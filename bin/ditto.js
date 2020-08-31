@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 // This is the main entry point for the ditto-cli command.
-
+const { program } = require('commander');
 // to use V8's code cache to speed up instantiation time
 require('v8-compile-cache');
 
 const { init, needsInit } = require('../lib/init/init');
+const pull = require('../lib/pull');
+
 /**
  * Catch and report unexpected error.
  * @param {any} error The thrown error object.
@@ -26,18 +28,20 @@ ditto-cli: ${version}
 }
 
 const main = async () => {
-  process.on('uncaughtException', onFatalError);
-  if (!process.env.DEBUG) process.on('unhandledRejection', onFatalError);
+  if (!process.env.DEBUG) {
+    process.on('uncaughtException', onFatalError);
+    process.on('unhandledRejection', onFatalError);
+  }
 
   if (needsInit()) {
     init();
+  } else {
+    program
+      .command('pull')
+      .description('pull copy from ditto into working directory')
+      .action(pull);
+    program.parse(process.argv);
   }
-
-  // then do the help prompt
-  // import
-  // import --project
-  // import --project -- frame
-  // see diffs (store cached diffs)
 };
 
-main().catch(onFatalError);
+main();

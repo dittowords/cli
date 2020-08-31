@@ -11,7 +11,10 @@
     "ditto-cli": "./bin/ditto.js"
   },
   "devDependencies": {
+    "@babel/core": "^7.11.4",
+    "@babel/preset-env": "^7.11.0",
     "@types/jest": "^26.0.9",
+    "babel-jest": "^26.3.0",
     "eslint": "^7.6.0",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.0",
@@ -19,12 +22,14 @@
     "jest": "^26.3.0",
     "rewire": "^5.0.0",
     "source-map": "^0.7.3",
+    "tempy": "^0.6.0",
     "tsconfig-paths": "^3.9.0"
   },
   "dependencies": {
     "axios": "^0.19.2",
     "boxen": "^4.2.0",
     "chalk": "^4.1.0",
+    "commander": "^6.1.0",
     "enquirer": "^2.3.6",
     "js-yaml": "^3.14.0",
     "ora": "^5.0.0",

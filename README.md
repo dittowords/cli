@@ -1,5 +1,7 @@
 # Ditto CLI
 
+![ditto-cli-init](https://user-images.githubusercontent.com/59497/91914546-33086500-ec6d-11ea-9712-56564a8bfb3f.gif)
+
 `ditto-cli` is a tool to integrate ditto into your build process.  You can use this tool to import your copy into your codebase and integrate it into the products you are building.
 
 ## Availability
@@ -19,6 +21,8 @@ You can submit issues or even make pull requests.
 * `ditto-cli pull` pull copy into working directory
 
 ### Pull
+
+![ditto-cli-pull](https://user-images.githubusercontent.com/59497/91914557-356abf00-ec6d-11ea-867c-7d73dc95e90b.gif)
 
 The pull command is the workhorse of `ditto-cli`:
 

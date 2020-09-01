@@ -33,8 +33,10 @@ const main = async () => {
     process.on('unhandledRejection', onFatalError);
   }
 
-  if (needsInit()) {
-    init();
+  const demo = process.env.DEMO;
+
+  if (needsInit() || (demo && process.argv.length < 3)) {
+    await init(!!demo);
   } else {
     program
       .command('pull')

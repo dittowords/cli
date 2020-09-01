@@ -44,6 +44,7 @@ There's a few environment variables that might make your life easier:
 
 * `DEBUG`: Which will show more verbose errors.
 * `DITTO_API_HOST`: If you happen to work for Ditto and are developing against a development site.
+* `DEMO`: puts the app into a demo mode to walk through the steps (details below)
 
 You can run these commands like so:
 
@@ -67,3 +68,17 @@ npm install -g .
 ```
 
 Which will make `ditto-cli` available on your computer.
+
+## Demo mode
+
+Demo mode can be used to walk through the initialization.
+
+```
+DEMO=true ditto-cli
+```
+
+Demo will:
+
+* Force the initialization of the app to collect credentials.
+* Force collection of a token (and skip validation)
+* Force collection of a project (from artificially generated projects)

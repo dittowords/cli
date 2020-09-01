@@ -23,7 +23,8 @@
     "rewire": "^5.0.0",
     "source-map": "^0.7.3",
     "tempy": "^0.6.0",
-    "tsconfig-paths": "^3.9.0"
+    "tsconfig-paths": "^3.9.0",
+    "typescript": "^4.0.2"
   },
   "dependencies": {
     "axios": "^0.19.2",
@@ -31,6 +32,7 @@
     "chalk": "^4.1.0",
     "commander": "^6.1.0",
     "enquirer": "^2.3.6",
+    "faker": "^5.1.0",
     "js-yaml": "^3.14.0",
     "ora": "^5.0.0",
     "v8-compile-cache": "^2.1.1"

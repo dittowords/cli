@@ -37,3 +37,33 @@ This file is generated and potentially always changing and the commit history ca
 > Add updated file from Ditto
 
 Something more meaningful is to add ditto's setup to part of your developer's environment setup.  Then update the file as build step before deployment.
+
+## Development (of the Ditto CLI)
+
+There's a few environment variables that might make your life easier:
+
+* `DEBUG`: Which will show more verbose errors.
+* `DITTO_API_HOST`: If you happen to work for Ditto and are developing against a development site.
+
+You can run these commands like so:
+
+```
+DEBUG=true ditto-cli
+DEBUG=true DITTO_API_HOST=http://localhost:1234 ditto-cli
+DITTO_API_HOST=http://localhost:1234 ditto-cli
+```
+
+If you are making changes to the CLI source code, you can also run the CLI directly
+using `node`:
+
+```
+node ./bin/ditto.js
+```
+
+You may also install the dev version of the CLI globally:
+
+```
+npm install -g .
+```
+
+Which will make `ditto-cli` available on your computer.

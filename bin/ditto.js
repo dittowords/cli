@@ -28,11 +28,6 @@ ditto-cli: ${version}
 }
 
 const main = async () => {
-  if (!process.env.DEBUG) {
-    process.on('uncaughtException', onFatalError);
-    process.on('unhandledRejection', onFatalError);
-  }
-
   if (needsInit()) {
     await init();
   } else {

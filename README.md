@@ -16,7 +16,9 @@ You can submit issues or even make pull requests.
 
 ## Usage
 
-* `ditto-cli` this will initialize your environment to work with Ditto if needed.
+* `DEBUG=true ditto-cli
+DEBUG=true DITTO_API_HOST=http://localhost:1234 ditto-cli
+DITTO_API_HOST=http://localhost:1234 ditto-cli` this will initialize your environment to work with Ditto if needed.
 * `ditto-cli help` this will show you help.
 * `ditto-cli pull` pull copy into working directory
 
@@ -26,12 +28,12 @@ You can submit issues or even make pull requests.
 
 The pull command is the workhorse of `ditto-cli`:
 
-* It pulls the text from the project defined in `.ditto/config.yml`.
+* It pulls the text from the project defined in `ditto/config.yml`.
 * We will prompt to overwrite if a file exists (unless we have set a default).
 
 ## Build Process
 
-We recommend using `.gitignore` for `.ditto/texts.json`.
+We recommend using `.gitignore` for `ditto/texts.json`.
 This file is generated and potentially always changing and the commit history can be extensive and perhaps boring:
 
 > Add updated file from Ditto

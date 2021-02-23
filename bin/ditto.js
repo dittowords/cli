@@ -25,6 +25,7 @@ const main = async () => {
       quit();
     }
   } else {
+    program.name('ditto-cli');
     program
       .command('pull')
       .description('pull copy from ditto into working directory')

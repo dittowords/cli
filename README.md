@@ -1,57 +1,46 @@
 # Ditto CLI
 
-![ditto-cli-init](https://user-images.githubusercontent.com/59497/91914546-33086500-ec6d-11ea-9712-56564a8bfb3f.gif)
+The Ditto CLI helps teams integrate [Ditto](https://dittowords.com) into their build processes. You can use it to pull copy from Ditto into your codebase right from the terminal.
 
-`ditto-cli` is a tool to integrate ditto into your build process.  You can use this tool to import your copy into your codebase and integrate it into the products you are building.
+## Getting Started
 
-## Availability
+Install the Ditto CLI globally by doing the following:
 
-To use the Ditto CLI, you'll ned to have a account on [Ditto](https://dittowords.com). If you have any questions, email us at support@dittowords.com.
-
-## Feedback wanted
-
-We welcome your feedback.
-Let us know what kind of tooling you require or if this tool isn't meeting your needs.  We are early in development and want to build something that is useful for you.
-You can submit issues or even make pull requests.
-
-## Usage
-
-* `ditto-cli` this will initialize your environment to work with Ditto if needed.
-* `ditto-cli help` this will show you help.
-* `ditto-cli pull` pull copy into working directory
-
-### Pull
-
-![ditto-cli-pull](https://user-images.githubusercontent.com/59497/91914557-356abf00-ec6d-11ea-867c-7d73dc95e90b.gif)
-
-The pull command is the workhorse of `ditto-cli`:
-
-* It pulls the text from the project defined in `.ditto/config.yml`.
-* We will prompt to overwrite if a file exists (unless we have set a default).
-
-
-## Development (of the Ditto CLI)
-
-There's a few environment variables that might make your life easier:
-
-* `DITTO_API_HOST`: If you happen to work for Ditto and are developing against a development site.
-You can run these commands like so:
-
-```
-DITTO_API_HOST=http://localhost:1234 ditto-cli
+```json
+npm install -g ditto-cli
 ```
 
-If you are making changes to the CLI source code, you can also run the CLI directly
-using `node`:
+Then, run `ditto-cli` to finish setting up. You'll be prompted to:
 
-```
-node ./bin/ditto.js
+1. Provide your API key (found at [https://beta.dittowords.com/account/user](https://beta.dittowords.com/account/user)) 
+2. Choose a Ditto project in your workspace to pull copy from. Only projects with **developer mode** enabled are accessible via the API. 
+
+Once you successfully provide that information, you're ready to start fetching copy!
+
+## Commands
+
+The Ditto CLI supports two main commands: `pull` and `project`. To run a command, prefix it with `ditto-cli`:
+
+```json
+ditto-cli [command]
+
+# Run `--help` for detailed information about CLI commands
+ditto-cli [command] help
 ```
 
-You may also install the dev version of the CLI globally:
+### `pull`
 
-```
-npm install -g .
-```
+This command does the following: 
 
-Which will make `ditto-cli` available on your computer.
+1. Pulls the text from the project defined in `ditto/config.yml` as a structured JSON
+2. Copies that information into the `ditto/text.json` file, overwriting its existing contents
+
+To change the project defined in `ditto/config.yml`, see the `project` command.
+
+### `project`
+
+Use this command to change the Ditto project you want to pull copy from (ie. the project defined in `ditto/config.yml`). Running this will allow you to select a project from a list of projects in your workspace that have developer mode enabled.
+
+## Feedback
+
+Have feedback? We'd love to hear it! Message us at [support@dittowords.com](mailto:support@dittowords.com).

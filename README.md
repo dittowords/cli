@@ -19,7 +19,7 @@ Once you successfully provide that information, you're ready to start fetching c
 
 ## Commands
 
-The Ditto CLI supports two main commands: `pull` and `project`. To run a command, prefix it with `ditto-cli`:
+The Ditto CLI supports one main command: `pull`. To run a command, prefix it with `ditto-cli`:
 
 ```json
 ditto-cli [command]
@@ -35,11 +35,6 @@ This command does the following:
 1. Pulls the text from the project defined in `ditto/config.yml` as a structured JSON
 2. Copies that information into the `ditto/text.json` file, overwriting its existing contents
 
-To change the project defined in `ditto/config.yml`, see the `project` command.
-
-### `project`
-
-Use this command to change the Ditto project you want to pull copy from (ie. the project defined in `ditto/config.yml`). Running this will allow you to select a project from a list of projects in your workspace that have developer mode enabled.
 
 ## Feedback
 

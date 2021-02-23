@@ -12,24 +12,18 @@ const pull = require('../lib/pull');
  * @param {any} error The thrown error object.
  * @returns {void}
  */
-function onFatalError() {
+function quit() {
   process.exitCode = 2;
-
-  // eslint-disable-next-line global-require
-  const { version } = require('../package.json');
-
-  console.error(`
-Oops! Something went wrong! ¯\\_(ツ)_/¯
-
-ditto-cli: ${version}
-`);
-
   process.exit();
 }
 
 const main = async () => {
   if (needsInit()) {
-    await init();
+    try {
+      await init();
+    } catch (error) {
+      quit();
+    }
   } else {
     program
       .command('pull')

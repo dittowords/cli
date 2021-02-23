@@ -13,6 +13,7 @@ const pull = require('../lib/pull');
  * @returns {void}
  */
 function quit() {
+  console.log('\nExiting Ditto CLI...');
   process.exitCode = 2;
   process.exit();
 }

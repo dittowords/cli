@@ -6,7 +6,7 @@
 
 ## Availability
 
-Ditto CLI is available to select paid users of the Ditto app.  For access please contact founders@dittowords.com.
+To use the Ditto CLI, you'll ned to have a account on [Ditto](https://dittowords.com). If you have any questions, email us at support@dittowords.com.
 
 ## Feedback wanted
 
@@ -29,28 +29,15 @@ The pull command is the workhorse of `ditto-cli`:
 * It pulls the text from the project defined in `.ditto/config.yml`.
 * We will prompt to overwrite if a file exists (unless we have set a default).
 
-## Build Process
-
-We recommend using `.gitignore` for `.ditto/texts.json`.
-This file is generated and potentially always changing and the commit history can be extensive and perhaps boring:
-
-> Add updated file from Ditto
-
-Something more meaningful is to add ditto's setup to part of your developer's environment setup.  Then update the file as build step before deployment.
 
 ## Development (of the Ditto CLI)
 
 There's a few environment variables that might make your life easier:
 
-* `DEBUG`: Which will show more verbose errors.
 * `DITTO_API_HOST`: If you happen to work for Ditto and are developing against a development site.
-* `DEMO`: puts the app into a demo mode to walk through the steps (details below)
-
 You can run these commands like so:
 
 ```
-DEBUG=true ditto-cli
-DEBUG=true DITTO_API_HOST=http://localhost:1234 ditto-cli
 DITTO_API_HOST=http://localhost:1234 ditto-cli
 ```
 
@@ -68,17 +55,3 @@ npm install -g .
 ```
 
 Which will make `ditto-cli` available on your computer.
-
-## Demo mode
-
-Demo mode can be used to walk through the initialization.
-
-```
-DEMO=true ditto-cli
-```
-
-Demo will:
-
-* Force the initialization of the app to collect credentials.
-* Force collection of a token (and skip validation)
-* Force collection of a project (from artificially generated projects)

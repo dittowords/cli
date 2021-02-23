@@ -6,6 +6,7 @@ require('v8-compile-cache');
 
 const { init, needsInit } = require('../lib/init/init');
 const pull = require('../lib/pull');
+const selectProject = require('../lib/select-project');
 
 /**
  * Catch and report unexpected error.
@@ -27,8 +28,12 @@ const main = async () => {
   } else {
     program
       .command('pull')
-      .description('pull copy from ditto into working directory')
+      .description('Pull copy from Ditto into working directory')
       .action(pull);
+    program
+      .command('project')
+      .description('Select Ditto project to pull copy from')
+      .action(selectProject);
     program.parse(process.argv);
   }
 };

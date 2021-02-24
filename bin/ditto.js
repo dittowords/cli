@@ -6,6 +6,7 @@ require('v8-compile-cache');
 
 const { init, needsInit } = require('../lib/init/init');
 const pull = require('../lib/pull');
+const selectProject = require('../lib/select-project');
 
 /**
  * Catch and report unexpected error.
@@ -30,8 +31,7 @@ const setupCommands = () => {
     .action(() => checkInit('project'));
 };
 
-const checkInit = async (command) => {
-  if (needsInit()) {
+const checkInit = async (command) => {  if (needsInit()) {
     try {
       await init();
     } catch (error) {

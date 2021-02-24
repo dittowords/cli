@@ -4,7 +4,7 @@
   "description": "Command Line Interface for Ditto (dittowords.com).",
   "main": "bin/index.js",
   "repository": "https://github.com/dittowords/ditto-cli.",
-  "author": "Dave Dash",
+  "author": "Ditto Tech Inc.",
   "license": "MIT",
   "private": false,
   "bin": {

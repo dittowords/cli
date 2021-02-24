@@ -6,42 +6,36 @@ require('v8-compile-cache');
 
 const { init, needsInit } = require('../lib/init/init');
 const pull = require('../lib/pull');
+const selectProject = require('../lib/select-project');
 
 /**
  * Catch and report unexpected error.
  * @param {any} error The thrown error object.
  * @returns {void}
  */
-function onFatalError() {
+function quit() {
+  console.log('\nExiting Ditto CLI...');
   process.exitCode = 2;
-
-  // eslint-disable-next-line global-require
-  const { version } = require('../package.json');
-
-  console.error(`
-Oops! Something went wrong! ¯\\_(ツ)_/¯
-
-ditto-cli: ${version}
-`);
-
   process.exit();
 }
 
 const main = async () => {
-  if (!process.env.DEBUG) {
-    process.on('uncaughtException', onFatalError);
-    process.on('unhandledRejection', onFatalError);
-  }
-
-  const demo = process.env.DEMO;
-
-  if (needsInit() || (demo && process.argv.length < 3)) {
-    await init(!!demo);
+  if (needsInit()) {
+    try {
+      await init();
+    } catch (error) {
+      quit();
+    }
   } else {
+    program.name('ditto-cli');
     program
       .command('pull')
-      .description('pull copy from ditto into working directory')
+      .description('Sync copy from Ditto into working directory')
       .action(pull);
+    program
+      .command('project')
+      .description('Select Ditto project to sync copy from')
+      .action(selectProject);
     program.parse(process.argv);
   }
 };

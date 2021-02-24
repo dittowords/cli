@@ -3,10 +3,24 @@
   "version": "0.0.1",
   "description": "Command Line Interface for Ditto (dittowords.com).",
   "main": "bin/index.js",
-  "repository": "https://github.com/dittowords/ditto-cli.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dittowords/cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dittowords/cli/issues"
+  },
   "author": "Ditto Tech Inc.",
   "license": "MIT",
-  "private": false,
+  "keywords": [
+    "ditto",
+    "dittowords",
+    "copy",
+    "microcopy",
+    "product",
+    "cli",
+    "api"
+  ],
   "bin": {
     "ditto-cli": "./bin/ditto.js"
   },

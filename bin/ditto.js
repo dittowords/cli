@@ -31,9 +31,13 @@ const setupCommands = () => {
     .action(() => checkInit('project'));
 };
 
-const checkInit = async (command) => {  if (needsInit()) {
+const checkInit = async (command) => {
+  if (needsInit()) {
     try {
       await init();
+      if (command === 'pull') {
+        main(); // re-run to actually pull text now that init is finished
+      }
     } catch (error) {
       quit();
     }
@@ -57,7 +61,8 @@ const checkInit = async (command) => {  if (needsInit()) {
 
 const main = async () => {
   if (process.argv.length === 1 && process.argv[0] === 'ditto-cli') {
-    checkInit('none');
+  // if (process.argv.length === 2 && process.argv[1] === '/Users/jolenam/Documents/GitHub/ditto-cli/bin/ditto.js') {
+    await checkInit('none');
   } else {
     setupCommands();
   }

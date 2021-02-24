@@ -5,7 +5,6 @@ The Ditto CLI helps teams integrate [Ditto](https://dittowords.com) into their b
 ## Getting Started
 
 Install the Ditto CLI globally by doing the following:
-
 ```json
 npm install -g ditto-cli
 ```

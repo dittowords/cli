@@ -34,7 +34,7 @@ const main = async () => {
       .action(pull);
     program
       .command('project')
-      .description('Select Ditto project to sync copy from')
+      .description('Change Ditto project to sync copy from')
       .action(selectProject);
     program.parse(process.argv);
   }

@@ -61,7 +61,6 @@ const checkInit = async (command) => {
 
 const main = async () => {
   if (process.argv.length === 1 && process.argv[0] === 'ditto-cli') {
-  // if (process.argv.length === 2 && process.argv[1] === '/Users/jolenam/Documents/GitHub/ditto-cli/bin/ditto.js') {
     await checkInit('none');
   } else {
     setupCommands();

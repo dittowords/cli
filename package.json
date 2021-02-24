@@ -1,5 +1,5 @@
 {
-  "name": "ditto-cli",
+  "name": "@dittowords/cli",
   "version": "0.0.1",
   "description": "Command Line Interface for Ditto (dittowords.com).",
   "main": "bin/index.js",

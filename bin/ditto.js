@@ -12,38 +12,56 @@ const pull = require('../lib/pull');
  * @param {any} error The thrown error object.
  * @returns {void}
  */
-function onFatalError() {
+function quit() {
+  console.log('\nExiting Ditto CLI...');
   process.exitCode = 2;
-
-  // eslint-disable-next-line global-require
-  const { version } = require('../package.json');
-
-  console.error(`
-Oops! Something went wrong! ¯\\_(ツ)_/¯
-
-ditto-cli: ${version}
-`);
-
   process.exit();
 }
 
-const main = async () => {
-  if (!process.env.DEBUG) {
-    process.on('uncaughtException', onFatalError);
-    process.on('unhandledRejection', onFatalError);
-  }
+const setupCommands = () => {
+  program.name('ditto-cli');
+  program
+    .command('pull')
+    .description('Sync copy from Ditto into working directory')
+    .action(() => checkInit('pull'));
+  program
+    .command('project')
+    .description('Select Ditto project to sync copy from')
+    .action(() => checkInit('project'));
+};
 
-  const demo = process.env.DEMO;
-
-  if (needsInit() || (demo && process.argv.length < 3)) {
-    await init(!!demo);
+const checkInit = async (command) => {
+  if (needsInit()) {
+    try {
+      await init();
+    } catch (error) {
+      quit();
+    }
   } else {
-    program
-      .command('pull')
-      .description('pull copy from ditto into working directory')
-      .action(pull);
-    program.parse(process.argv);
+    switch (command) {
+      case 'pull':
+        pull();
+        break;
+      case 'project':
+        selectProject();
+        break;
+      case 'none':
+        setupCommands();
+        program.help();
+        break;
+      default:
+        quit();
+    }
   }
+};
+
+const main = async () => {
+  if (process.argv.length === 1 && process.argv[0] === 'ditto-cli') {
+    checkInit('none');
+  } else {
+    setupCommands();
+  }
+  program.parse(process.argv);
 };
 
 main();

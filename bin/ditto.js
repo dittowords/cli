@@ -19,25 +19,53 @@ function quit() {
   process.exit();
 }
 
-const main = async () => {
+const setupCommands = () => {
+  program.name('ditto-cli');
+  program
+    .command('pull')
+    .description('Sync copy from Ditto into working directory')
+    .action(() => checkInit('pull'));
+  program
+    .command('project')
+    .description('Select Ditto project to sync copy from')
+    .action(() => checkInit('project'));
+};
+
+const checkInit = async (command) => {
   if (needsInit()) {
     try {
       await init();
+      if (command === 'pull') {
+        main(); // re-run to actually pull text now that init is finished
+      }
     } catch (error) {
       quit();
     }
   } else {
-    program.name('ditto-cli');
-    program
-      .command('pull')
-      .description('Sync copy from Ditto into working directory')
-      .action(pull);
-    program
-      .command('project')
-      .description('Select Ditto project to sync copy from')
-      .action(selectProject);
-    program.parse(process.argv);
+    switch (command) {
+      case 'pull':
+        pull();
+        break;
+      case 'project':
+        selectProject();
+        break;
+      case 'none':
+        setupCommands();
+        program.help();
+        break;
+      default:
+        quit();
+    }
   }
+};
+
+const main = async () => {
+  if (process.argv.length === 1 && process.argv[0] === 'ditto-cli') {
+    await checkInit('none');
+  } else {
+    setupCommands();
+  }
+  program.parse(process.argv);
 };
 
 main();

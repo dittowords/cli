@@ -13,7 +13,7 @@ npm install -g ditto-cli
 Then, run `ditto-cli` to finish setting up. You'll be prompted to:
 
 1. Provide your API key (found at [https://beta.dittowords.com/account/user](https://beta.dittowords.com/account/user))
-2. Choose a Ditto project in your workspace to pull copy from. Only projects with **developer mode** enabled are accessible via the API.
+2. Choose a Ditto project in your workspace to sync copy from. Only projects with **developer mode** enabled are accessible via the API.
 
 Once you successfully provide that information, you're ready to start fetching copy!
 
@@ -39,7 +39,7 @@ To change the project defined in `ditto/config.yml`, see the `project` command.
 
 ### `project`
 
-Use this command to change the Ditto project you want to pull copy from (ie. the project defined in `ditto/config.yml`). Running this will allow you to select a project from a list of projects in your workspace that have developer mode enabled.
+Use this command to change the Ditto project you want to sync copy from (ie. the project defined in `ditto/config.yml`). Running this will allow you to select a project from a list of projects in your workspace that have developer mode enabled.
 
 ## Feedback
 

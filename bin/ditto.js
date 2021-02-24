@@ -30,11 +30,11 @@ const main = async () => {
     program.name('ditto-cli');
     program
       .command('pull')
-      .description('Pull copy from Ditto into working directory')
+      .description('Sync copy from Ditto into working directory')
       .action(pull);
     program
       .command('project')
-      .description('Select Ditto project to pull copy from')
+      .description('Select Ditto project to sync copy from')
       .action(selectProject);
     program.parse(process.argv);
   }

@@ -22,7 +22,7 @@
     "api"
   ],
   "bin": {
-    "ditto-cli": "./bin/ditto.js"
+    "ditto": "./bin/ditto.js"
   },
   "devDependencies": {
     "@babel/core": "^7.11.4",

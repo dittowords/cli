@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// This is the main entry point for the ditto command.
+// This is the main entry point for the ditto-cli command.
 const { program } = require('commander');
 // to use V8's code cache to speed up instantiation time
 require('v8-compile-cache');
@@ -20,7 +20,7 @@ function quit() {
 }
 
 const setupCommands = () => {
-  program.name('ditto');
+  program.name('ditto-cli');
   program
     .command('pull')
     .description('Sync copy from Ditto into working directory')
@@ -60,7 +60,7 @@ const checkInit = async (command) => {
 };
 
 const main = async () => {
-  if (process.argv.length <= 2 && process.argv[1].includes('ditto')) {
+  if (process.argv.length <= 2 && process.argv[1].includes('ditto-cli')) {
     await checkInit('none');
   } else {
     setupCommands();

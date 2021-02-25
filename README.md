@@ -12,26 +12,25 @@ Install the Ditto CLI globally by doing the following:
 npm install -g @dittowords/cli
 ```
 
-Then, run `ditto` to finish setting up. You’ll be prompted to:
+Then, run `ditto-cli` to finish setting up. You’ll be prompted to:
 
 1. Provide your API key (found at [https://beta.dittowords.com/account/user](https://beta.dittowords.com/account/user) under **API Keys**).
 2. Choose a Ditto project in your workspace to pull copy from. Only projects with **developer mode** enabled are accessible via the API.
 
-Once you successfully provide that information, you’re ready to start fetching copy! You can set up the CLI in multiple directories by running the `ditto` command and choosing a project to sync from.
+Once you successfully provide that information, you’re ready to start fetching copy! You can set up the CLI in multiple directories by running the `ditto-cli` command and choosing a project to sync from.
 
 ## Commands
 
 ### `pull`
 
-**Usage:** `ditto pull`
-
+**Usage:** `ditto-cli pull`
 **Action:** To pull the latest text from the linked project into `ditto/text.json`.
 
 The text will be pulled down as a structured JSON with IDs, and will locally overwrite what was previously in the file.
 
 ### `project`
 
-**Usage:** `ditto project`
+**Usage:** `ditto-cli project`
 
 **Action:** To change the Ditto project you want to pull copy from in the current directory. Running this will allow you to select a project from a list of projects in your workspace that have developer mode enabled.
 

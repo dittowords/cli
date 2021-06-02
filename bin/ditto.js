@@ -25,10 +25,23 @@ const setupCommands = () => {
     .command('pull')
     .description('Sync copy from Ditto into working directory')
     .action(() => checkInit('pull'));
-  program
+    
+  const projectDescription = 'Add a Ditto project to sync copy from'
+  const projectCommand = program
     .command('project')
-    .description('Select Ditto project to sync copy from')
+    .description(projectDescription)
     .action(() => checkInit('project'));
+
+  projectCommand
+    .command('add')
+    .description(projectDescription)
+    .action(() => checkInit('project'));
+    
+  projectCommand
+    .command('remove')
+    // TODO: write better description
+    .description('Remove a Ditto project that copy is currently synced from')
+    .action(() => checkInit('project remove'));
 };
 
 const checkInit = async (command) => {
@@ -48,6 +61,10 @@ const checkInit = async (command) => {
         break;
       case 'project':
         selectProject();
+        break;
+      case 'project remove':
+        // TODO: implement me
+        console.error(`Error: 'project remove' has not been implemented`);
         break;
       case 'none':
         setupCommands();

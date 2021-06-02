@@ -60,6 +60,7 @@ const checkInit = async (command) => {
         pull();
         break;
       case 'project':
+      case 'project add':
         selectProject();
         break;
       case 'project remove':

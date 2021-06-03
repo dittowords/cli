@@ -6,7 +6,9 @@ require('v8-compile-cache');
 
 const { init, needsInit } = require('../lib/init/init');
 const pull = require('../lib/pull');
+
 const addProject = require('../lib/add-project');
+const removeProject = require('../lib/remove-project');
 
 /**
  * Catch and report unexpected error.
@@ -64,8 +66,7 @@ const checkInit = async (command) => {
         addProject();
         break;
       case 'project remove':
-        // TODO: implement me
-        console.error(`Error: 'project remove' has not been implemented`);
+        removeProject();
         break;
       case 'none':
         setupCommands();

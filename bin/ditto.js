@@ -46,12 +46,11 @@ const setupCommands = () => {
 };
 
 const checkInit = async (command) => {
-  if (needsInit()) {
+  if (needsInit() && command !== 'project remove') {
     try {
       await init();
-      if (command === 'pull') {
+      if (command === 'pull') 
         main(); // re-run to actually pull text now that init is finished
-      }
     } catch (error) {
       quit();
     }

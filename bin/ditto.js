@@ -16,7 +16,7 @@ const removeProject = require('../lib/remove-project');
  * @returns {void}
  */
 function quit() {
-  console.log('\nExiting Ditto CLI...');
+  console.log('\nExiting Ditto CLI...\n');
   process.exitCode = 2;
   process.exit();
 }

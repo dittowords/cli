@@ -6,7 +6,7 @@ require('v8-compile-cache');
 
 const { init, needsInit } = require('../lib/init/init');
 const pull = require('../lib/pull');
-const selectProject = require('../lib/select-project');
+const addProject = require('../lib/add-project');
 
 /**
  * Catch and report unexpected error.
@@ -61,7 +61,7 @@ const checkInit = async (command) => {
         break;
       case 'project':
       case 'project add':
-        selectProject();
+        addProject();
         break;
       case 'project remove':
         // TODO: implement me

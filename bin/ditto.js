@@ -41,8 +41,7 @@ const setupCommands = () => {
     
   projectCommand
     .command('remove')
-    // TODO: write better description
-    .description('Remove a Ditto project that copy is currently synced from')
+    .description('Stop syncing copy from a Ditto project')
     .action(() => checkInit('project remove'));
 };
 

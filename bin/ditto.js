@@ -6,7 +6,9 @@ require('v8-compile-cache');
 
 const { init, needsInit } = require('../lib/init/init');
 const pull = require('../lib/pull');
-const selectProject = require('../lib/select-project');
+
+const addProject = require('../lib/add-project');
+const removeProject = require('../lib/remove-project');
 
 /**
  * Catch and report unexpected error.
@@ -14,7 +16,7 @@ const selectProject = require('../lib/select-project');
  * @returns {void}
  */
 function quit() {
-  console.log('\nExiting Ditto CLI...');
+  console.log('\nExiting Ditto CLI...\n');
   process.exitCode = 2;
   process.exit();
 }
@@ -25,19 +27,30 @@ const setupCommands = () => {
     .command('pull')
     .description('Sync copy from Ditto into working directory')
     .action(() => checkInit('pull'));
-  program
+    
+  const projectDescription = 'Add a Ditto project to sync copy from'
+  const projectCommand = program
     .command('project')
-    .description('Select Ditto project to sync copy from')
+    .description(projectDescription)
     .action(() => checkInit('project'));
+
+  projectCommand
+    .command('add')
+    .description(projectDescription)
+    .action(() => checkInit('project'));
+    
+  projectCommand
+    .command('remove')
+    .description('Stop syncing copy from a Ditto project')
+    .action(() => checkInit('project remove'));
 };
 
 const checkInit = async (command) => {
-  if (needsInit()) {
+  if (needsInit() && command !== 'project remove') {
     try {
       await init();
-      if (command === 'pull') {
+      if (command === 'pull') 
         main(); // re-run to actually pull text now that init is finished
-      }
     } catch (error) {
       quit();
     }
@@ -47,7 +60,11 @@ const checkInit = async (command) => {
         pull();
         break;
       case 'project':
-        selectProject();
+      case 'project add':
+        addProject();
+        break;
+      case 'project remove':
+        removeProject();
         break;
       case 'none':
         setupCommands();

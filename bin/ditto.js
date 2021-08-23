@@ -15,9 +15,9 @@ const removeProject = require('../lib/remove-project');
  * @param {any} error The thrown error object.
  * @returns {void}
  */
-function quit() {
+function quit(exitCode = 2) {
   console.log('\nExiting Ditto CLI...\n');
-  process.exitCode = 2;
+  process.exitCode = exitCode;
   process.exit();
 }
 

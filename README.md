@@ -1,60 +1,104 @@
 # Ditto CLI
 
-The Ditto CLI helps teams integrate [Ditto](https://dittowords.com/) into their build processes. You can use it to pull copy  into your codebase using the Ditto API right from the terminal.
-
-Ditto allows for end-to-end syncing of text from mockups (Figma) all the way to production. For more information, visit [dittowords.com](http://dittowords.com).
+The Ditto CLI helps teams integrate [Ditto](https://dittowords.com/) into their development workflows and build processes.
 
 ## Getting Started
 
-Install the Ditto CLI globally by doing the following:
+You can install the CLI from NPM:
 
-```json
-npm install -g @dittowords/cli
+```bash
+# as a dev dependency (recommended)
+npm install --save-dev @dittowords/cli
+
+# as a global package
+npm install --global @dittowords/cli
 ```
 
-Then, run `ditto-cli` to finish setting up. You’ll be prompted to:
+The installed binary is named `ditto-cli`. You can execute it directly in `node_modules/.bin/ditto-cli` or using [npx](https://www.npmjs.com/package/npx) (with or without installation) like `npx @dittowords/cli`.
 
-1. Provide your API key (found at [https://beta.dittowords.com/account/user](https://beta.dittowords.com/account/user) under **API Keys**).
-2. Choose a Ditto project in your workspace to pull copy from. Only projects with **developer mode** enabled are accessible via the API.
+The first time you run the CLI, you'll be asked to provide an API key (found at [https://beta.dittowords.com/account/user](https://beta.dittowords.com/account/user) under **API Keys**).
 
-Once you successfully provide that information, you’re ready to start fetching copy! You can set up the CLI in multiple directories by running the `ditto-cli` command and choosing a project to sync from.
+Once you've successfully authenticated, you’re ready to start fetching copy! You can set up the CLI in multiple directories by running `ditto-cli` and choosing an initial project to sync from.
 
 ## Commands
 
 ### `pull`
 
 **Usage:** `ditto-cli pull`
-**Action:** To pull the latest text from the linked project into `ditto/text.json`.
 
-The text will be pulled down as a structured JSON with IDs, and will locally overwrite what was previously in the file.
+**Action:** To pull the latest text from the linked projects and store it in the `ditto/` folder.
 
-### `project`
+The text will be pulled down and stored in JSON files according to the `format` property specified in `config.yml`. If no format is specified, the default structured format will be used. Every time text is pulled, the existing text data is removed before new data is generated and stored.
 
-**Usage:** `ditto-cli project`
+If the `variants` property is not set to `true` in `config.yml`, all text will be pulled and stored in a file called `text.json`.
 
-**Action:** To change the Ditto project you want to pull copy from in the current directory. Running this will allow you to select a project from a list of projects in your workspace that have developer mode enabled.
+If the `variants` property is set to `true` in `config.yml`, multiple JSON files will be generated:
+- The file `base.json` will contain all of the base text for the specified projects
+- The files named after the pattern `[variant-api-id].json` will contain all of the variant text for the specified projects for each variant in the workspace
 
-The Ditto project that the directory is synced with is defined in  `ditto/config.yml`, and you can also manually change the linked project there.
+### `project add`
+
+**Usage:** `ditto-cli project add`
+
+**Action:** To add a project to the list of Ditto projects you want to pull copy from in the current directory. Running this will allow you to select from a list of projects in your workspace that have developer mode enabled.
+
+### `project remove`
+
+**Usage:** `ditto-cli project remove`
+
+**Action:** To remove a project from the list of Ditto projects you want to pull copy from in the current directory. Running this will allow you to select from the list of projects currently saved in `config.yml`
 
 ## Files
 
 ### `ditto/`
 
-This folder is associated with your current working directory, so if you switch directories, we'll create a new folder there.
+This folder is associated with your current working directory; if you switch to a fresh directory to run the CLI, a new `ditto/` folder will be created.
 
 - `config.yml`
 
-    This stores the information on which Ditto project you've selected to pull copy from in this directory.
+    This is the source of truth for pulling text from projects in Ditto. It includes information about which Ditto projects the CLI should pull data from and in what format that data should be stored.
 
-    You can change which project is defined here using the `project` command, or by manually replacing the contents of this file. If you switch directories, you'll automatically be prompted to choose a project to pull from.
+    This file is managed by the `project add` / `project remove` commands, but can also be updated via manual edits.
 
-- `text.json`
+    **Supported properties**
+    - `projects` (required) - list of project names and ids to pull copy from
+    - `variants` (optional) - a `true` or `false` value indicating whether or not variant data should be pulled for the specified projects. Defaults to `false` if not specified.
+    - `format` (optional) - the format that the specified projects should be stored in. Acceptable values are `structured` or `format`. If not specified, the default structured format will be used.
 
-    The copy pulled from your Ditto project is saved to this file. Learn more about how this content is structured and how the IDs are generated by reading our guide here [LINK].
+    **Example**:
+    ```
+    projects:
+      - name: Ditto Component Library
+        id: ditto_component_library
+    variants: true
+    format: flat
+    ```
 
-### `.config/ditto`
+- `*.json`
 
-Your API key is saved to this file in your **root directory**. To change your API key, you'll need to open this file and replace the key manually.
+    The copy pulled from your Ditto projects is saved to JSON files in the `ditto/` folder. 
+    
+    The number of files present and the convention with which they're named will vary according to whether or not you've specified the `variants` option in `config.yml`. Learn more about how these files are generated by reading our guide here [coming soon].
+
+- `index.js`
+
+    An automatically generated driver file that simplifies the process of passing synced data to the Ditto React SDK with a single import:
+
+    ```jsx
+    import source from './ditto';
+
+    function App() {
+      return (
+        <DittoProvider source={source}>
+          ...
+        </DittoProvider>
+      )
+    }
+    ```
+
+### `~/.config/ditto`
+
+Your API key is saved to this file in your **home directory**. Changing an API key currently requires opening this file and manually replacing the existing key.
 
 ## SDKs
 

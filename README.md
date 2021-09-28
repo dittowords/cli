@@ -4,7 +4,7 @@ The Ditto CLI helps teams integrate [Ditto](https://dittowords.com/) into their 
 
 ## Getting Started
 
-You can install the CLI from NPM:
+You can install the CLI from npm:
 
 ```bash
 # as a dev dependency (recommended)

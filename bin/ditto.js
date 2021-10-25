@@ -5,7 +5,7 @@ const { program } = require("commander");
 require("v8-compile-cache");
 
 const { init, needsInit } = require("../lib/init/init");
-const pull = require("../lib/pull");
+const { pull } = require("../lib/pull");
 
 const addProject = require("../lib/add-project");
 const removeProject = require("../lib/remove-project");

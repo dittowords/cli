@@ -78,14 +78,12 @@ If you run the CLI in a directory that does not contain a `ditto/` folder, the f
 
   The copy pulled from your Ditto projects is saved to JSON files in the `ditto/` folder.
 
-  The number of files present and the convention with which they're named will vary according to whether or not you've specified the `variants` option in `config.yml`.
+  The number of files present and the convention with which they're named will vary according to the options specified in `config.yml`:
 
-  If the `variants` property is not set to `true` in `config.yml`, all text will be stored in a file called `text.json`.
-
-  If the `variants` property is set to `true` in `config.yml`, multiple JSON files will be generated:
-
-  - The file `base.json` will contain the base text for the specified projects
-  - The files named after the pattern `[variant-api-id].json` will contain the variant text for the specified projects (for each variant in the workspace).
+  - If the `variants` and `format` options are unset, all data will be stored in a single file: `text.json`
+  - If the `variants` option is `true` and the `format` option is unset, files will be written on a per-variant basis; `base.json` will contain all base (non-variant) text and all other files will follow the pattern `[variant-api-id].json`.
+  - If the `variants` option is unset and the `format` open is `flat` or `structured`, files will be written on a per-project basis following the pattern `[project-id].json`.
+  - If the `variants` option is `true` and the `format` option is `flat` or `structured`, files will be written on a per-project per-variant basis following the pattern `[project-id__variant-api-id].json`. These files will NOT contain the top-level `projects` and `project_xyz` keys.
 
 - #### `index.js`
 

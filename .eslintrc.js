@@ -3,17 +3,15 @@ module.exports = {
     browser: true,
     commonjs: true,
     es2020: true,
-    'jest/globals': true,
+    "jest/globals": true,
   },
-  extends: [
-    'airbnb-base',
-  ],
+  extends: ["airbnb-base"],
   parserOptions: {
     ecmaVersion: 11,
   },
-  plugins: ['jest'],
+  plugins: ["jest"],
   rules: {
-    'no-console': 'off',
-    'no-underscore-dangle': ['error', { allow: ['_id', '__get__'] }],
+    "no-console": "off",
+    "no-underscore-dangle": ["error", { allow: ["_id", "__get__"] }],
   },
 };

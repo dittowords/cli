@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // This is the main entry point for the ditto-cli command.
-const { program } = require('commander');
+const { program } = require("commander");
 // to use V8's code cache to speed up instantiation time
-require('v8-compile-cache');
+require("v8-compile-cache");
 
-const { init, needsInit } = require('../lib/init/init');
-const pull = require('../lib/pull');
+const { init, needsInit } = require("../lib/init/init");
+const pull = require("../lib/pull");
 
-const addProject = require('../lib/add-project');
-const removeProject = require('../lib/remove-project');
+const addProject = require("../lib/add-project");
+const removeProject = require("../lib/remove-project");
 
 /**
  * Catch and report unexpected error.
@@ -16,57 +16,56 @@ const removeProject = require('../lib/remove-project');
  * @returns {void}
  */
 function quit(exitCode = 2) {
-  console.log('\nExiting Ditto CLI...\n');
+  console.log("\nExiting Ditto CLI...\n");
   process.exitCode = exitCode;
   process.exit();
 }
 
 const setupCommands = () => {
-  program.name('ditto-cli');
+  program.name("ditto-cli");
   program
-    .command('pull')
-    .description('Sync copy from Ditto into working directory')
-    .action(() => checkInit('pull'));
-    
-  const projectDescription = 'Add a Ditto project to sync copy from'
+    .command("pull")
+    .description("Sync copy from Ditto into working directory")
+    .action(() => checkInit("pull"));
+
+  const projectDescription = "Add a Ditto project to sync copy from";
   const projectCommand = program
-    .command('project')
+    .command("project")
     .description(projectDescription)
-    .action(() => checkInit('project'));
+    .action(() => checkInit("project"));
 
   projectCommand
-    .command('add')
+    .command("add")
     .description(projectDescription)
-    .action(() => checkInit('project'));
-    
+    .action(() => checkInit("project"));
+
   projectCommand
-    .command('remove')
-    .description('Stop syncing copy from a Ditto project')
-    .action(() => checkInit('project remove'));
+    .command("remove")
+    .description("Stop syncing copy from a Ditto project")
+    .action(() => checkInit("project remove"));
 };
 
 const checkInit = async (command) => {
-  if (needsInit() && command !== 'project remove') {
+  if (needsInit() && command !== "project remove") {
     try {
       await init();
-      if (command === 'pull') 
-        main(); // re-run to actually pull text now that init is finished
+      if (command === "pull") main(); // re-run to actually pull text now that init is finished
     } catch (error) {
       quit();
     }
   } else {
     switch (command) {
-      case 'pull':
+      case "pull":
         pull();
         break;
-      case 'project':
-      case 'project add':
+      case "project":
+      case "project add":
         addProject();
         break;
-      case 'project remove':
+      case "project remove":
         removeProject();
         break;
-      case 'none':
+      case "none":
         setupCommands();
         program.help();
         break;
@@ -77,8 +76,8 @@ const checkInit = async (command) => {
 };
 
 const main = async () => {
-  if (process.argv.length <= 2 && process.argv[1].includes('ditto-cli')) {
-    await checkInit('none');
+  if (process.argv.length <= 2 && process.argv[1].includes("ditto-cli")) {
+    await checkInit("none");
   } else {
     setupCommands();
   }

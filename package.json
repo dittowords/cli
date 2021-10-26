@@ -3,6 +3,9 @@
   "version": "1.1.1",
   "description": "Command Line Interface for Ditto (dittowords.com).",
   "main": "bin/index.js",
+  "scripts": {
+    "prepare": "husky install"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dittowords/cli.git"
@@ -33,7 +36,10 @@
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-jest": "^23.20.0",
+    "husky": "^7.0.4",
     "jest": "^26.3.0",
+    "lint-staged": "^11.2.4",
+    "prettier": "2.4.1",
     "rewire": "^5.0.0",
     "source-map": "^0.7.3",
     "tempy": "^0.6.0",
@@ -50,5 +56,8 @@
     "js-yaml": "^3.14.0",
     "ora": "^5.0.0",
     "v8-compile-cache": "^2.1.1"
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx,css,json}": "prettier --write"
   }
 }

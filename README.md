@@ -87,13 +87,44 @@ If you run the CLI in a directory that does not contain a `ditto/` folder, the f
 
 - #### `index.js`
 
-  An automatically generated driver file that simplifies the process of passing text data to Ditto JavaScript SDKs.
+  An automatically generated driver file that simplifies the process of passing text data to Ditto JavaScript SDKs. This file has a standardized format that is always the same independent of the CLI configuration used to generate it.
+
+  ```ts
+  interface DriverFile {
+    [projectId: string]: {
+      // non-variant text is represented via an apiId of 'base'
+      [variantApiId: string]: {
+        [id: string]: Frame | { text: string } | string;
+      };
+    };
+  }
+
+  interface Frame {
+    blocks: {
+      [blockId: string]: {
+        [textApiId: string]: StructuredText;
+      };
+    };
+    otherText: {
+      [textId: string]: StructuredText;
+    };
+  }
+
+  interface StructuredText {
+    text: string;
+  }
+  ```
 
   ```js
   module.exports = {
-    base: require("./base.json"),
-    spanish: require("./spanish.json"),
-    french: require("./french.json"),
+    ditto_component_library: {
+      base: require("./ditto_component_library__base.json"),
+      spanish: require("./ditto_component_library__spanish.json"),
+    },
+    project_1234: {
+      base: require("./example-project__base.json"),
+      spanish: require("./example-project__spanish.json"),
+    },
   };
   ```
 

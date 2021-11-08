@@ -89,6 +89,8 @@ If you run the CLI in a directory that does not contain a `ditto/` folder, the f
 
   An automatically generated driver file that simplifies the process of passing text data to Ditto JavaScript SDKs. This file has a standardized format that is always the same independent of the CLI configuration used to generate it.
 
+  **Since this file is designed to be consumed by other internal Ditto libraries, it is not recommended that you depend on it - its format may change between major releases.**
+
   ```ts
   interface DriverFile {
     [projectId: string]: {

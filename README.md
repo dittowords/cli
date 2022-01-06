@@ -16,9 +16,39 @@ npm install --global @dittowords/cli
 
 The installed binary is named `ditto-cli`. You can execute it directly in `node_modules/.bin/ditto-cli` or using [npx](https://www.npmjs.com/package/npx) (with or without installation) like `npx @dittowords/cli`.
 
-The first time you run the CLI, you'll be asked to provide an API key (found at [https://beta.dittowords.com/account/user](https://beta.dittowords.com/account/user) under **API Keys**).
+The first time you run the CLI, you'll be asked to provide an API key (found at [https://beta.dittowords.com/account/user](https://beta.dittowords.com/account/user) under **API Keys**):
 
-Once you've successfully authenticated, you’re ready to start fetching copy! You can set up the CLI in multiple directories by running `ditto-cli` and choosing an initial project to sync from.
+```
+$ npx @dittowords/cli
+
+┌──────────────────────────────────┐
+│                                  │
+│   Welcome to the Ditto CLI.      │
+│                                  │
+│   We're glad to have you here.   │
+│                                  │
+└──────────────────────────────────┘
+
+What is your API key? > xxx-xxx-xxx
+
+Thanks for authenticating.
+We'll save the key to: /Users/{username}/.config/ditto
+```
+
+Once you've successfully authenticated, you'll be asked to configure the CLI with an initial project from your workspace:
+
+```
+Looks like there are no Ditto projects selected for your current directory.
+
+? Choose the project you'd like to sync text from:
+- Ditto Component Library https://beta.dittowords.com/components/all
+- NUX Onboarding Flow https://beta.dittowords.com/doc/609e9981c313f8018d0c346a
+...
+```
+
+After selecting a project, a configuration file will automatically be created at the path `./ditto/config.yml`, relative to your current working directory. The CLI will attempt to read from this file every time a command is executed. See the [documentation on config.yml](#files) further down in this README for a full reference of how the CLI can be configured.
+
+Once you've successfully authenticated and a config file has been created, you’re ready to start fetching copy! You can set up the CLI in multiple directories by running `ditto-cli` and choosing an initial project to sync from.
 
 ## Commands
 
@@ -52,7 +82,7 @@ This folder houses the configuration file (`ditto/config.yml`) used by the CLI a
 
 If you run the CLI in a directory that does not contain a `ditto/` folder, the folder and a `config.yml` file will be automatically created.
 
-- #### `config.yml`
+- #### config.yml
 
   This is the source of truth for a given directory about how the CLI should fetch and store data from Ditto. It includes information about which Ditto projects the CLI should pull text from and in what format the text should be stored.
 
@@ -60,16 +90,62 @@ If you run the CLI in a directory that does not contain a `ditto/` folder, the f
 
   **Supported properties**
 
-  - `projects` (required) - a list of project names and ids to pull text from (see example)
-  - `variants` (optional) - a `true` or `false` value indicating whether or not variant data should be pulled for the specified projects. Defaults to `false` if not specified (will likely default to `true` in future major releases).
-  - `format` (optional) - the format the specified projects should be stored in. Acceptable values are `structured` or `flat`. If not specified, the default format containing block and frame data will be used.
+  ##### `projects`
 
-  **Example**:
+  A list of project names and ids to pull text from. R
 
-  ```
+  equired if `components: true` is not specified.
+
+  **Note**: the `name` property is used for display purposes when referencing a project in the CLI, but does not have to be an
+  exact match with the project name in Ditto.
+
+  ```yml
   projects:
-    - name: Ditto Component Library
-      id: ditto_component_library
+    - name: Landing Page Copy
+      id: 61b8d26105f8f400e97fdd14
+    - name: User Settings
+      id: 606cb89ac55041013d552f8b
+  ```
+
+  ##### `components`
+
+  If included with a value of `true`, data from the component library will be fetched and included in the CLI's output.
+
+  Required if `projects` is not specified with a valid list of projects.
+
+  ```yml
+  components: true
+  ```
+
+  ##### `variants`
+
+  If included with a value of `true`, variant data will be pulled for the specified projects and/or the component library.
+
+  Defaults to `false`.
+
+  ```yml
+  variants: true
+  ```
+
+  ##### `format`
+
+  The format the specified projects should be stored in. Acceptable values are `structured` or `flat`.
+
+  If not specified, the default format containing block and frame data will be used.
+
+  ```yml
+  format: flat
+  ```
+
+  **Full Example**
+
+  ```yml
+  projects:
+    - name: Landing Page Copy
+      id: 61b8d26105f8f400e97fdd14
+    - name: User Settings
+      id: 606cb89ac55041013d552f8b
+  components: true
   variants: true
   format: flat
   ```

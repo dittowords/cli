@@ -50,6 +50,17 @@ After selecting a project, a configuration file will automatically be created at
 
 Once you've successfully authenticated and a config file has been created, you’re ready to start fetching copy! You can set up the CLI in multiple directories by running `ditto-cli` and choosing an initial project to sync from.
 
+## API Keys
+
+The CLI will not prompt for an API key if a value is provided in the environment variable `DITTO_API_KEY`.
+
+If the `DITTO_API_KEY` environment variable is not set, then the CLI will attempt to parse a token from a file at the
+path `~/.config/ditto`. If this file does not exist or does not contain a valid API key, then the CLI will prompt
+for one.
+
+We don't recommend editing the file manually; if you need to remove a saved API key and put another one in its place,
+it's better to fully delete the file and then re-run the CLI so that a new key is prompted for.
+
 ## Commands
 
 ### `pull`

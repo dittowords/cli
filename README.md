@@ -103,9 +103,9 @@ If you run the CLI in a directory that does not contain a `ditto/` folder, the f
 
   ##### `projects`
 
-  A list of project names and ids to pull text from. R
+  A list of project names and ids to pull text from. 
 
-  equired if `components: true` is not specified.
+  Required if `components: true` is not specified.
 
   **Note**: the `name` property is used for display purposes when referencing a project in the CLI, but does not have to be an
   exact match with the project name in Ditto.

@@ -16,7 +16,7 @@ npm install --global @dittowords/cli
 
 The installed binary is named `ditto-cli`. You can execute it directly in `node_modules/.bin/ditto-cli` or using [npx](https://www.npmjs.com/package/npx) (with or without installation) like `npx @dittowords/cli`.
 
-The first time you run the CLI, you'll be asked to provide an API key (found at [https://beta.dittowords.com/account/user](https://beta.dittowords.com/account/user) under **API Keys**):
+The first time you run the CLI, you'll be asked to provide an API key (found at [https://app.dittowords.com/account/user](https://app.dittowords.com/account/user) under **API Keys**):
 
 ```
 $ npx @dittowords/cli
@@ -41,8 +41,8 @@ Once you've successfully authenticated, you'll be asked to configure the CLI wit
 Looks like there are no Ditto projects selected for your current directory.
 
 ? Choose the project you'd like to sync text from:
-- Ditto Component Library https://beta.dittowords.com/components/all
-- NUX Onboarding Flow https://beta.dittowords.com/doc/609e9981c313f8018d0c346a
+- Ditto Component Library https://app.dittowords.com/components/all
+- NUX Onboarding Flow https://app.dittowords.com/doc/609e9981c313f8018d0c346a
 ...
 ```
 

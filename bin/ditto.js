@@ -45,6 +45,17 @@ const setupCommands = () => {
     .action(() => checkInit("project remove"));
 };
 
+const setupOptions = () => {
+  program
+    .option('-m, --meta <data...>',
+      'Optional metadata for this command to send arbitrary data to the backend. Ex: -m context:github-action trigger:manual');
+};
+
+const processMetaOption = (inputArr) => (Array.isArray(inputArr) ? inputArr.map((element) => {
+  const [key, value] = element.split(':');
+  return { [key]: value };
+}) : []);
+
 const checkInit = async (command) => {
   if (needsInit() && command !== "project remove") {
     try {
@@ -54,9 +65,10 @@ const checkInit = async (command) => {
       quit();
     }
   } else {
+    const { meta } = program.opts();
     switch (command) {
       case "pull":
-        pull();
+        pull({ meta: processMetaOption(meta) });
         break;
       case "project":
       case "project add":
@@ -80,6 +92,7 @@ const main = async () => {
     await checkInit("none");
   } else {
     setupCommands();
+    setupOptions();
   }
   program.parse(process.argv);
 };

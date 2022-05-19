@@ -9,6 +9,7 @@ const { pull } = require("../lib/pull");
 
 const addProject = require("../lib/add-project");
 const removeProject = require("../lib/remove-project");
+const processMetaOption = require("../lib/utils/processMetaOption");
 
 /**
  * Catch and report unexpected error.
@@ -50,11 +51,6 @@ const setupOptions = () => {
     .option('-m, --meta <data...>',
       'Optional metadata for this command to send arbitrary data to the backend. Ex: -m context:github-action trigger:manual');
 };
-
-const processMetaOption = (inputArr) => (Array.isArray(inputArr) ? inputArr.map((element) => {
-  const [key, value] = element.split(':');
-  return { [key]: value };
-}) : []);
 
 const checkInit = async (command) => {
   if (needsInit() && command !== "project remove") {

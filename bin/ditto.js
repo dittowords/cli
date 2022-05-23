@@ -9,6 +9,7 @@ const { pull } = require("../lib/pull");
 
 const addProject = require("../lib/add-project");
 const removeProject = require("../lib/remove-project");
+const processMetaOption = require("../lib/utils/processMetaOption");
 
 /**
  * Catch and report unexpected error.
@@ -45,6 +46,12 @@ const setupCommands = () => {
     .action(() => checkInit("project remove"));
 };
 
+const setupOptions = () => {
+  program
+    .option('-m, --meta <data...>',
+      'Optional metadata for this command to send arbitrary data to the backend. Ex: -m githubActionRequest:true trigger:manual');
+};
+
 const checkInit = async (command) => {
   if (needsInit() && command !== "project remove") {
     try {
@@ -54,9 +61,10 @@ const checkInit = async (command) => {
       quit();
     }
   } else {
+    const { meta } = program.opts();
     switch (command) {
       case "pull":
-        pull();
+        pull({ meta: processMetaOption(meta) });
         break;
       case "project":
       case "project add":
@@ -80,6 +88,7 @@ const main = async () => {
     await checkInit("none");
   } else {
     setupCommands();
+    setupOptions();
   }
   program.parse(process.argv);
 };

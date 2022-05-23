@@ -49,7 +49,7 @@ const setupCommands = () => {
 const setupOptions = () => {
   program
     .option('-m, --meta <data...>',
-      'Optional metadata for this command to send arbitrary data to the backend. Ex: -m context:github-action trigger:manual');
+      'Optional metadata for this command to send arbitrary data to the backend. Ex: -m githubActionRequest:true trigger:manual');
 };
 
 const checkInit = async (command) => {

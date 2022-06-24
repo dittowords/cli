@@ -13,7 +13,7 @@ const config = require("../config");
 const consts = require("../consts");
 const output = require("../output");
 const { collectAndSaveToken } = require("../init/token");
-const getSelectedProjects = require("../utils/getSelectedProjects");
+const { getSelectedProjects } = require("../utils/getSelectedProjects");
 const promptForProject = require("../utils/promptForProject");
 function quit(exitCode = 2) {
     console.log("\nExiting Ditto CLI...\n");

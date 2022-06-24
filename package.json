@@ -5,6 +5,7 @@
   "main": "bin/index.js",
   "scripts": {
     "prepare": "husky install",
+    "start": "tsc && node dist/ditto.js",
     "sync": "tsc && node dist/ditto.js pull"
   },
   "repository": {

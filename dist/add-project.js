@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const { collectAndSaveProject } = require("./init/project");
 const projectsToText = require("./utils/projectsToText");
-const getSelectedProjects = require("./utils/getSelectedProjects");
+const { getSelectedProjects, getIsUsingComponents, } = require("./utils/getSelectedProjects");
 function quit(exitCode = 2) {
     console.log("Project selection was not updated.");
     process.exitCode = exitCode;

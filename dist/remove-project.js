@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const config = require("./config");
 const consts = require("./consts");
 const output = require("./output");
-const getSelectedProjects = require("./utils/getSelectedProjects");
+const { getSelectedProjects } = require("./utils/getSelectedProjects");
 const promptForProject = require("./utils/promptForProject");
 function removeProject() {
     return __awaiter(this, void 0, void 0, function* () {

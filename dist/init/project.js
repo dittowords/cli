@@ -13,7 +13,7 @@ const config = require("../config");
 const consts = require("../consts");
 const output = require("../output");
 const { collectAndSaveToken } = require("../init/token");
-const { getSelectedProjects } = require("../utils/getSelectedProjects");
+const { getSelectedProjects, getIsUsingComponents, } = require("../utils/getSelectedProjects");
 const promptForProject = require("../utils/promptForProject");
 function quit(exitCode = 2) {
     console.log("\nExiting Ditto CLI...\n");
@@ -41,7 +41,7 @@ function askForAnotherToken() {
         yield collectAndSaveToken(message);
     });
 }
-function listProjects(token, projectsAlreadySelected) {
+function listProjects(token, projectsAlreadySelected, componentsSelected) {
     return __awaiter(this, void 0, void 0, function* () {
         const spinner = ora("Fetching projects in your workspace...");
         spinner.start();
@@ -58,7 +58,14 @@ function listProjects(token, projectsAlreadySelected) {
             throw e;
         }
         spinner.stop();
-        return projects.data.filter(({ id }) => !projectsAlreadySelected.some((project) => project.id === id));
+        return projects.data.filter(({ id }) => {
+            if (id === "ditto_component_library") {
+                return !componentsSelected;
+            }
+            else {
+                return !projectsAlreadySelected.some((project) => project.id === id);
+            }
+        });
     });
 }
 function collectProject(token, initialize) {
@@ -68,7 +75,8 @@ function collectProject(token, initialize) {
             console.log(`Looks like there are no Ditto projects selected for your current directory: ${output.info(path)}.`);
         }
         const projectsAlreadySelected = getSelectedProjects();
-        const projects = yield listProjects(token, projectsAlreadySelected);
+        const usingComponents = getIsUsingComponents();
+        const projects = yield listProjects(token, projectsAlreadySelected, usingComponents);
         if (!(projects && projects.length)) {
             console.log("You're currently syncing all projects in your workspace.");
             console.log(output.warnText("Not seeing a project that you were expecting? Verify that developer mode is enabled on that project. More info: https://www.dittowords.com/docs/ditto-developer-mode"));

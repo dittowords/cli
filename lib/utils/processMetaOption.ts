@@ -6,11 +6,11 @@ const processMetaOption = (inputArr) => {
   }
 
   inputArr.forEach((element) => {
-    const [key, value] = element.split(':');
+    const [key, value] = element.split(":");
     res[key] = value;
   });
 
   return res;
 };
 
-module.exports = processMetaOption;
+export default processMetaOption;

@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 // This is the main entry point for the ditto-cli command.
-const { program } = require("commander");
+import { program } from "commander";
 // to use V8's code cache to speed up instantiation time
-require("v8-compile-cache");
+import "v8-compile-cache";
 
-const { init, needsInit } = require("../lib/init/init");
-const { pull } = require("../lib/pull");
+import { init, needsInit } from "./init/init";
+import { pull } from "./pull";
 
-const addProject = require("../lib/add-project");
-const removeProject = require("../lib/remove-project");
-const processMetaOption = require("../lib/utils/processMetaOption");
+import addProject from "./add-project";
+import removeProject from "./remove-project";
+import processMetaOption from "./utils/processMetaOption";
 
 /**
  * Catch and report unexpected error.
@@ -47,9 +47,10 @@ const setupCommands = () => {
 };
 
 const setupOptions = () => {
-  program
-    .option('-m, --meta <data...>',
-      'Optional metadata for this command to send arbitrary data to the backend. Ex: -m githubActionRequest:true trigger:manual');
+  program.option(
+    "-m, --meta <data...>",
+    "Optional metadata for this command to send arbitrary data to the backend. Ex: -m githubActionRequest:true trigger:manual"
+  );
 };
 
 const checkInit = async (command) => {

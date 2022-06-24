@@ -25,7 +25,7 @@ const addProject = () => __awaiter(this, void 0, void 0, function* () {
                 console.log(`\nYou're currently syncing text from the ${output.info("Component Library")} and from the following projects: ${projectsToText(projects)}`);
             }
             else {
-                console.log(`\nYou're currently only syncing text from the component library`);
+                console.log(`\nYou're currently only syncing text from the ${output.info("Component Library")}`);
             }
         }
         else if (projects.length) {

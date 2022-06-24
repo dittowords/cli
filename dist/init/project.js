@@ -82,11 +82,14 @@ function collectProject(token, initialize) {
             console.log(output.warnText("Not seeing a project that you were expecting? Verify that developer mode is enabled on that project. More info: https://www.dittowords.com/docs/ditto-developer-mode"));
             return null;
         }
+        const nonItitPrompt = usingComponents
+            ? "Add a project"
+            : "Add a project or library";
         return promptForProject({
             projects,
             message: initialize
-                ? "Choose the project you'd like to sync text from"
-                : "Add a project",
+                ? "Choose the project or library you'd like to sync text from"
+                : nonItitPrompt,
         });
     });
 }

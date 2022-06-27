@@ -4,6 +4,7 @@
   "description": "Command Line Interface for Ditto (dittowords.com).",
   "main": "bin/index.js",
   "scripts": {
+    "prepublish": "tsc",
     "prepare": "husky install",
     "start": "tsc && node bin/ditto.js",
     "sync": "tsc && node bin/ditto.js pull"

@@ -4,12 +4,12 @@ import chalk from "chalk";
 
 import { prompt } from "enquirer";
 
-import api from "../api";
+import { create } from "../api";
 import consts from "../consts";
 import output from "../output";
 import config from "../config";
 
-function needsToken(configFile?: string, host = consts.API_HOST) {
+export const needsToken = (configFile?: string, host = consts.API_HOST) => {
   if (config.getTokenFromEnv()) {
     return false;
   }
@@ -23,11 +23,11 @@ function needsToken(configFile?: string, host = consts.API_HOST) {
   )
     return true;
   return false;
-}
+};
 
 // Returns true if valid, otherwise an error message.
-async function checkToken(token: string): Promise<string | boolean> {
-  const axios = api.create(token);
+async function checkToken(token: string): Promise<any> {
+  const axios = create(token);
   const endpoint = "/token-check";
 
   const resOrError = await axios
@@ -48,7 +48,6 @@ async function checkToken(token: string): Promise<string | boolean> {
     .catch(() =>
       output.errorText("Sorry! We're having trouble reaching the Ditto API.")
     );
-
   if (typeof resOrError === "string") return resOrError;
 
   if (resOrError.status === 200) return true;
@@ -87,7 +86,7 @@ function quit(exitCode = 2) {
  * @param {string | null} message
  * @returns
  */
-async function collectAndSaveToken(message: string | null = null) {
+export const collectAndSaveToken = async (message: string | null = null) => {
   try {
     const token = await collectToken(message);
     console.log(
@@ -102,6 +101,6 @@ async function collectAndSaveToken(message: string | null = null) {
   } catch (error) {
     quit();
   }
-}
+};
 
 export default { needsToken, collectAndSaveToken };

@@ -1,4 +1,4 @@
-const processMetaOption = require("./processMetaOption");
+import processMetaOption from "./processMetaOption";
 
 describe("processMetaOption tests", () => {
   it("It parses correctly", () => {

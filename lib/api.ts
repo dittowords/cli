@@ -1,9 +1,9 @@
-const axios = require("axios").default;
+import axios from "axios";
 
-const config = require("./config");
-const consts = require("./consts");
+import config from "./config";
+import consts from "./consts";
 
-export const create = (token: string) => {
+export const create = (token?: string) => {
   return axios.create({
     baseURL: consts.API_HOST,
     headers: {

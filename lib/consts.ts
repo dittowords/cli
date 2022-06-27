@@ -10,3 +10,11 @@ export const PROJECT_CONFIG_FILE = path.normalize(
 );
 export const TEXT_DIR = process.env.DITTO_TEXT_DIR || "ditto";
 export const TEXT_FILE = path.normalize(path.join(TEXT_DIR, "text.json"));
+
+export default {
+  API_HOST,
+  CONFIG_FILE,
+  PROJECT_CONFIG_FILE,
+  TEXT_DIR,
+  TEXT_FILE,
+};

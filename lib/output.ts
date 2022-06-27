@@ -8,3 +8,14 @@ export const url = (msg: string) => chalk.blueBright.underline(msg);
 export const subtle = (msg: string) => chalk.grey(msg);
 export const write = (msg: string) => chalk.white(msg);
 export const nl = () => console.log("\n");
+
+export default {
+  errorText,
+  warnText,
+  info,
+  success,
+  url,
+  subtle,
+  write,
+  nl,
+};

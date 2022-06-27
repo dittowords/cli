@@ -1,4 +1,4 @@
-import * as output from "../output";
+import output from "../output";
 
 interface Project {
   name: string;

@@ -1,6 +1,6 @@
 const { AutoComplete } = require("enquirer");
 
-import * as output from "../output";
+import output from "../output";
 
 interface Project {
   id: string;

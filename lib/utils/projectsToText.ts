@@ -1,6 +1,11 @@
-const output = require("../output");
+import * as output from "../output";
 
-function projectsToText(projects) {
+interface Project {
+  name: string;
+  id: string;
+}
+
+const projectsToText = (projects: Project[]) => {
   return (
     (projects || []).reduce(
       (outputString, { name, id }) =>
@@ -13,6 +18,6 @@ function projectsToText(projects) {
       ""
     ) + "\n"
   );
-}
+};
 
-module.exports = projectsToText;
+export default projectsToText;

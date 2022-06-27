@@ -1,5 +1,5 @@
 import config from "./config";
-import consts from "./consts";
+import * as consts from "./consts";
 import * as output from "./output";
 import {
   getSelectedProjects,

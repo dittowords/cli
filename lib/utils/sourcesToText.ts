@@ -1,7 +1,12 @@
-const output = require("../output");
-const projectsToText = require("./projectsToText");
+import * as output from "../output";
+import projectsToText from "./projectsToText";
 
-function sourcesToText(projects, componentLibrary) {
+interface Project {
+  name: string;
+  id: string;
+}
+
+const sourcesToText = (projects: Project[], componentLibrary: boolean) => {
   let message = "";
 
   if (componentLibrary) {
@@ -19,6 +24,6 @@ function sourcesToText(projects, componentLibrary) {
   }
 
   return message;
-}
+};
 
-module.exports = sourcesToText;
+export default sourcesToText;

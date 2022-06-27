@@ -12,5 +12,4 @@ export const create = (token: string) => {
   });
 };
 
-module.exports = { create };
 export default create(config.getToken(consts.CONFIG_FILE, consts.API_HOST));

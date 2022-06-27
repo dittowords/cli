@@ -4,7 +4,7 @@ import {
   getSelectedProjects,
   getIsUsingComponents,
 } from "./utils/getSelectedProjects";
-import output from "./output";
+import * as output from "./output";
 
 function quit(exitCode = 2) {
   console.log("Project selection was not updated.");

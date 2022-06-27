@@ -1,6 +1,6 @@
 import config from "./config";
 import consts from "./consts";
-import output from "./output";
+import * as output from "./output";
 import {
   getSelectedProjects,
   getIsUsingComponents,

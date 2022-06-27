@@ -1,12 +1,4 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
+"use strict";
 const fs = require("fs");
 const path = require("path");
 const ora = require("ora");
@@ -25,12 +17,10 @@ const hasVariantData = (data) => {
     const hasProjectKeys = data.projects && Object.keys(data.projects).length > 0;
     return hasTopLevelKeys || hasProjectKeys;
 };
-function askForAnotherToken() {
-    return __awaiter(this, void 0, void 0, function* () {
-        config.deleteToken(consts.CONFIG_FILE, consts.API_HOST);
-        const message = "Looks like the API key you have saved no longer works. Please enter another one.";
-        yield collectAndSaveToken(message);
-    });
+async function askForAnotherToken() {
+    config.deleteToken(consts.CONFIG_FILE, consts.API_HOST);
+    const message = "Looks like the API key you have saved no longer works. Please enter another one.";
+    await collectAndSaveToken(message);
 }
 /**
  * For a given variant:
@@ -39,96 +29,95 @@ function askForAnotherToken() {
  * - if format is `flat` or `structured`, fetch data for each project from `/project/:project_id` and
  * save in `{projectName}-${variantApiId}.json`
  */
-function downloadAndSaveVariant(variantApiId, projects, format, token) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const params = { variant: variantApiId };
-        if (format) {
-            params.format = format;
-        }
-        if (NON_DEFAULT_FORMATS.includes(format)) {
-            const savedMessages = yield Promise.all(projects.map(({ id, fileName }) => __awaiter(this, void 0, void 0, function* () {
-                const { data } = yield api.get(`/projects/${id}`, {
-                    params,
-                    headers: { Authorization: `token ${token}` },
-                });
-                if (!hasVariantData(data)) {
-                    return "";
-                }
-                const filename = fileName + ("__" + (variantApiId || "base")) + ".json";
-                const filepath = path.join(consts.TEXT_DIR, filename);
-                const dataString = JSON.stringify(data, null, 2);
-                fs.writeFileSync(filepath, dataString);
-                return getSavedMessage(filename);
-            })));
-            return savedMessages.join("");
-        }
-        else {
-            const { data } = yield api.get("/projects", {
-                params: Object.assign(Object.assign({}, params), { projectIds: projects.map(({ id }) => id) }),
+async function downloadAndSaveVariant(variantApiId, projects, format, token) {
+    const params = { variant: variantApiId };
+    if (format) {
+        params.format = format;
+    }
+    if (NON_DEFAULT_FORMATS.includes(format)) {
+        const savedMessages = await Promise.all(projects.map(async ({ id, fileName }) => {
+            const { data } = await api.get(`/projects/${id}`, {
+                params,
                 headers: { Authorization: `token ${token}` },
             });
             if (!hasVariantData(data)) {
                 return "";
             }
-            const filename = `${variantApiId || "base"}.json`;
+            const filename = fileName + ("__" + (variantApiId || "base")) + ".json";
             const filepath = path.join(consts.TEXT_DIR, filename);
             const dataString = JSON.stringify(data, null, 2);
             fs.writeFileSync(filepath, dataString);
             return getSavedMessage(filename);
+        }));
+        return savedMessages.join("");
+    }
+    else {
+        const { data } = await api.get("/projects", {
+            params: { ...params, projectIds: projects.map(({ id }) => id) },
+            headers: { Authorization: `token ${token}` },
+        });
+        if (!hasVariantData(data)) {
+            return "";
         }
-    });
+        const filename = `${variantApiId || "base"}.json`;
+        const filepath = path.join(consts.TEXT_DIR, filename);
+        const dataString = JSON.stringify(data, null, 2);
+        fs.writeFileSync(filepath, dataString);
+        return getSavedMessage(filename);
+    }
 }
 /**
  * @param {{ meta: Object.<string, string> }} options
  */
-function downloadAndSaveVariants(projects, format, token, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const meta = options ? options.meta : {};
-        const { data: variants } = yield api.get("/variants", {
-            params: Object.assign(Object.assign({}, meta), { projectIds: projects.map(({ id }) => id) }),
-            headers: { Authorization: `token ${token}` },
-        });
-        const messages = yield Promise.all([
-            downloadAndSaveVariant(null, projects, format, token),
-            ...variants.map(({ apiID }) => downloadAndSaveVariant(apiID, projects, format, token)),
-        ]);
-        return messages.join("");
+async function downloadAndSaveVariants(projects, format, token, options) {
+    const meta = options ? options.meta : {};
+    const { data: variants } = await api.get("/variants", {
+        params: {
+            ...meta,
+            projectIds: projects.map(({ id }) => id),
+        },
+        headers: { Authorization: `token ${token}` },
     });
+    const messages = await Promise.all([
+        downloadAndSaveVariant(null, projects, format, token),
+        ...variants.map(({ apiID }) => downloadAndSaveVariant(apiID, projects, format, token)),
+    ]);
+    return messages.join("");
 }
 /**
  @param {{ meta: Object.<string, string> }} options
  */
-function downloadAndSaveBase(projects, format, token, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const meta = options ? options.meta : {};
-        const params = Object.assign({}, meta);
-        if (format) {
-            params.format = format;
-        }
-        if (NON_DEFAULT_FORMATS.includes(format)) {
-            const savedMessages = yield Promise.all(projects.map(({ id, fileName }) => __awaiter(this, void 0, void 0, function* () {
-                const { data } = yield api.get(`/projects/${id}`, {
-                    params,
-                    headers: { Authorization: `token ${token}` },
-                });
-                const filename = `${fileName}.json`;
-                const filepath = path.join(consts.TEXT_DIR, filename);
-                const dataString = JSON.stringify(data, null, 2);
-                fs.writeFileSync(filepath, dataString);
-                return getSavedMessage(filename);
-            })));
-            return savedMessages.join("");
-        }
-        else {
-            const { data } = yield api.get(`/projects`, {
-                params: Object.assign(Object.assign({}, params), { projectIds: projects.map(({ id }) => id) }),
+async function downloadAndSaveBase(projects, format, token, options) {
+    const meta = options ? options.meta : {};
+    const params = {
+        ...meta,
+    };
+    if (format) {
+        params.format = format;
+    }
+    if (NON_DEFAULT_FORMATS.includes(format)) {
+        const savedMessages = await Promise.all(projects.map(async ({ id, fileName }) => {
+            const { data } = await api.get(`/projects/${id}`, {
+                params,
                 headers: { Authorization: `token ${token}` },
             });
+            const filename = `${fileName}.json`;
+            const filepath = path.join(consts.TEXT_DIR, filename);
             const dataString = JSON.stringify(data, null, 2);
-            fs.writeFileSync(consts.TEXT_FILE, dataString);
-            return getSavedMessage("text.json");
-        }
-    });
+            fs.writeFileSync(filepath, dataString);
+            return getSavedMessage(filename);
+        }));
+        return savedMessages.join("");
+    }
+    else {
+        const { data } = await api.get(`/projects`, {
+            params: { ...params, projectIds: projects.map(({ id }) => id) },
+            headers: { Authorization: `token ${token}` },
+        });
+        const dataString = JSON.stringify(data, null, 2);
+        fs.writeFileSync(consts.TEXT_FILE, dataString);
+        return getSavedMessage("text.json");
+    }
 }
 function getSavedMessage(file) {
     return `Successfully saved to ${output.info(file)}\n`;
@@ -163,7 +152,7 @@ function generateJsDriver(projects, variants, format) {
     const fileNames = fs
         .readdirSync(consts.TEXT_DIR)
         .filter((fileName) => /\.json$/.test(fileName));
-    const projectIdsByName = projects.reduce((agg, project) => (Object.assign(Object.assign({}, agg), { [project.fileName]: project.id })), {});
+    const projectIdsByName = projects.reduce((agg, project) => ({ ...agg, [project.fileName]: project.id }), {});
     const data = fileNames.reduce((obj, fileName) => {
         // filename format: {project-name}__{variant-api-id}.json
         // file format: flat or structured
@@ -224,59 +213,57 @@ function generateJsDriver(projects, variants, format) {
 /**
  * @param {{ meta: Object.<string, string> }} options
  */
-function downloadAndSave(sourceInformation, token, options) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const { validProjects, variants, format, shouldFetchComponentLibrary } = sourceInformation;
-        let msg = `\nFetching the latest text from ${sourcesToText(validProjects, shouldFetchComponentLibrary)}\n`;
-        const spinner = ora(msg);
-        spinner.start();
-        // We'll need to move away from this solution if at some
-        // point down the road we stop allowing the component
-        // library to be returned from the /projects endpoint
-        if (shouldFetchComponentLibrary) {
-            validProjects.push({
-                id: "ditto_component_library",
-                name: "Ditto Component Library",
-                fileName: "ditto-component-library",
-            });
+async function downloadAndSave(sourceInformation, token, options) {
+    const { validProjects, variants, format, shouldFetchComponentLibrary } = sourceInformation;
+    let msg = `\nFetching the latest text from ${sourcesToText(validProjects, shouldFetchComponentLibrary)}\n`;
+    const spinner = ora(msg);
+    spinner.start();
+    // We'll need to move away from this solution if at some
+    // point down the road we stop allowing the component
+    // library to be returned from the /projects endpoint
+    if (shouldFetchComponentLibrary) {
+        validProjects.push({
+            id: "ditto_component_library",
+            name: "Ditto Component Library",
+            fileName: "ditto-component-library",
+        });
+    }
+    try {
+        msg += cleanOutputFiles();
+        const meta = options ? options.meta : {};
+        msg += variants
+            ? await downloadAndSaveVariants(validProjects, format, token, { meta })
+            : await downloadAndSaveBase(validProjects, format, token, { meta });
+        msg += generateJsDriver(validProjects, variants, format);
+        msg += `\n${output.success("Done")}!`;
+        spinner.stop();
+        return console.log(msg);
+    }
+    catch (e) {
+        spinner.stop();
+        let error = e.message;
+        if (e.response && e.response.status === 404) {
+            await askForAnotherToken();
+            pull();
+            return;
         }
-        try {
-            msg += cleanOutputFiles();
-            const meta = options ? options.meta : {};
-            msg += variants
-                ? yield downloadAndSaveVariants(validProjects, format, token, { meta })
-                : yield downloadAndSaveBase(validProjects, format, token, { meta });
-            msg += generateJsDriver(validProjects, variants, format);
-            msg += `\n${output.success("Done")}!`;
-            spinner.stop();
+        if (e.response && e.response.status === 401) {
+            error = "You don't have access to the selected projects";
+            msg = `${output.errorText(error)}.\nChoose others using the ${output.info("project")} command, or update your API key.`;
             return console.log(msg);
         }
-        catch (e) {
-            spinner.stop();
-            let error = e.message;
-            if (e.response && e.response.status === 404) {
-                yield askForAnotherToken();
-                pull();
-                return;
-            }
-            if (e.response && e.response.status === 401) {
-                error = "You don't have access to the selected projects";
-                msg = `${output.errorText(error)}.\nChoose others using the ${output.info("project")} command, or update your API key.`;
-                return console.log(msg);
-            }
-            if (e.response && e.response.status === 403) {
-                error =
-                    "One or more of the requested projects don't have Developer Mode enabled";
-                msg = `${output.errorText(error)}.\nPlease choose different projects using the ${output.info("project")} command, or turn on Developer Mode for all selected projects. Learn more here: ${output.subtle("https://www.dittowords.com/docs/ditto-developer-mode")}.`;
-                return console.log(msg);
-            }
-            if (e.response && e.response.status === 400) {
-                error = "projects not found";
-            }
-            msg = `We hit an error fetching text from the projects: ${output.errorText(error)}.\nChoose others using the ${output.info("project")} command.`;
+        if (e.response && e.response.status === 403) {
+            error =
+                "One or more of the requested projects don't have Developer Mode enabled";
+            msg = `${output.errorText(error)}.\nPlease choose different projects using the ${output.info("project")} command, or turn on Developer Mode for all selected projects. Learn more here: ${output.subtle("https://www.dittowords.com/docs/ditto-developer-mode")}.`;
             return console.log(msg);
         }
-    });
+        if (e.response && e.response.status === 400) {
+            error = "projects not found";
+        }
+        msg = `We hit an error fetching text from the projects: ${output.errorText(error)}.\nChoose others using the ${output.info("project")} command.`;
+        return console.log(msg);
+    }
 }
 /**
  * @param {{ meta: Object.<string, string> }} options

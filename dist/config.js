@@ -1,3 +1,4 @@
+"use strict";
 const fs = require("fs");
 const path = require("path");
 const url = require("url");
@@ -20,12 +21,12 @@ function createFileIfMissing(filename) {
 function readData(file = consts.PROJECT_CONFIG_FILE, defaultData = {}) {
     createFileIfMissing(file);
     const fileContents = fs.readFileSync(file, "utf8");
-    return yaml.safeLoad(fileContents) || defaultData;
+    return yaml.load(fileContents) || defaultData;
 }
 function writeData(file, data) {
     createFileIfMissing(file);
     const existingData = readData(file);
-    const yamlStr = yaml.safeDump(Object.assign(Object.assign({}, existingData), data));
+    const yamlStr = yaml.dump({ ...existingData, ...data });
     fs.writeFileSync(file, yamlStr, "utf8");
 }
 function justTheHost(host) {

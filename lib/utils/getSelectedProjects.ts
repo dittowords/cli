@@ -1,17 +1,36 @@
 import fs from "fs";
-import yaml from "js-yaml";
+import yaml, { YAMLException } from "js-yaml";
 
 import { PROJECT_CONFIG_FILE } from "../consts";
 
-function yamlToJson(_yaml) {
+interface ConfigProject {
+  name: string;
+  id: string;
+}
+interface ConfigYAML {
+  components?: boolean;
+  projects?: ConfigProject[];
+  format?: string;
+  variants?: boolean;
+}
+
+function jsonIsConfigYAML(json: unknown): json is ConfigYAML {
+  return typeof json === "object";
+}
+
+function yamlToJson(_yaml: string): ConfigYAML | null {
   try {
-    return yaml.safeLoad(_yaml);
+    let configYaml = yaml.load(_yaml);
+    if (!jsonIsConfigYAML(configYaml)) {
+      throw "Yaml is misconfigured";
+    }
+    return configYaml;
   } catch (e) {
-    // if (e instanceof YAMLException) {
-    //   return "";
-    // } else {
-    throw e;
-    // }
+    if (e instanceof YAMLException) {
+      return null;
+    } else {
+      throw e;
+    }
   }
 }
 
@@ -19,7 +38,9 @@ function yamlToJson(_yaml) {
  * Returns an array containing all valid projects ({ id, name })
  * currently contained in the project config file.
  */
-export const getSelectedProjects = (configFile = PROJECT_CONFIG_FILE) => {
+export const getSelectedProjects = (
+  configFile = PROJECT_CONFIG_FILE
+): { name: string; id: string }[] => {
   if (!fs.existsSync(configFile)) return [];
 
   const contentYaml = fs.readFileSync(configFile, "utf8");

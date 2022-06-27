@@ -1,3 +1,4 @@
+"use strict";
 const output = require("../output");
 const projectsToText = require("./projectsToText");
 function sourcesToText(projects, componentLibrary) {

@@ -1,5 +1,5 @@
-const processMetaOption = (inputArr) => {
-  const res = {};
+const processMetaOption = (inputArr: string[] | null) => {
+  const res: Record<string, string> = {};
 
   if (!Array.isArray(inputArr)) {
     return res;

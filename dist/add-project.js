@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -21,7 +12,7 @@ function quit(exitCode = 2) {
     process.exitCode = exitCode;
     process.exit();
 }
-const addProject = () => __awaiter(void 0, void 0, void 0, function* () {
+const addProject = async () => {
     const projects = (0, getSelectedProjects_1.getSelectedProjects)();
     const usingComponents = (0, getSelectedProjects_1.getIsUsingComponents)();
     try {
@@ -36,12 +27,12 @@ const addProject = () => __awaiter(void 0, void 0, void 0, function* () {
         else if (projects.length) {
             console.log(`\nYou're currently set up to sync text from the following projects: ${(0, projectsToText_1.default)(projects)}`);
         }
-        yield (0, project_1.collectAndSaveProject)(false);
+        await (0, project_1.collectAndSaveProject)(false);
     }
     catch (error) {
         console.log(`\nSorry, there was an error adding a project to your workspace: `, error);
         quit();
     }
-});
+};
 exports.default = addProject;
 //# sourceMappingURL=add-project.js.map

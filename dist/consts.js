@@ -1,3 +1,4 @@
+"use strict";
 const homedir = require("os").homedir();
 const path = require("path");
 const TEXT_DIR = process.env.DITTO_TEXT_DIR || "ditto";

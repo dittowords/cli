@@ -1,3 +1,4 @@
+"use strict";
 const chalk = require("chalk");
 const errorText = (msg) => chalk.magenta(msg);
 const warnText = (msg) => chalk.yellow(msg);

@@ -33,7 +33,9 @@
   "devDependencies": {
     "@babel/core": "^7.11.4",
     "@babel/preset-env": "^7.11.0",
+    "@tsconfig/node16": "^1.0.3",
     "@types/jest": "^26.0.9",
+    "@types/js-yaml": "^4.0.5",
     "@types/node": "^18.0.0",
     "babel-jest": "^26.3.0",
     "eslint": "^7.6.0",
@@ -57,7 +59,7 @@
     "commander": "^6.1.0",
     "enquirer": "^2.3.6",
     "faker": "^5.1.0",
-    "js-yaml": "^3.14.0",
+    "js-yaml": "^4.1.0",
     "ora": "^5.0.0",
     "v8-compile-cache": "^2.1.1"
   },

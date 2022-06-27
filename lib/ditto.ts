@@ -53,7 +53,7 @@ const setupOptions = () => {
   );
 };
 
-const checkInit = async (command) => {
+const checkInit = async (command: string) => {
   if (needsInit() && command !== "project remove") {
     try {
       await init();

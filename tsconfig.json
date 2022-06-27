@@ -1,15 +1,12 @@
 {
+  "extends": "@tsconfig/node16/tsconfig.json",
   "compilerOptions": {
     "allowJs": true,
     "outDir": "dist",
-    "module": "commonjs",
-    "target": "es6",
-    "esModuleInterop": true,
-    "moduleResolution": "node",
+    "outFile": "dist/ditto.js",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "strictNullChecks": true,
-    "declaration": true,
     "sourceMap": true
   },
   "include": ["lib/ditto.ts"]

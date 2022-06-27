@@ -5,8 +5,8 @@
   "main": "bin/index.js",
   "scripts": {
     "prepare": "husky install",
-    "start": "tsc && node dist/ditto.js",
-    "sync": "tsc && node dist/ditto.js pull"
+    "start": "tsc && node bin/ditto.js",
+    "sync": "tsc && node bin/ditto.js pull"
   },
   "repository": {
     "type": "git",
@@ -26,9 +26,9 @@
     "cli",
     "api"
   ],
-  "types": "dist/ditto.d.ts",
+  "types": "bin/ditto.d.ts",
   "bin": {
-    "ditto-cli": "dist/ditto.js"
+    "ditto-cli": "bin/ditto.js"
   },
   "devDependencies": {
     "@babel/core": "^7.11.4",

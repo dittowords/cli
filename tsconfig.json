@@ -2,8 +2,7 @@
   "extends": "@tsconfig/node16/tsconfig.json",
   "compilerOptions": {
     "allowJs": true,
-    "outDir": "dist",
-    "outFile": "dist/ditto.js",
+    "outDir": "bin",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "strictNullChecks": true,

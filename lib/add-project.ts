@@ -1,10 +1,10 @@
-const { collectAndSaveProject } = require("./init/project");
-const projectsToText = require("./utils/projectsToText");
-const {
+import { collectAndSaveProject } from "./init/project";
+import projectsToText from "./utils/projectsToText";
+import {
   getSelectedProjects,
   getIsUsingComponents,
-} = require("./utils/getSelectedProjects");
-const output = require("./output");
+} from "./utils/getSelectedProjects";
+import output from "./output";
 
 function quit(exitCode = 2) {
   console.log("Project selection was not updated.");
@@ -48,4 +48,4 @@ const addProject = async () => {
   }
 };
 
-module.exports = addProject;
+export default addProject;

@@ -1,2 +1,2 @@
-export = addProject;
-declare function addProject(): Promise<void>;
+declare const addProject: () => Promise<void>;
+export default addProject;

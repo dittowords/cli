@@ -1,11 +1,11 @@
-const config = require("./config");
-const consts = require("./consts");
-const output = require("./output");
-const {
+import config from "./config";
+import consts from "./consts";
+import output from "./output";
+import {
   getSelectedProjects,
   getIsUsingComponents,
-} = require("./utils/getSelectedProjects");
-const promptForProject = require("./utils/promptForProject");
+} from "./utils/getSelectedProjects";
+import promptForProject from "./utils/promptForProject";
 
 async function removeProject() {
   const projects = getSelectedProjects();
@@ -47,4 +47,4 @@ async function removeProject() {
   );
 }
 
-module.exports = removeProject;
+export default removeProject;

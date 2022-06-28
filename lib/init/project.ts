@@ -103,7 +103,7 @@ async function collectProject(token: string | undefined, initialize: boolean) {
     return null;
   }
 
-  const nonItitPrompt = usingComponents
+  const nonInitPrompt = usingComponents
     ? "Add a project"
     : "Add a project or library";
 
@@ -111,7 +111,7 @@ async function collectProject(token: string | undefined, initialize: boolean) {
     projects,
     message: initialize
       ? "Choose the project or library you'd like to sync text from"
-      : nonItitPrompt,
+      : nonInitPrompt,
   });
 }
 

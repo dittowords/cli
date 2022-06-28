@@ -43,10 +43,6 @@ export const getSelectedProjects = (
   return contentJson.projects.filter(({ name, id }) => name && id);
 };
 
-/**
- * Returns an array containing all valid projects ({ id, name })
- * currently contained in the project config file.
- */
 export const getIsUsingComponents = (
   configFile = PROJECT_CONFIG_FILE
 ): boolean => {

@@ -11,12 +11,7 @@ import {
 } from "../utils/getSelectedProjects";
 import promptForProject from "../utils/promptForProject";
 import { AxiosResponse } from "axios";
-
-interface Project {
-  name: string;
-  id: string;
-  url?: string;
-}
+import { Project } from "../types";
 
 function quit(exitCode = 2) {
   console.log("\nExiting Ditto CLI...\n");
@@ -29,13 +24,13 @@ function saveProject(file: string, name: string, id: string) {
   // array, but we want to always treat the component library as a separate
   // entity and use the new notation of a top-level `components` key
   if (id === "components") {
-    config.writeData(file, { components: true });
+    config.writeProjectConfigData(file, { components: true });
     return;
   }
 
   const projects = [...getSelectedProjects(), { name, id }];
 
-  config.writeData(file, { projects });
+  config.writeProjectConfigData(file, { projects });
 }
 
 export const needsSource = () => {

@@ -1,11 +1,12 @@
-const fs = require("fs");
-const path = require("path");
-const url = require("url");
-const yaml = require("js-yaml");
+import fs from "fs";
+import path from "path";
+import url from "url";
+import yaml from "js-yaml";
 
-const consts = require("./consts").default;
+import consts from "./consts";
+import { Project, ConfigYAML } from "./types";
 
-function createFileIfMissing(filename) {
+function createFileIfMissing(filename: string) {
   const dir = path.dirname(filename);
 
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
@@ -15,46 +16,96 @@ function createFileIfMissing(filename) {
   }
 }
 
-/**
- * Read data from a file
- * @param {string} file defaults to `PROJECT_CONFIG_FILE` defined in `constants.js`
- * @param {*} defaultData defaults to `{}`
- * @returns
- */
-function readData(file = consts.PROJECT_CONFIG_FILE, defaultData = {}) {
-  createFileIfMissing(file);
-  const fileContents = fs.readFileSync(file, "utf8");
-  return yaml.load(fileContents) || defaultData;
+function jsonIsConfigYAML(json: unknown): json is ConfigYAML {
+  return typeof json === "object";
 }
 
-function writeData(file, data) {
+function jsonIsGlobalYAML(
+  json: unknown
+): json is Record<string, { token: string }[]> {
+  return (
+    !!json &&
+    typeof json === "object" &&
+    Object.values(json).every((arr) =>
+      arr.every(
+        (val: any) =>
+          typeof val === "object" && Object.keys(val).includes("token")
+      )
+    )
+  );
+}
+
+/**
+ * Read data from a project config file
+ * @param {string} file defaults to `PROJECT_CONFIG_FILE` defined in `constants.js`
+ * @param {*} defaultData defaults to `{}`
+ * @returns { ConfigYAML }
+ */
+function readProjectConfigData(
+  file = consts.PROJECT_CONFIG_FILE,
+  defaultData = {}
+): ConfigYAML {
   createFileIfMissing(file);
-  const existingData = readData(file);
+  const fileContents = fs.readFileSync(file, "utf8");
+  const yamlData = yaml.load(fileContents);
+  if (jsonIsConfigYAML(yamlData)) {
+    return yamlData;
+  }
+  return defaultData;
+}
+
+/**
+ * Read data from a global config file
+ * @param {string} file defaults to `CONFIG_FILE` defined in `constants.js`
+ * @param {*} defaultData defaults to `{}`
+ * @returns { Record<string, { token: string }[]> }
+ */
+function readGlobalConfigData(
+  file = consts.CONFIG_FILE,
+  defaultData = {}
+): Record<string, { token: string }[]> {
+  createFileIfMissing(file);
+  const fileContents = fs.readFileSync(file, "utf8");
+  const yamlData = yaml.load(fileContents);
+  if (jsonIsGlobalYAML(yamlData)) {
+    return yamlData;
+  }
+  return defaultData;
+}
+
+function writeProjectConfigData(file: string, data: object) {
+  createFileIfMissing(file);
+  const existingData = readProjectConfigData(file);
   const yamlStr = yaml.dump({ ...existingData, ...data });
   fs.writeFileSync(file, yamlStr, "utf8");
 }
 
-function justTheHost(host) {
-  if (!host.includes("://")) return host;
-  return url.parse(host).hostname;
+function writeGlobalConfigData(file: string, data: object) {
+  createFileIfMissing(file);
+  const existingData = readGlobalConfigData(file);
+  const yamlStr = yaml.dump({ ...existingData, ...data });
+  fs.writeFileSync(file, yamlStr, "utf8");
 }
 
-function deleteToken(file, host) {
-  const data = readData(file);
+function justTheHost(host: string) {
+  if (!host.includes("://")) return host;
+  return url.parse(host).hostname || "";
+}
+
+function deleteToken(file: string, host: string) {
+  const data = readGlobalConfigData(file);
   const hostParsed = justTheHost(host);
   data[hostParsed] = [];
-  data[hostParsed][0] = {};
-  data[hostParsed][0].token = "";
-  writeData(file, data);
+  data[hostParsed][0] = { token: "" };
+  writeGlobalConfigData(file, data);
 }
 
-function saveToken(file, host, token) {
-  const data = readData(file);
+function saveToken(file: string, host: string, token: string) {
+  const data = readGlobalConfigData(file);
   const hostParsed = justTheHost(host);
   data[hostParsed] = []; // only allow one token per host
-  data[hostParsed][0] = {};
-  data[hostParsed][0].token = token;
-  writeData(file, data);
+  data[hostParsed][0] = { token };
+  writeGlobalConfigData(file, data);
 }
 
 function getTokenFromEnv() {
@@ -67,35 +118,22 @@ function getTokenFromEnv() {
  * @param {string} host
  * @returns {string | undefined}
  */
-function getToken(file, host) {
+function getToken(file: string, host: string) {
   const tokenFromEnv = getTokenFromEnv();
   if (tokenFromEnv) {
     return tokenFromEnv;
   }
 
-  const data = readData(file);
+  const data = readGlobalConfigData(file);
   const hostEntry = data[justTheHost(host)];
   if (!hostEntry) return undefined;
   const { length } = hostEntry;
   return hostEntry[length - 1].token;
 }
 
-function save(file, key, value) {
-  const data = readData(file);
-  let current = data;
-  const parts = key.split(".");
-  parts.slice(0, -1).forEach((part) => {
-    if (!(part in current)) {
-      current[part] = {};
-      current = current[part];
-    }
-  });
-  current[parts.slice(-1)] = value;
-  writeData(file, data);
-}
-
 const IS_DUPLICATE = /-(\d+$)/;
-function dedupeProjectName(projectNames, projectName) {
+
+function dedupeProjectName(projectNames: Set<string>, projectName: string) {
   let dedupedName = projectName;
 
   if (projectNames.has(dedupedName)) {
@@ -123,10 +161,10 @@ function dedupeProjectName(projectNames, projectName) {
  * - the `variants` and `format` config options
  */
 function parseSourceInformation() {
-  const { projects, components, variants, format } = readData();
+  const { projects, components, variants, format } = readProjectConfigData();
 
-  const projectNames = new Set();
-  const validProjects = [];
+  const projectNames = new Set<string>();
+  const validProjects: Project[] = [];
 
   let componentLibraryInProjects = false;
 
@@ -161,15 +199,16 @@ function parseSourceInformation() {
   };
 }
 
-module.exports = {
+export default {
   createFileIfMissing,
-  readData,
-  writeData,
+  readProjectConfigData,
+  readGlobalConfigData,
+  writeGlobalConfigData,
+  writeProjectConfigData,
   justTheHost,
   saveToken,
   deleteToken,
   getToken,
   getTokenFromEnv,
-  save,
   parseSourceInformation,
 };

@@ -1,10 +1,6 @@
 import output from "../output";
 import projectsToText from "./projectsToText";
-
-interface Project {
-  name: string;
-  id: string;
-}
+import { Project } from "../types";
 
 const sourcesToText = (projects: Project[], componentLibrary: boolean) => {
   let message = "";

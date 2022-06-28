@@ -2,17 +2,7 @@ import fs from "fs";
 import yaml, { YAMLException } from "js-yaml";
 
 import { PROJECT_CONFIG_FILE } from "../consts";
-
-interface ConfigProject {
-  name: string;
-  id: string;
-}
-interface ConfigYAML {
-  components?: boolean;
-  projects?: ConfigProject[];
-  format?: string;
-  variants?: boolean;
-}
+import { ConfigYAML, Project } from "../types";
 
 function jsonIsConfigYAML(json: unknown): json is ConfigYAML {
   return typeof json === "object";
@@ -40,7 +30,7 @@ function yamlToJson(_yaml: string): ConfigYAML | null {
  */
 export const getSelectedProjects = (
   configFile = PROJECT_CONFIG_FILE
-): ConfigProject[] => {
+): Project[] => {
   if (!fs.existsSync(configFile)) return [];
 
   const contentYaml = fs.readFileSync(configFile, "utf8");

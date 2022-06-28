@@ -1,12 +1,7 @@
 const { AutoComplete } = require("enquirer");
 
 import output from "../output";
-
-interface Project {
-  id: string;
-  name: string;
-  url?: string;
-}
+import { Project } from "../types";
 
 function formatProjectChoice(project: Project) {
   return (

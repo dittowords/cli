@@ -31,7 +31,7 @@ async function removeProject() {
   });
   if (!projectToRemove) return;
 
-  config.writeData(consts.PROJECT_CONFIG_FILE, {
+  config.writeProjectConfigData(consts.PROJECT_CONFIG_FILE, {
     components: isUsingComponents && projectToRemove.id !== "components",
     projects: projects.filter(({ id }) => id !== projectToRemove.id),
   });

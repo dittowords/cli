@@ -16,7 +16,7 @@ export const needsToken = (configFile?: string, host = consts.API_HOST) => {
 
   const file = configFile || consts.CONFIG_FILE;
   if (!fs.existsSync(file)) return true;
-  const configData = config.readData(file);
+  const configData = config.readGlobalConfigData(file);
   if (
     !configData[config.justTheHost(host)] ||
     configData[config.justTheHost(host)][0].token === ""
@@ -66,7 +66,7 @@ async function collectToken(message: string | null) {
     )}".`;
   console.log(tokenDescription);
 
-  const response = await prompt<{ token?: string }>({
+  const response = await prompt<{ token: string }>({
     type: "input",
     name: "token",
     message: "What is your API key?",

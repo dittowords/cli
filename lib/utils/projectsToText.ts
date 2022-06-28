@@ -1,9 +1,5 @@
 import output from "../output";
-
-interface Project {
-  name: string;
-  id: string;
-}
+import { Project } from "../types";
 
 const projectsToText = (projects: Project[]) => {
   return (

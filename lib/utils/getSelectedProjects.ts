@@ -12,7 +12,7 @@ function yamlToJson(_yaml: string): ConfigYAML | null {
   try {
     let configYaml = yaml.load(_yaml);
     if (!jsonIsConfigYAML(configYaml)) {
-      throw "Yaml is misconfigured";
+      return {};
     }
     return configYaml;
   } catch (e) {

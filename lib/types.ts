@@ -11,3 +11,13 @@ export interface ConfigYAML {
   format?: string;
   variants?: boolean;
 }
+
+export interface SourceInformation {
+  hasSourceData: boolean;
+  validProjects: Project[];
+  shouldFetchComponentLibrary: boolean;
+  variants: boolean;
+  format: string;
+}
+
+export type Token = string | undefined;

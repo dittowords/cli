@@ -11,7 +11,7 @@ import {
 } from "../utils/getSelectedProjects";
 import promptForProject from "../utils/promptForProject";
 import { AxiosResponse } from "axios";
-import { Project } from "../types";
+import { Project, Token } from "../types";
 
 function quit(exitCode = 2) {
   console.log("\nExiting Ditto CLI...\n");
@@ -45,7 +45,7 @@ async function askForAnotherToken() {
 }
 
 async function listProjects(
-  token: string | undefined,
+  token: Token,
   projectsAlreadySelected: Project[],
   componentsSelected: boolean
 ) {
@@ -75,7 +75,7 @@ async function listProjects(
   });
 }
 
-async function collectProject(token: string | undefined, initialize: boolean) {
+async function collectProject(token: Token, initialize: boolean) {
   const path = process.cwd();
   if (initialize) {
     console.log(

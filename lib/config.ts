@@ -116,7 +116,7 @@ function getTokenFromEnv() {
  *
  * @param {string} file
  * @param {string} host
- * @returns {string | undefined}
+ * @returns {Token}
  */
 function getToken(file: string, host: string) {
   const tokenFromEnv = getTokenFromEnv();
@@ -188,14 +188,14 @@ function parseSourceInformation() {
   const shouldFetchComponentLibrary =
     !!components || componentLibraryInProjects;
 
-  const hasSourceData = validProjects.length || shouldFetchComponentLibrary;
+  const hasSourceData = !!validProjects.length || shouldFetchComponentLibrary;
 
   return {
     hasSourceData,
     validProjects,
     shouldFetchComponentLibrary,
-    variants,
-    format,
+    variants: variants || false,
+    format: format || "flat",
   };
 }
 

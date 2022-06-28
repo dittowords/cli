@@ -1,19 +1,21 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
 
-const ora = require("ora");
+import ora from "ora";
 
-const api = require("./api").default;
-const config = require("./config").default;
-const consts = require("./consts");
-const output = require("./output");
-const { collectAndSaveToken } = require("./init/token");
-const sourcesToText = require("./utils/sourcesToText").default;
+import api from "./api";
+import config from "./config";
+import consts from "./consts";
+import output from "./output";
+import { collectAndSaveToken } from "./init/token";
+import sourcesToText from "./utils/sourcesToText";
+import { SourceInformation, Token, Project } from "./types";
 
 const NON_DEFAULT_FORMATS = ["flat", "structured"];
 
 const DEFAULT_FORMAT_KEYS = ["projects", "exported_at"];
-const hasVariantData = (data) => {
+const hasVariantData = (data: any) => {
+  // TODO: Type this to a projects response interface
   const hasTopLevelKeys =
     Object.keys(data).filter((key) => !DEFAULT_FORMAT_KEYS.includes(key))
       .length > 0;
@@ -37,8 +39,15 @@ async function askForAnotherToken() {
  * - if format is `flat` or `structured`, fetch data for each project from `/project/:project_id` and
  * save in `{projectName}-${variantApiId}.json`
  */
-async function downloadAndSaveVariant(variantApiId, projects, format, token) {
-  const params = { variant: variantApiId };
+async function downloadAndSaveVariant(
+  variantApiId: string | null,
+  projects: Project[],
+  format: string,
+  token: Token
+) {
+  const params: Record<string, string | null> = {
+    variant: variantApiId,
+  };
   if (format) {
     params.format = format;
   }
@@ -88,10 +97,12 @@ async function downloadAndSaveVariant(variantApiId, projects, format, token) {
   }
 }
 
-/**
- * @param {{ meta: Object.<string, string> }} options
- */
-async function downloadAndSaveVariants(projects, format, token, options) {
+async function downloadAndSaveVariants(
+  projects: Project[],
+  format: string,
+  token: Token,
+  options: PullOptions
+) {
   const meta = options ? options.meta : {};
 
   const { data: variants } = await api.get("/variants", {
@@ -104,7 +115,7 @@ async function downloadAndSaveVariants(projects, format, token, options) {
 
   const messages = await Promise.all([
     downloadAndSaveVariant(null, projects, format, token),
-    ...variants.map(({ apiID }) =>
+    ...variants.map(({ apiID }: { apiID: string }) =>
       downloadAndSaveVariant(apiID, projects, format, token)
     ),
   ]);
@@ -112,10 +123,12 @@ async function downloadAndSaveVariants(projects, format, token, options) {
   return messages.join("");
 }
 
-/**
- @param {{ meta: Object.<string, string> }} options
- */
-async function downloadAndSaveBase(projects, format, token, options) {
+async function downloadAndSaveBase(
+  projects: Project[],
+  format: string,
+  token: Token,
+  options: PullOptions
+) {
   const meta = options ? options.meta : {};
 
   const params = {
@@ -159,7 +172,7 @@ async function downloadAndSaveBase(projects, format, token, options) {
   }
 }
 
-function getSavedMessage(file) {
+function getSavedMessage(file: string) {
   return `Successfully saved to ${output.info(file)}\n`;
 }
 
@@ -180,7 +193,7 @@ function cleanOutputFiles() {
 
 // compatability with legacy method of specifying project ids
 // that is still used by the default format
-const stringifyProjectId = (projectId) =>
+const stringifyProjectId = (projectId: string) =>
   projectId === "ditto_component_library" ? projectId : `project_${projectId}`;
 
 /**
@@ -194,74 +207,88 @@ const stringifyProjectId = (projectId) =>
  * independent of the CLI configuration used to fetch
  * data from Ditto.
  */
-function generateJsDriver(projects, variants, format) {
+function generateJsDriver(
+  projects: Project[],
+  variants: boolean,
+  format: string
+) {
   const fileNames = fs
     .readdirSync(consts.TEXT_DIR)
     .filter((fileName) => /\.json$/.test(fileName));
 
-  const projectIdsByName = projects.reduce(
-    (agg, project) => ({ ...agg, [project.fileName]: project.id }),
+  const projectIdsByName: Record<string, string> = projects.reduce(
+    (agg, project) => {
+      if (project.fileName) {
+        return { ...agg, [project.fileName]: project.id };
+      }
+      return agg;
+    },
     {}
   );
 
-  const data = fileNames.reduce((obj, fileName) => {
-    // filename format: {project-name}__{variant-api-id}.json
-    // file format: flat or structured
-    if (variants && format) {
-      const [projectName, rest] = fileName.split("__");
-      const [variantApiId] = rest.split(".");
+  const data = fileNames.reduce(
+    (obj: Record<string, Record<string, string>>, fileName) => {
+      // filename format: {project-name}__{variant-api-id}.json
+      // file format: flat or structured
+      if (variants && format) {
+        const [projectName, rest] = fileName.split("__");
+        const [variantApiId] = rest.split(".");
 
-      const projectId = projectIdsByName[projectName];
-      if (!projectId) {
-        throw new Error(`Couldn't find id for ${projectName}`);
-      }
-
-      const projectIdStr = stringifyProjectId(projectId);
-
-      if (!obj[projectIdStr]) {
-        obj[projectIdStr] = {};
-      }
-
-      obj[projectIdStr][variantApiId] = `require('./${fileName}')`;
-    }
-    // filename format: {variant-api-id}.json
-    // file format: default
-    else if (variants) {
-      const file = require(path.resolve(consts.TEXT_DIR, `./${fileName}`));
-      const [variantApiId] = fileName.split(".");
-
-      Object.keys(file.projects).forEach((projectId) => {
-        if (!obj[projectId]) {
-          obj[projectId] = {};
+        const projectId = projectIdsByName[projectName];
+        if (!projectId) {
+          throw new Error(`Couldn't find id for ${projectName}`);
         }
 
-        const project = file.projects[projectId];
-        obj[projectId][variantApiId] = project.frames || project.components;
-      });
-    }
-    // filename format: {project-name}.json
-    // file format: flat or structured
-    else if (format) {
-      const [projectName] = fileName.split(".");
-      const projectId = projectIdsByName[projectName];
-      if (!projectId) {
-        throw new Error(`Couldn't find id for ${projectName}`);
+        const projectIdStr = stringifyProjectId(projectId);
+
+        if (!obj[projectIdStr]) {
+          obj[projectIdStr] = {};
+        }
+
+        obj[projectIdStr][variantApiId] = `require('./${fileName}')`;
+      }
+      // filename format: {variant-api-id}.json
+      // file format: default
+      else if (variants) {
+        const file = require(path.resolve(consts.TEXT_DIR, `./${fileName}`));
+        const [variantApiId] = fileName.split(".");
+
+        Object.keys(file.projects).forEach((projectId) => {
+          if (!obj[projectId]) {
+            obj[projectId] = {};
+          }
+
+          const project = file.projects[projectId];
+          obj[projectId][variantApiId] = project.frames || project.components;
+        });
+      }
+      // filename format: {project-name}.json
+      // file format: flat or structured
+      else if (format) {
+        const [projectName] = fileName.split(".");
+        const projectId = projectIdsByName[projectName];
+        if (!projectId) {
+          throw new Error(`Couldn't find id for ${projectName}`);
+        }
+
+        obj[stringifyProjectId(projectId)] = {
+          base: `require('./${fileName}')`,
+        };
+      }
+      // filename format: text.json (single file)
+      // file format: default
+      else {
+        const file = require(path.resolve(consts.TEXT_DIR, `./${fileName}`));
+        Object.keys(file.projects).forEach((projectId) => {
+          const project = file.projects[projectId];
+          obj[projectId] = { base: project.frames || project.components };
+        });
       }
 
-      obj[stringifyProjectId(projectId)] = { base: `require('./${fileName}')` };
-    }
-    // filename format: text.json (single file)
-    // file format: default
-    else {
-      const file = require(path.resolve(consts.TEXT_DIR, `./${fileName}`));
-      Object.keys(file.projects).forEach((projectId) => {
-        const project = file.projects[projectId];
-        obj[projectId] = { base: project.frames || project.components };
-      });
-    }
-
-    return obj;
-  }, {});
+      return obj;
+    },
+    {}
+  );
 
   let dataString = `module.exports = ${JSON.stringify(data, null, 2)}`
     // remove quotes around require statements
@@ -273,10 +300,11 @@ function generateJsDriver(projects, variants, format) {
   return `Generated .js SDK driver at ${output.info(filePath)}`;
 }
 
-/**
- * @param {{ meta: Object.<string, string> }} options
- */
-async function downloadAndSave(sourceInformation, token, options) {
+async function downloadAndSave(
+  sourceInformation: SourceInformation,
+  token: Token,
+  options: PullOptions
+) {
   const { validProjects, variants, format, shouldFetchComponentLibrary } =
     sourceInformation;
 
@@ -313,7 +341,7 @@ async function downloadAndSave(sourceInformation, token, options) {
 
     spinner.stop();
     return console.log(msg);
-  } catch (e) {
+  } catch (e: any) {
     spinner.stop();
     let error = e.message;
     if (e.response && e.response.status === 404) {
@@ -350,18 +378,19 @@ async function downloadAndSave(sourceInformation, token, options) {
   }
 }
 
-/**
- * @param {{ meta: Object.<string, string> }} options
- */
-function pull(options) {
+interface PullOptions {
+  meta: Record<string, string>;
+}
+
+export const pull = (options?: PullOptions) => {
   const meta = options ? options.meta : {};
   const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
   const sourceInformation = config.parseSourceInformation();
 
   return downloadAndSave(sourceInformation, token, { meta });
-}
+};
 
-module.exports = {
+export default {
   pull,
   _testing: {
     cleanOutputFiles,

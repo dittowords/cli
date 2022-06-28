@@ -5,7 +5,7 @@ const rewire = require("rewire");
 const yaml = require("js-yaml");
 const { createFileIfMissing } = require("../config");
 
-const project = rewire("./project");
+const project = rewire("./project.ts");
 
 const { needsProject } = project;
 

@@ -1,15 +1,22 @@
-const ora = require("ora");
+import ora from "ora";
 
-const api = require("../api").default;
-const config = require("../config");
-const consts = require("../consts");
-const output = require("../output");
-const { collectAndSaveToken } = require("./token");
-const {
+import api from "../api";
+import config from "../config";
+import consts from "../consts";
+import output from "../output";
+import { collectAndSaveToken } from "./token";
+import {
   getSelectedProjects,
   getIsUsingComponents,
-} = require("../utils/getSelectedProjects");
-const promptForProject = require("../utils/promptForProject").default;
+} from "../utils/getSelectedProjects";
+import promptForProject from "../utils/promptForProject";
+import { AxiosResponse } from "axios";
+
+interface Project {
+  name: string;
+  id: string;
+  url?: string;
+}
 
 function quit(exitCode = 2) {
   console.log("\nExiting Ditto CLI...\n");
@@ -17,7 +24,7 @@ function quit(exitCode = 2) {
   process.exit();
 }
 
-function saveProject(file, name, id) {
+function saveProject(file: string, name: string, id: string) {
   // old functionality included "ditto_component_library" in the `projects`
   // array, but we want to always treat the component library as a separate
   // entity and use the new notation of a top-level `components` key
@@ -31,9 +38,9 @@ function saveProject(file, name, id) {
   config.writeData(file, { projects });
 }
 
-function needsSource() {
+export const needsSource = () => {
   return !config.parseSourceInformation().hasSourceData;
-}
+};
 
 async function askForAnotherToken() {
   config.deleteToken(consts.CONFIG_FILE, consts.API_HOST);
@@ -43,17 +50,17 @@ async function askForAnotherToken() {
 }
 
 async function listProjects(
-  token,
-  projectsAlreadySelected,
-  componentsSelected
+  token: string | undefined,
+  projectsAlreadySelected: Project[],
+  componentsSelected: boolean
 ) {
   const spinner = ora("Fetching projects in your workspace...");
   spinner.start();
 
-  let projects = [];
+  let response: AxiosResponse<any>;
 
   try {
-    projects = await api.get("/project-names", {
+    response = await api.get("/project-names", {
       headers: {
         Authorization: `token ${token}`,
       },
@@ -64,7 +71,7 @@ async function listProjects(
   }
 
   spinner.stop();
-  return projects.data.filter(({ id }) => {
+  return response.data.filter(({ id }: Project) => {
     if (id === "ditto_component_library") {
       return !componentsSelected;
     } else {
@@ -73,7 +80,7 @@ async function listProjects(
   });
 }
 
-async function collectProject(token, initialize) {
+async function collectProject(token: string | undefined, initialize: boolean) {
   const path = process.cwd();
   if (initialize) {
     console.log(
@@ -113,7 +120,7 @@ async function collectProject(token, initialize) {
   });
 }
 
-async function collectAndSaveProject(initialize = false) {
+export const collectAndSaveProject = async (initialize = false) => {
   try {
     const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
     const project = await collectProject(token, initialize);
@@ -133,7 +140,7 @@ async function collectAndSaveProject(initialize = false) {
     );
 
     saveProject(consts.PROJECT_CONFIG_FILE, project.name, project.id);
-  } catch (e) {
+  } catch (e: any) {
     console.log(e);
     if (e.response && e.response.status === 404) {
       await askForAnotherToken();
@@ -142,6 +149,6 @@ async function collectAndSaveProject(initialize = false) {
       quit();
     }
   }
-}
+};
 
-module.exports = { needsSource, collectAndSaveProject };
+export default { needsSource, collectAndSaveProject };

@@ -1,17 +1,16 @@
 // Related to initializing a user/environment to ditto.
 // expected to be run once per project.
-const boxen = require("boxen");
-const chalk = require("chalk");
-const projectsToText = require("../utils/projectsToText");
+import boxen from "boxen";
+import chalk from "chalk";
+import projectsToText from "../utils/projectsToText";
 
-const { needsSource, collectAndSaveProject } = require("./project");
-const { needsToken, collectAndSaveToken } = require("./token");
+import { needsSource, collectAndSaveProject } from "./project";
+import { needsToken, collectAndSaveToken } from "./token";
 
-const config = require("../config");
-const output = require("../output");
-const sourcesToText = require("../utils/sourcesToText");
+import config from "../config";
+import sourcesToText from "../utils/sourcesToText";
 
-const needsInit = () => needsToken() || needsSource();
+export const needsInit = () => needsToken() || needsSource();
 
 function welcome() {
   const msg = chalk.white(`${chalk.bold(
@@ -23,7 +22,7 @@ We're glad to have you here.`);
   console.log(boxen(msg, { padding: 1 }));
 }
 
-async function init() {
+export const init = async () => {
   welcome();
 
   if (needsToken()) {
@@ -43,6 +42,6 @@ async function init() {
     sourcesToText(validProjects, shouldFetchComponentLibrary);
 
   console.log(message);
-}
+};
 
-module.exports = { needsInit, init };
+export default { needsInit, init };

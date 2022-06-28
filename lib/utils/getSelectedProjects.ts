@@ -40,7 +40,7 @@ function yamlToJson(_yaml: string): ConfigYAML | null {
  */
 export const getSelectedProjects = (
   configFile = PROJECT_CONFIG_FILE
-): { name: string; id: string }[] => {
+): ConfigProject[] => {
   if (!fs.existsSync(configFile)) return [];
 
   const contentYaml = fs.readFileSync(configFile, "utf8");
@@ -57,11 +57,13 @@ export const getSelectedProjects = (
  * Returns an array containing all valid projects ({ id, name })
  * currently contained in the project config file.
  */
-export const getIsUsingComponents = (configFile = PROJECT_CONFIG_FILE) => {
-  if (!fs.existsSync(configFile)) return [];
+export const getIsUsingComponents = (
+  configFile = PROJECT_CONFIG_FILE
+): boolean => {
+  if (!fs.existsSync(configFile)) return false;
 
   const contentYaml = fs.readFileSync(configFile, "utf8");
   const contentJson = yamlToJson(contentYaml);
 
-  return contentJson && contentJson.components;
+  return !!contentJson && !!contentJson.components;
 };

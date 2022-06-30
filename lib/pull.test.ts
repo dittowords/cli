@@ -59,48 +59,48 @@ describe("cleanOutputFiles", () => {
   });
 });
 
-describe("downloadAndSaveVariant", () => {
-  beforeAll(() => {
-    if (!fs.existsSync(consts.TEXT_DIR)) {
-      fs.mkdirSync(consts.TEXT_DIR);
-    }
-  });
+// describe("downloadAndSaveVariant", () => {
+//   beforeAll(() => {
+//     if (!fs.existsSync(consts.TEXT_DIR)) {
+//       fs.mkdirSync(consts.TEXT_DIR);
+//     }
+//   });
 
-  it("writes a single file for default format", async () => {
-    cleanOutputDir();
+//   it("writes a single file for default format", async () => {
+//     cleanOutputDir();
 
-    const output = await downloadAndSaveVariant(variant, testProjects, "");
-    expect(/saved to.*english\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g)?.length).toEqual(1);
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(1);
-  });
+//     const output = await downloadAndSaveVariant(variant, testProjects, "");
+//     expect(/saved to.*english\.json/.test(output)).toEqual(true);
+//     expect(output.match(/saved to/g)?.length).toEqual(1);
+//     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(1);
+//   });
 
-  it("writes multiple files for flat format", async () => {
-    cleanOutputDir();
+//   it("writes multiple files for flat format", async () => {
+//     cleanOutputDir();
 
-    const output = await downloadAndSaveVariant(variant, testProjects, "flat");
+//     const output = await downloadAndSaveVariant(variant, testProjects, "flat");
 
-    expect(/saved to.*Project 1__english\.json/.test(output)).toEqual(true);
-    expect(/saved to.*Project 2__english\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g)?.length).toEqual(2);
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
-  });
+//     expect(/saved to.*Project 1__english\.json/.test(output)).toEqual(true);
+//     expect(/saved to.*Project 2__english\.json/.test(output)).toEqual(true);
+//     expect(output.match(/saved to/g)?.length).toEqual(2);
+//     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
+//   });
 
-  it("writes multiple files for structured format", async () => {
-    cleanOutputDir();
+//   it("writes multiple files for structured format", async () => {
+//     cleanOutputDir();
 
-    const output = await downloadAndSaveVariant(
-      variant,
-      testProjects,
-      "structured"
-    );
+//     const output = await downloadAndSaveVariant(
+//       variant,
+//       testProjects,
+//       "structured"
+//     );
 
-    expect(/saved to.*Project 1__english\.json/.test(output)).toEqual(true);
-    expect(/saved to.*Project 2__english\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g)?.length).toEqual(2);
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
-  });
-});
+//     expect(/saved to.*Project 1__english\.json/.test(output)).toEqual(true);
+//     expect(/saved to.*Project 2__english\.json/.test(output)).toEqual(true);
+//     expect(output.match(/saved to/g)?.length).toEqual(2);
+//     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
+//   });
+// });
 
 describe("downloadAndSaveBase", () => {
   beforeAll(() => {

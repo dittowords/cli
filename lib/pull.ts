@@ -43,7 +43,7 @@ async function downloadAndSaveVariant(
   variantApiId: string | null,
   projects: Project[],
   format: string,
-  token: Token
+  token?: Token
 ) {
   const params: Record<string, string | null> = {
     variant: variantApiId,
@@ -54,7 +54,7 @@ async function downloadAndSaveVariant(
 
   if (NON_DEFAULT_FORMATS.includes(format)) {
     const savedMessages = await Promise.all(
-      projects.map(async ({ id, fileName }) => {
+      projects.map(async ({ id, fileName }: Project) => {
         const { data } = await api.get(`/projects/${id}`, {
           params,
           headers: { Authorization: `token ${token}` },
@@ -100,8 +100,8 @@ async function downloadAndSaveVariant(
 async function downloadAndSaveVariants(
   projects: Project[],
   format: string,
-  token: Token,
-  options: PullOptions
+  token?: Token,
+  options?: PullOptions
 ) {
   const meta = options ? options.meta : {};
 
@@ -126,8 +126,8 @@ async function downloadAndSaveVariants(
 async function downloadAndSaveBase(
   projects: Project[],
   format: string,
-  token: Token,
-  options: PullOptions
+  token?: Token,
+  options?: PullOptions
 ) {
   const meta = options ? options.meta : {};
 
@@ -140,7 +140,7 @@ async function downloadAndSaveBase(
 
   if (NON_DEFAULT_FORMATS.includes(format)) {
     const savedMessages = await Promise.all(
-      projects.map(async ({ id, fileName }) => {
+      projects.map(async ({ id, fileName }: Project) => {
         const { data } = await api.get(`/projects/${id}`, {
           params,
           headers: { Authorization: `token ${token}` },
@@ -302,8 +302,8 @@ function generateJsDriver(
 
 async function downloadAndSave(
   sourceInformation: SourceInformation,
-  token: Token,
-  options: PullOptions
+  token?: Token,
+  options?: PullOptions
 ) {
   const { validProjects, variants, format, shouldFetchComponentLibrary } =
     sourceInformation;
@@ -379,7 +379,7 @@ async function downloadAndSave(
 }
 
 interface PullOptions {
-  meta: Record<string, string>;
+  meta?: Record<string, string>;
 }
 
 export const pull = (options?: PullOptions) => {

@@ -1,17 +1,9 @@
-const fs = require("fs");
-const yaml = require("js-yaml");
-const path = require("path");
-const api = require("./api");
-
-const rewire = require("rewire");
-const rewireConfig = rewire("./config");
-rewireConfig.__set__("readData", () => {
-  const fileContents = fs.readFileSync(file, "utf8");
-  return yaml.load(fileContents) || defaultData;
-});
+import fs from "fs";
+import path from "path";
+import api from "./api";
 
 jest.mock("./api");
-api.default.get.mockResolvedValue({ data: [] });
+api.get = jest.fn().mockResolvedValue({ data: [] });
 
 jest.mock("./consts", () => ({
   TEXT_DIR: ".testing",
@@ -21,35 +13,30 @@ jest.mock("./consts", () => ({
   TEXT_FILE: ".testing/text.json",
 }));
 
-const consts = require("./consts");
-const {
-  pull,
-  _testing: {
-    cleanOutputFiles,
-    getProjectsWithDedupedNames,
-    downloadAndSaveVariant,
-    downloadAndSaveBase,
-  },
-} = require("./pull");
+import consts from "./consts";
+import allPull from "./pull";
 
+const {
+  _testing: { cleanOutputFiles, downloadAndSaveVariant, downloadAndSaveBase },
+} = allPull;
 const testProjects = [
   {
-    id: 1,
+    id: "1",
     name: "Project 1",
   },
-  { id: 2, name: "Project 2" },
+  { id: "2", name: "Project 2" },
 ];
 const variant = "english";
 
 const cleanOutputDir = () => {
   if (fs.existsSync(consts.TEXT_DIR))
-    fs.rmdirSync(consts.TEXT_DIR, { force: true, recursive: true });
+    fs.rmSync(consts.TEXT_DIR, { recursive: true, force: true });
 
   fs.mkdirSync(consts.TEXT_DIR);
 };
 
 afterAll(() => {
-  fs.rmdirSync(consts.TEXT_DIR, { force: true, recursive: true });
+  fs.rmSync(consts.TEXT_DIR, { force: true, recursive: true });
 });
 
 describe("cleanOutputFiles", () => {
@@ -69,24 +56,6 @@ describe("cleanOutputFiles", () => {
   });
 });
 
-describe("getProjectsWithDedupedNames", () => {
-  it("dedupes projects with the same name", () => {
-    const projects = [
-      { id: 1, name: "project" },
-      { id: 2, name: "project" },
-      { id: 3, name: "project" },
-      { id: 4, name: "project-other" },
-    ];
-
-    expect(getProjectsWithDedupedNames(projects)).toEqual([
-      { id: 1, name: "project" },
-      { id: 2, name: "project-1" },
-      { id: 3, name: "project-2" },
-      { id: 4, name: "project-other" },
-    ]);
-  });
-});
-
 describe("downloadAndSaveVariant", () => {
   beforeAll(() => {
     if (!fs.existsSync(consts.TEXT_DIR)) {
@@ -97,10 +66,10 @@ describe("downloadAndSaveVariant", () => {
   it("writes a single file for default format", async () => {
     cleanOutputDir();
 
-    const output = await downloadAndSaveVariant(variant, testProjects);
+    const output = await downloadAndSaveVariant(variant, testProjects, "");
 
     expect(/saved to.*english\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g).length).toEqual(1);
+    expect(output.match(/saved to/g)?.length).toEqual(1);
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(1);
   });
 
@@ -111,7 +80,7 @@ describe("downloadAndSaveVariant", () => {
 
     expect(/saved to.*Project 1__english\.json/.test(output)).toEqual(true);
     expect(/saved to.*Project 2__english\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g).length).toEqual(2);
+    expect(output.match(/saved to/g)?.length).toEqual(2);
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
   });
 
@@ -126,7 +95,7 @@ describe("downloadAndSaveVariant", () => {
 
     expect(/saved to.*Project 1__english\.json/.test(output)).toEqual(true);
     expect(/saved to.*Project 2__english\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g).length).toEqual(2);
+    expect(output.match(/saved to/g)?.length).toEqual(2);
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
   });
 });
@@ -141,10 +110,10 @@ describe("downloadAndSaveBase", () => {
   it("writes to text.json for default format", async () => {
     cleanOutputDir();
 
-    const output = await downloadAndSaveBase(testProjects);
+    const output = await downloadAndSaveBase(testProjects, "");
 
     expect(/saved to.*text\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g).length).toEqual(1);
+    expect(output.match(/saved to/g)?.length).toEqual(1);
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(1);
   });
 
@@ -152,10 +121,9 @@ describe("downloadAndSaveBase", () => {
     cleanOutputDir();
 
     const output = await downloadAndSaveBase(testProjects, "flat");
-
     expect(/saved to.*Project 1\.json/.test(output)).toEqual(true);
     expect(/saved to.*Project 2\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g).length).toEqual(2);
+    expect(output.match(/saved to/g)?.length).toEqual(2);
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
   });
 
@@ -166,7 +134,7 @@ describe("downloadAndSaveBase", () => {
 
     expect(/saved to.*Project 1\.json/.test(output)).toEqual(true);
     expect(/saved to.*Project 2\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g).length).toEqual(2);
+    expect(output.match(/saved to/g)?.length).toEqual(2);
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
   });
 });

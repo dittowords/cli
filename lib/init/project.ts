@@ -146,4 +146,6 @@ export const collectAndSaveProject = async (initialize = false) => {
   }
 };
 
+export const _testing = { saveProject, needsSource };
+
 export default { needsSource, collectAndSaveProject };

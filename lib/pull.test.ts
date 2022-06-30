@@ -1,6 +1,16 @@
 import fs from "fs";
 import path from "path";
 import api from "./api";
+import config from "./config";
+
+const testProjects = [
+  {
+    id: "1",
+    name: "Project 1",
+    fileName: "Project 1",
+  },
+  { id: "2", name: "Project 2", fileName: "Project 2" },
+];
 
 jest.mock("./api");
 api.get = jest.fn().mockResolvedValue({ data: [] });
@@ -19,13 +29,6 @@ import allPull from "./pull";
 const {
   _testing: { cleanOutputFiles, downloadAndSaveVariant, downloadAndSaveBase },
 } = allPull;
-const testProjects = [
-  {
-    id: "1",
-    name: "Project 1",
-  },
-  { id: "2", name: "Project 2" },
-];
 const variant = "english";
 
 const cleanOutputDir = () => {
@@ -67,7 +70,6 @@ describe("downloadAndSaveVariant", () => {
     cleanOutputDir();
 
     const output = await downloadAndSaveVariant(variant, testProjects, "");
-
     expect(/saved to.*english\.json/.test(output)).toEqual(true);
     expect(output.match(/saved to/g)?.length).toEqual(1);
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(1);

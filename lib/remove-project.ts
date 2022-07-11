@@ -13,7 +13,7 @@ async function removeProject() {
   if (!projects.length && !isUsingComponents) {
     console.log(
       "\n" +
-        "No projects found in your workspace.\n" +
+        "No projects found in your current configuration.\n" +
         `Try adding one with: ${output.info("ditto-cli project add")}\n`
     );
     return;

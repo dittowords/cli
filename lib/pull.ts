@@ -42,7 +42,7 @@ async function askForAnotherToken() {
 async function downloadAndSaveVariant(
   variantApiId: string | null,
   projects: Project[],
-  format: string,
+  format: string | undefined,
   token?: Token
 ) {
   const params: Record<string, string | null> = {
@@ -52,7 +52,7 @@ async function downloadAndSaveVariant(
     params.format = format;
   }
 
-  if (NON_DEFAULT_FORMATS.includes(format)) {
+  if (format && NON_DEFAULT_FORMATS.includes(format)) {
     const savedMessages = await Promise.all(
       projects.map(async ({ id, fileName }: Project) => {
         const { data } = await api.get(`/projects/${id}`, {
@@ -99,7 +99,7 @@ async function downloadAndSaveVariant(
 
 async function downloadAndSaveVariants(
   projects: Project[],
-  format: string,
+  format: string | undefined,
   token?: Token,
   options?: PullOptions
 ) {
@@ -125,7 +125,7 @@ async function downloadAndSaveVariants(
 
 async function downloadAndSaveBase(
   projects: Project[],
-  format: string,
+  format: string | undefined,
   token?: Token,
   options?: PullOptions
 ) {
@@ -138,7 +138,7 @@ async function downloadAndSaveBase(
     params.format = format;
   }
 
-  if (NON_DEFAULT_FORMATS.includes(format)) {
+  if (format && NON_DEFAULT_FORMATS.includes(format)) {
     const savedMessages = await Promise.all(
       projects.map(async ({ id, fileName }: Project) => {
         const { data } = await api.get(`/projects/${id}`, {
@@ -210,7 +210,7 @@ const stringifyProjectId = (projectId: string) =>
 function generateJsDriver(
   projects: Project[],
   variants: boolean,
-  format: string
+  format: string | undefined
 ) {
   const fileNames = fs
     .readdirSync(consts.TEXT_DIR)

@@ -17,7 +17,7 @@ export interface SourceInformation {
   validProjects: Project[];
   shouldFetchComponentLibrary: boolean;
   variants: boolean;
-  format: string;
+  format: string | undefined;
 }
 
 export type Token = string | undefined;

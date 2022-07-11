@@ -195,7 +195,7 @@ function parseSourceInformation() {
     validProjects,
     shouldFetchComponentLibrary,
     variants: variants || false,
-    format: format || "flat",
+    format,
   };
 }
 

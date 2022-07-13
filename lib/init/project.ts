@@ -52,8 +52,7 @@ async function listProjects(
   const spinner = ora("Fetching projects in your workspace...");
   spinner.start();
 
-  let response: AxiosResponse<any>;
-
+  let response: AxiosResponse<{ id: string; name: string }[]>;
   try {
     response = await api.get("/project-names", {
       headers: {

@@ -15,7 +15,6 @@ const NON_DEFAULT_FORMATS = ["flat", "structured"];
 
 const DEFAULT_FORMAT_KEYS = ["projects", "exported_at"];
 const hasVariantData = (data: any) => {
-  // TODO: Type this to a projects response interface
   const hasTopLevelKeys =
     Object.keys(data).filter((key) => !DEFAULT_FORMAT_KEYS.includes(key))
       .length > 0;

@@ -7,7 +7,8 @@
     "prepublish": "tsc",
     "prepare": "husky install",
     "start": "tsc && node bin/ditto.js",
-    "sync": "tsc && node bin/ditto.js pull"
+    "sync": "tsc && node bin/ditto.js pull",
+    "dev": "tsc --watch"
   },
   "repository": {
     "type": "git",

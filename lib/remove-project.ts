@@ -1,11 +1,11 @@
-const config = require("./config");
-const consts = require("./consts");
-const output = require("./output");
-const {
+import config from "./config";
+import consts from "./consts";
+import output from "./output";
+import {
   getSelectedProjects,
   getIsUsingComponents,
-} = require("./utils/getSelectedProjects");
-const promptForProject = require("./utils/promptForProject");
+} from "./utils/getSelectedProjects";
+import promptForProject from "./utils/promptForProject";
 
 async function removeProject() {
   const projects = getSelectedProjects();
@@ -13,17 +13,14 @@ async function removeProject() {
   if (!projects.length && !isUsingComponents) {
     console.log(
       "\n" +
-        "No projects found in your workspace.\n" +
+        "No projects found in your current configuration.\n" +
         `Try adding one with: ${output.info("ditto-cli project add")}\n`
     );
     return;
   }
 
   const allProjects = isUsingComponents
-    ? [
-        { id: "ditto_component_library", name: "Ditto Component Library" },
-        ...projects,
-      ]
+    ? [{ id: "components", name: "Ditto Component Library" }, ...projects]
     : projects;
 
   const projectToRemove = await promptForProject({
@@ -34,9 +31,8 @@ async function removeProject() {
   });
   if (!projectToRemove) return;
 
-  config.writeData(consts.PROJECT_CONFIG_FILE, {
-    components:
-      isUsingComponents && projectToRemove.id !== "ditto_component_library",
+  config.writeProjectConfigData(consts.PROJECT_CONFIG_FILE, {
+    components: isUsingComponents && projectToRemove.id !== "components",
     projects: projects.filter(({ id }) => id !== projectToRemove.id),
   });
 
@@ -51,4 +47,4 @@ async function removeProject() {
   );
 }
 
-module.exports = removeProject;
+export default removeProject;

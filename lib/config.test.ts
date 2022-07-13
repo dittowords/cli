@@ -1,11 +1,9 @@
 /* eslint-disable no-underscore-dangle */
-const fs = require("fs");
-const path = require("path");
-
-const tempy = require("tempy");
-const yaml = require("js-yaml");
-
-const config = require("./config");
+import fs from "fs";
+import path from "path";
+import tempy from "tempy";
+import yaml from "js-yaml";
+import config from "./config";
 
 const fakeHomedir = fs.mkdtempSync(path.join(__dirname, "../testing/tmp"));
 
@@ -57,11 +55,15 @@ describe("Tokens in config files", () => {
   describe("saveToken", () => {
     it("creates a config file with config data", () => {
       const fileContents = fs.readFileSync(configFile, "utf8");
-      const configData = yaml.safeLoad(fileContents);
-      expect(configData["testing.dittowords.com"]).toBeDefined();
-      expect(configData["testing.dittowords.com"][0].token).toEqual(
-        "faketoken"
-      );
+      const configData = yaml.load(fileContents);
+      if (configData && typeof configData === "object") {
+        expect(configData["testing.dittowords.com"]).toBeDefined();
+        expect(configData["testing.dittowords.com"][0].token).toEqual(
+          "faketoken"
+        );
+      } else {
+        fail("Config Data should have been an object!");
+      }
     });
   });
 
@@ -71,18 +73,5 @@ describe("Tokens in config files", () => {
         "faketoken"
       );
     });
-  });
-});
-
-describe("save", () => {
-  let data;
-  beforeEach(() => {
-    const file = tempy.writeSync("");
-    config.save(file, "test.setting", true);
-    data = config.readData(file);
-  });
-
-  it("writes a setting correctly", () => {
-    expect(data.test.setting).toEqual(true);
   });
 });

@@ -4,8 +4,11 @@
   "description": "Command Line Interface for Ditto (dittowords.com).",
   "main": "bin/index.js",
   "scripts": {
+    "prepublish": "tsc",
     "prepare": "husky install",
-    "sync": "node bin/ditto.js pull"
+    "start": "tsc && node bin/ditto.js",
+    "sync": "tsc && node bin/ditto.js pull",
+    "dev": "tsc --watch"
   },
   "repository": {
     "type": "git",
@@ -25,27 +28,32 @@
     "cli",
     "api"
   ],
+  "types": "bin/ditto.d.ts",
   "bin": {
-    "ditto-cli": "./bin/ditto.js"
+    "ditto-cli": "bin/ditto.js"
   },
   "devDependencies": {
     "@babel/core": "^7.11.4",
     "@babel/preset-env": "^7.11.0",
+    "@babel/preset-typescript": "^7.18.6",
+    "@tsconfig/node16": "^1.0.3",
     "@types/jest": "^26.0.9",
+    "@types/js-yaml": "^4.0.5",
+    "@types/node": "^18.0.0",
     "babel-jest": "^26.3.0",
     "eslint": "^7.6.0",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-jest": "^23.20.0",
     "husky": "^7.0.4",
+    "jest": "^27.3.1",
     "lint-staged": "^11.2.4",
     "prettier": "2.4.1",
-    "jest": "^27.3.1",
     "rewire": "^5.0.0",
     "source-map": "^0.7.3",
     "tempy": "^0.6.0",
     "tsconfig-paths": "^3.9.0",
-    "typescript": "^4.0.2"
+    "typescript": "^4.7.4"
   },
   "dependencies": {
     "axios": "^0.19.2",
@@ -54,7 +62,7 @@
     "commander": "^6.1.0",
     "enquirer": "^2.3.6",
     "faker": "^5.1.0",
-    "js-yaml": "^3.14.0",
+    "js-yaml": "^4.1.0",
     "ora": "^5.0.0",
     "v8-compile-cache": "^2.1.1"
   },

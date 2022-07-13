@@ -1,6 +1,7 @@
-const output = require("../output");
+import output from "../output";
+import { Project } from "../types";
 
-function projectsToText(projects) {
+const projectsToText = (projects: Project[]) => {
   return (
     (projects || []).reduce(
       (outputString, { name, id }) =>
@@ -13,6 +14,6 @@ function projectsToText(projects) {
       ""
     ) + "\n"
   );
-}
+};
 
-module.exports = projectsToText;
+export default projectsToText;

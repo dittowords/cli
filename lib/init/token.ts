@@ -1,38 +1,38 @@
-const fs = require("fs");
+import fs from "fs";
 
-const chalk = require("chalk");
+import chalk from "chalk";
 
-const { prompt } = require("enquirer");
+import { prompt } from "enquirer";
 
-const api = require("../api");
-const consts = require("../consts");
-const output = require("../output");
-const config = require("../config");
+import { create } from "../api";
+import consts from "../consts";
+import output from "../output";
+import config from "../config";
 
-function needsToken(configFile, host = consts.API_HOST) {
+export const needsToken = (configFile?: string, host = consts.API_HOST) => {
   if (config.getTokenFromEnv()) {
     return false;
   }
 
   const file = configFile || consts.CONFIG_FILE;
   if (!fs.existsSync(file)) return true;
-  const configData = config.readData(file);
+  const configData = config.readGlobalConfigData(file);
   if (
     !configData[config.justTheHost(host)] ||
     configData[config.justTheHost(host)][0].token === ""
   )
     return true;
   return false;
-}
+};
 
 // Returns true if valid, otherwise an error message.
-async function checkToken(token) {
-  const axios = api.create(token);
+async function checkToken(token: string): Promise<any> {
+  const axios = create(token);
   const endpoint = "/token-check";
 
   const resOrError = await axios
     .get(endpoint)
-    .catch((error) => {
+    .catch((error: any) => {
       if (error.code === "ENOTFOUND") {
         return output.errorText(
           `Can't connect to API: ${output.url(error.hostname)}`
@@ -48,7 +48,6 @@ async function checkToken(token) {
     .catch(() =>
       output.errorText("Sorry! We're having trouble reaching the Ditto API.")
     );
-
   if (typeof resOrError === "string") return resOrError;
 
   if (resOrError.status === 200) return true;
@@ -56,7 +55,7 @@ async function checkToken(token) {
   return output.errorText("This API key isn't valid. Please try another.");
 }
 
-async function collectToken(message) {
+async function collectToken(message: string | null) {
   const blue = output.info;
   const apiUrl = output.url("https://app.dittowords.com/account/user");
   const breadcrumbs = `${blue("User")}`;
@@ -67,7 +66,7 @@ async function collectToken(message) {
     )}".`;
   console.log(tokenDescription);
 
-  const response = await prompt({
+  const response = await prompt<{ token: string }>({
     type: "input",
     name: "token",
     message: "What is your API key?",
@@ -82,7 +81,12 @@ function quit(exitCode = 2) {
   process.exit();
 }
 
-async function collectAndSaveToken(message = null) {
+/**
+ *
+ * @param {string | null} message
+ * @returns
+ */
+export const collectAndSaveToken = async (message: string | null = null) => {
   try {
     const token = await collectToken(message);
     console.log(
@@ -97,6 +101,6 @@ async function collectAndSaveToken(message = null) {
   } catch (error) {
     quit();
   }
-}
+};
 
-module.exports = { needsToken, collectAndSaveToken };
+export default { needsToken, collectAndSaveToken };

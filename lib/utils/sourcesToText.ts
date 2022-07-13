@@ -1,7 +1,8 @@
-const output = require("../output");
-const projectsToText = require("./projectsToText");
+import output from "../output";
+import projectsToText from "./projectsToText";
+import { Project } from "../types";
 
-function sourcesToText(projects, componentLibrary) {
+const sourcesToText = (projects: Project[], componentLibrary: boolean) => {
   let message = "";
 
   if (componentLibrary) {
@@ -19,6 +20,6 @@ function sourcesToText(projects, componentLibrary) {
   }
 
   return message;
-}
+};
 
-module.exports = sourcesToText;
+export default sourcesToText;

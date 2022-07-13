@@ -1,18 +1,17 @@
 const { AutoComplete } = require("enquirer");
 
-const output = require("../output");
+import output from "../output";
+import { Project } from "../types";
 
-function formatProjectChoice(project) {
+function formatProjectChoice(project: Project) {
   return (
     project.name +
     " " +
-    output.subtle(
-      project.url || `https://app.dittowords.com/doc/${project.id}`
-    )
+    output.subtle(project.url || `https://app.dittowords.com/doc/${project.id}`)
   );
 }
 
-function parseResponse(response) {
+function parseResponse(response: string) {
   if (!response) {
     return null;
   }
@@ -26,7 +25,17 @@ function parseResponse(response) {
   return { name, id };
 }
 
-async function promptForProject({ message, projects, limit = 10 }) {
+interface ProjectPromptParams {
+  message: string;
+  projects: Project[];
+  limit?: number;
+}
+
+const promptForProject = async ({
+  message,
+  projects,
+  limit = 10,
+}: ProjectPromptParams) => {
   output.nl();
 
   const choices = projects.map(formatProjectChoice);
@@ -48,6 +57,6 @@ async function promptForProject({ message, projects, limit = 10 }) {
   }
 
   return parseResponse(response);
-}
+};
 
-module.exports = promptForProject;
+export default promptForProject;

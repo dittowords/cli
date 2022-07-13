@@ -1,7 +1,7 @@
-const tempy = require("tempy");
+import tempy from "tempy";
 
-const config = require("../config");
-const { needsToken } = require("./token");
+import config from "../config";
+import { needsToken } from "./token";
 
 describe("needsToken()", () => {
   it("is true if there is no config file", () => {

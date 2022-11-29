@@ -176,9 +176,9 @@ If you run the CLI in a directory that does not contain a `ditto/` folder, the f
 
 - #### Mobile files (XML and .strings)
 
-  When `format` is set to `android`, the resulting files will be XML. More information about the contents of the XML files can be found [here](https://developer.dittowords.com/api-reference#android).
+  When `format` is set to `android`, the resulting files will be in XML format. More information about the contents of the XML files can be found [here](https://developer.dittowords.com/api-reference#android).
 
-  When `format` is set to `ios-strings`, the resulting files will in .strings format. More information about the contents of the .strings files can be found [here](https://developer.dittowords.com/api-reference#ios-strings).
+  When `format` is set to `ios-strings`, the resulting files will be in .strings format. More information about the contents of the .strings files can be found [here](https://developer.dittowords.com/api-reference#ios-strings).
 
 - #### `index.js`
 

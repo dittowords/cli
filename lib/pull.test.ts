@@ -13,7 +13,8 @@ const testProjects = [
 ];
 
 jest.mock("./api");
-api.get = jest.fn().mockResolvedValue({ data: [] });
+
+const mockApi = api as jest.Mocked<typeof api>;
 
 jest.mock("./consts", () => ({
   TEXT_DIR: ".testing",
@@ -43,15 +44,17 @@ afterAll(() => {
 });
 
 describe("cleanOutputFiles", () => {
-  it("removes .js and .json files", () => {
+  it("removes .js, .json, .xml, and .strings files", () => {
     cleanOutputDir();
 
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.json"), "test");
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.js"), "test");
+    fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.xml"), "test");
+    fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.strings"), "test");
     // this file shouldn't be deleted
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.txt"), "test");
 
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(3);
+    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(5);
 
     cleanOutputFiles();
 
@@ -112,6 +115,7 @@ describe("downloadAndSaveBase", () => {
   it("writes to text.json for default format", async () => {
     cleanOutputDir();
 
+    mockApi.get.mockResolvedValueOnce({ data: [] });
     const output = await downloadAndSaveBase(testProjects, "");
 
     expect(/saved to.*text\.json/.test(output)).toEqual(true);
@@ -122,6 +126,7 @@ describe("downloadAndSaveBase", () => {
   it("writes multiple files for flat format", async () => {
     cleanOutputDir();
 
+    mockApi.get.mockResolvedValue({ data: [] });
     const output = await downloadAndSaveBase(testProjects, "flat");
     expect(/saved to.*Project 1\.json/.test(output)).toEqual(true);
     expect(/saved to.*Project 2\.json/.test(output)).toEqual(true);
@@ -132,10 +137,24 @@ describe("downloadAndSaveBase", () => {
   it("writes multiple files for structured format", async () => {
     cleanOutputDir();
 
+    mockApi.get.mockResolvedValue({ data: [] });
     const output = await downloadAndSaveBase(testProjects, "structured");
 
     expect(/saved to.*Project 1\.json/.test(output)).toEqual(true);
     expect(/saved to.*Project 2\.json/.test(output)).toEqual(true);
+    expect(output.match(/saved to/g)?.length).toEqual(2);
+    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
+  });
+
+  it("writes .xml file for android", async () => {
+    cleanOutputDir();
+
+    mockApi.get.mockResolvedValue({ data: "hello" });
+    const output = await downloadAndSaveBase(testProjects, "android");
+    console.log(output);
+
+    expect(/saved to.*Project 1\.xml/.test(output)).toEqual(true);
+    expect(/saved to.*Project 2\.xml/.test(output)).toEqual(true);
     expect(output.match(/saved to/g)?.length).toEqual(2);
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
   });

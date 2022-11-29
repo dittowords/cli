@@ -146,15 +146,26 @@ describe("downloadAndSaveBase", () => {
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
   });
 
-  it("writes .xml file for android", async () => {
+  it("writes .xml files for android", async () => {
     cleanOutputDir();
 
     mockApi.get.mockResolvedValue({ data: "hello" });
     const output = await downloadAndSaveBase(testProjects, "android");
-    console.log(output);
 
     expect(/saved to.*Project 1\.xml/.test(output)).toEqual(true);
     expect(/saved to.*Project 2\.xml/.test(output)).toEqual(true);
+    expect(output.match(/saved to/g)?.length).toEqual(2);
+    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
+  });
+
+  it("writes .strings files for ios-strings", async () => {
+    cleanOutputDir();
+
+    mockApi.get.mockResolvedValue({ data: "hello" });
+    const output = await downloadAndSaveBase(testProjects, "ios-strings");
+
+    expect(/saved to.*Project 1\.strings/.test(output)).toEqual(true);
+    expect(/saved to.*Project 2\.strings/.test(output)).toEqual(true);
     expect(output.match(/saved to/g)?.length).toEqual(2);
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
   });

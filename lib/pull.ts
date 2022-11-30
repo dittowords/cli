@@ -11,7 +11,7 @@ import { collectAndSaveToken } from "./init/token";
 import sourcesToText from "./utils/sourcesToText";
 import { SourceInformation, Token, Project } from "./types";
 
-const NON_DEFAULT_FORMATS = ["flat", "structured"];
+const NON_DEFAULT_FORMATS = ["flat", "structured", "android", "ios-strings"];
 
 const DEFAULT_FORMAT_KEYS = ["projects", "exported_at"];
 const hasVariantData = (data: any) => {
@@ -29,6 +29,16 @@ async function askForAnotherToken() {
   const message =
     "Looks like the API key you have saved no longer works. Please enter another one.";
   await collectAndSaveToken(message);
+}
+
+function getExtension(format: string) {
+  if (format === "android") {
+    return ".xml";
+  }
+  if (format === "ios-strings") {
+    return ".strings";
+  }
+  return ".json";
 }
 
 /**
@@ -63,10 +73,16 @@ async function downloadAndSaveVariant(
           return "";
         }
 
-        const filename = fileName + ("__" + (variantApiId || "base")) + ".json";
+        const extension = getExtension(format);
+
+        const filename =
+          fileName + ("__" + (variantApiId || "base")) + extension;
         const filepath = path.join(consts.TEXT_DIR, filename);
 
-        const dataString = JSON.stringify(data, null, 2);
+        let dataString = data;
+        if (extension === ".json") {
+          dataString = JSON.stringify(data, null, 2);
+        }
 
         fs.writeFileSync(filepath, dataString);
 
@@ -145,10 +161,14 @@ async function downloadAndSaveBase(
           headers: { Authorization: `token ${token}` },
         });
 
-        const filename = `${fileName}.json`;
+        const extension = getExtension(format);
+        const filename = `${fileName}${extension}`;
         const filepath = path.join(consts.TEXT_DIR, filename);
 
-        const dataString = JSON.stringify(data, null, 2);
+        let dataString = data;
+        if (extension === ".json") {
+          dataString = JSON.stringify(data, null, 2);
+        }
 
         fs.writeFileSync(filepath, dataString);
 
@@ -182,7 +202,7 @@ function cleanOutputFiles() {
 
   const fileNames = fs.readdirSync(consts.TEXT_DIR);
   fileNames.forEach((fileName) => {
-    if (/\.js(on)?$/.test(fileName)) {
+    if (/\.js(on)?|\.xml|\.strings$/.test(fileName)) {
       fs.unlinkSync(path.resolve(consts.TEXT_DIR, fileName));
     }
   });

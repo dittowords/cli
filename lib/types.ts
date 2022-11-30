@@ -9,6 +9,7 @@ export interface ConfigYAML {
   components?: boolean;
   projects?: Project[];
   format?: string;
+  status?: string;
   variants?: boolean;
 }
 
@@ -18,6 +19,7 @@ export interface SourceInformation {
   shouldFetchComponentLibrary: boolean;
   variants: boolean;
   format: string | undefined;
+  status: string | undefined;
 }
 
 export type Token = string | undefined;

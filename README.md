@@ -150,6 +150,16 @@ If you run the CLI in a directory that does not contain a `ditto/` folder, the f
   format: flat
   ```
 
+  ##### `status`
+
+  If included, results will only include data with the passed in status value. Excluding this value will result in no filtering. Acceptable values are `NONE`, `WIP`, `REVIEW`, `FINAL`, and `DEV`.
+
+  More information about statuses can be found [here](https://www.dittowords.com/docs/tips-for-collaborating).
+
+  ```yml
+  staus: FINAL
+  ```
+
   **Full Example**
 
   ```yml
@@ -161,6 +171,7 @@ If you run the CLI in a directory that does not contain a `ditto/` folder, the f
   components: true
   variants: true
   format: flat
+  status: FINAL
   ```
 
 - #### JSON Files

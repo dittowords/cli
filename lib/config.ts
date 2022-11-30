@@ -161,7 +161,8 @@ function dedupeProjectName(projectNames: Set<string>, projectName: string) {
  * - the `variants` and `format` config options
  */
 function parseSourceInformation() {
-  const { projects, components, variants, format } = readProjectConfigData();
+  const { projects, components, variants, format, status } =
+    readProjectConfigData();
 
   const projectNames = new Set<string>();
   const validProjects: Project[] = [];
@@ -196,6 +197,7 @@ function parseSourceInformation() {
     shouldFetchComponentLibrary,
     variants: variants || false,
     format,
+    status,
   };
 }
 

@@ -116,7 +116,7 @@ describe("downloadAndSaveBase", () => {
     cleanOutputDir();
 
     mockApi.get.mockResolvedValueOnce({ data: [] });
-    const output = await downloadAndSaveBase(testProjects, "");
+    const output = await downloadAndSaveBase(testProjects, "", undefined);
 
     expect(/saved to.*text\.json/.test(output)).toEqual(true);
     expect(output.match(/saved to/g)?.length).toEqual(1);
@@ -127,7 +127,7 @@ describe("downloadAndSaveBase", () => {
     cleanOutputDir();
 
     mockApi.get.mockResolvedValue({ data: [] });
-    const output = await downloadAndSaveBase(testProjects, "flat");
+    const output = await downloadAndSaveBase(testProjects, "flat", undefined);
     expect(/saved to.*Project 1\.json/.test(output)).toEqual(true);
     expect(/saved to.*Project 2\.json/.test(output)).toEqual(true);
     expect(output.match(/saved to/g)?.length).toEqual(2);
@@ -138,7 +138,11 @@ describe("downloadAndSaveBase", () => {
     cleanOutputDir();
 
     mockApi.get.mockResolvedValue({ data: [] });
-    const output = await downloadAndSaveBase(testProjects, "structured");
+    const output = await downloadAndSaveBase(
+      testProjects,
+      "structured",
+      undefined
+    );
 
     expect(/saved to.*Project 1\.json/.test(output)).toEqual(true);
     expect(/saved to.*Project 2\.json/.test(output)).toEqual(true);
@@ -150,7 +154,11 @@ describe("downloadAndSaveBase", () => {
     cleanOutputDir();
 
     mockApi.get.mockResolvedValue({ data: "hello" });
-    const output = await downloadAndSaveBase(testProjects, "android");
+    const output = await downloadAndSaveBase(
+      testProjects,
+      "android",
+      undefined
+    );
 
     expect(/saved to.*Project 1\.xml/.test(output)).toEqual(true);
     expect(/saved to.*Project 2\.xml/.test(output)).toEqual(true);
@@ -162,7 +170,11 @@ describe("downloadAndSaveBase", () => {
     cleanOutputDir();
 
     mockApi.get.mockResolvedValue({ data: "hello" });
-    const output = await downloadAndSaveBase(testProjects, "ios-strings");
+    const output = await downloadAndSaveBase(
+      testProjects,
+      "ios-strings",
+      undefined
+    );
 
     expect(/saved to.*Project 1\.strings/.test(output)).toEqual(true);
     expect(/saved to.*Project 2\.strings/.test(output)).toEqual(true);

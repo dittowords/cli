@@ -52,6 +52,7 @@ async function downloadAndSaveVariant(
   variantApiId: string | null,
   projects: Project[],
   format: string | undefined,
+  status: string | undefined,
   token?: Token
 ) {
   const params: Record<string, string | null> = {
@@ -59,6 +60,9 @@ async function downloadAndSaveVariant(
   };
   if (format) {
     params.format = format;
+  }
+  if (status) {
+    params.status = status;
   }
 
   if (format && NON_DEFAULT_FORMATS.includes(format)) {
@@ -115,6 +119,7 @@ async function downloadAndSaveVariant(
 async function downloadAndSaveVariants(
   projects: Project[],
   format: string | undefined,
+  status: string | undefined,
   token?: Token,
   options?: PullOptions
 ) {
@@ -129,9 +134,9 @@ async function downloadAndSaveVariants(
   });
 
   const messages = await Promise.all([
-    downloadAndSaveVariant(null, projects, format, token),
+    downloadAndSaveVariant(null, projects, format, status, token),
     ...variants.map(({ apiID }: { apiID: string }) =>
-      downloadAndSaveVariant(apiID, projects, format, token)
+      downloadAndSaveVariant(apiID, projects, format, status, token)
     ),
   ]);
 
@@ -141,6 +146,7 @@ async function downloadAndSaveVariants(
 async function downloadAndSaveBase(
   projects: Project[],
   format: string | undefined,
+  status: string | undefined,
   token?: Token,
   options?: PullOptions
 ) {
@@ -151,6 +157,9 @@ async function downloadAndSaveBase(
   };
   if (format) {
     params.format = format;
+  }
+  if (status) {
+    params.status = status;
   }
 
   if (format && NON_DEFAULT_FORMATS.includes(format)) {
@@ -324,8 +333,13 @@ async function downloadAndSave(
   token?: Token,
   options?: PullOptions
 ) {
-  const { validProjects, variants, format, shouldFetchComponentLibrary } =
-    sourceInformation;
+  const {
+    validProjects,
+    variants,
+    format,
+    shouldFetchComponentLibrary,
+    status,
+  } = sourceInformation;
 
   let msg = `\nFetching the latest text from ${sourcesToText(
     validProjects,
@@ -351,8 +365,12 @@ async function downloadAndSave(
 
     const meta = options ? options.meta : {};
     msg += variants
-      ? await downloadAndSaveVariants(validProjects, format, token, { meta })
-      : await downloadAndSaveBase(validProjects, format, token, { meta });
+      ? await downloadAndSaveVariants(validProjects, format, status, token, {
+          meta,
+        })
+      : await downloadAndSaveBase(validProjects, format, status, token, {
+          meta,
+        });
 
     msg += generateJsDriver(validProjects, variants, format);
 

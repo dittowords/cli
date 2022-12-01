@@ -157,7 +157,7 @@ If you run the CLI in a directory that does not contain a `ditto/` folder, the f
   More information about statuses can be found [here](https://www.dittowords.com/docs/tips-for-collaborating).
 
   ```yml
-  staus: FINAL
+  status: FINAL
   ```
 
   **Full Example**

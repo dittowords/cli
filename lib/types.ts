@@ -11,6 +11,7 @@ export interface ConfigYAML {
   format?: string;
   status?: string;
   variants?: boolean;
+  richText?: boolean;
 }
 
 export interface SourceInformation {
@@ -20,6 +21,7 @@ export interface SourceInformation {
   variants: boolean;
   format: string | undefined;
   status: string | undefined;
+  richText: boolean | undefined;
 }
 
 export type Token = string | undefined;

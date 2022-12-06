@@ -160,6 +160,10 @@ If you run the CLI in a directory that does not contain a `ditto/` folder, the f
   status: FINAL
   ```
 
+  #### `richText`
+
+  If included, results will have rich text versions of each piece of text requested. This rich text will be in HTML format. You can read more about Ditto's rich text feature [here](https://www.dittowords.com/docs/rich-text).
+
   **Full Example**
 
   ```yml

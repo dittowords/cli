@@ -161,7 +161,7 @@ function dedupeProjectName(projectNames: Set<string>, projectName: string) {
  * - the `variants` and `format` config options
  */
 function parseSourceInformation() {
-  const { projects, components, variants, format, status } =
+  const { projects, components, variants, format, status, richText } =
     readProjectConfigData();
 
   const projectNames = new Set<string>();
@@ -198,6 +198,7 @@ function parseSourceInformation() {
     variants: variants || false,
     format,
     status,
+    richText,
   };
 }
 

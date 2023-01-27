@@ -7,8 +7,6 @@ import "v8-compile-cache";
 import { init, needsInit } from "./init/init";
 import { pull } from "./pull";
 
-import addProject from "./add-project";
-import removeProject from "./remove-project";
 import processMetaOption from "./utils/processMetaOption";
 
 /**
@@ -28,22 +26,6 @@ const setupCommands = () => {
     .command("pull")
     .description("Sync copy from Ditto into working directory")
     .action(() => checkInit("pull"));
-
-  const projectDescription = "Add a Ditto project to sync copy from";
-  const projectCommand = program
-    .command("project")
-    .description(projectDescription)
-    .action(() => checkInit("project"));
-
-  projectCommand
-    .command("add")
-    .description(projectDescription)
-    .action(() => checkInit("project"));
-
-  projectCommand
-    .command("remove")
-    .description("Stop syncing copy from a Ditto project")
-    .action(() => checkInit("project remove"));
 };
 
 const setupOptions = () => {
@@ -66,13 +48,6 @@ const checkInit = async (command: string) => {
     switch (command) {
       case "pull":
         pull({ meta: processMetaOption(meta) });
-        break;
-      case "project":
-      case "project add":
-        addProject();
-        break;
-      case "project remove":
-        removeProject();
         break;
       case "none":
         setupCommands();

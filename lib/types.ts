@@ -10,7 +10,7 @@ export interface ConfigYAML {
     components?: boolean;
     projects?: Project[];
   };
-  format?: string;
+  format?: "flat" | "structured" | "android-xml" | "ios-strings";
   status?: string;
   variants?: boolean;
   richText?: boolean;

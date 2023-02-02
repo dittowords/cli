@@ -153,7 +153,7 @@ async function downloadAndSaveBase(
   projects: Project[],
   format: string | undefined,
   status: string | undefined,
-  richText: boolean | undefined,
+  richText?: boolean | undefined,
   token?: Token,
   options?: PullOptions
 ) {

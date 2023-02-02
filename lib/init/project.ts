@@ -20,17 +20,8 @@ function quit(exitCode = 2) {
 }
 
 function saveProject(file: string, name: string, id: string) {
-  // old functionality included "ditto_component_library" in the `projects`
-  // array, but we want to always treat the component library as a separate
-  // entity and use the new notation of a top-level `components` key
-  if (id === "components") {
-    config.writeProjectConfigData(file, { components: true });
-    return;
-  }
-
-  const projects = [...getSelectedProjects(), { name, id }];
-
-  config.writeProjectConfigData(file, { projects });
+  const projects = [...getSelectedProjects(file), { name, id }];
+  config.writeProjectConfigData(file, { sources: { projects } });
 }
 
 export const needsSource = () => {

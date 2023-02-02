@@ -3,8 +3,7 @@ import yaml, { YAMLException } from "js-yaml";
 
 import { PROJECT_CONFIG_FILE } from "../consts";
 import { ConfigYAML, Project } from "../types";
-
-const COMPONENTS_ENABLED_BY_DEFAULT = true;
+import { DEFAULT_CONFIG_JSON } from "../config";
 
 function jsonIsConfigYAML(json: unknown): json is ConfigYAML {
   return typeof json === "object";
@@ -68,7 +67,7 @@ export const getIsUsingComponents = (
   const contentJson = yamlToJson(contentYaml);
 
   if (!contentJson) {
-    return COMPONENTS_ENABLED_BY_DEFAULT;
+    return Boolean(DEFAULT_CONFIG_JSON.sources?.components);
   }
 
   if (contentJson.components !== undefined) {
@@ -78,7 +77,7 @@ export const getIsUsingComponents = (
   }
 
   if (contentJson.sources?.components === undefined) {
-    return COMPONENTS_ENABLED_BY_DEFAULT;
+    return Boolean(DEFAULT_CONFIG_JSON.sources?.components);
   }
 
   return Boolean(contentJson.sources.components);

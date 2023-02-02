@@ -4,6 +4,8 @@ import yaml, { YAMLException } from "js-yaml";
 import { PROJECT_CONFIG_FILE } from "../consts";
 import { ConfigYAML, Project } from "../types";
 
+const COMPONENTS_ENABLED_BY_DEFAULT = true;
+
 function jsonIsConfigYAML(json: unknown): json is ConfigYAML {
   return typeof json === "object";
 }
@@ -36,13 +38,27 @@ export const getSelectedProjects = (
   const contentYaml = fs.readFileSync(configFile, "utf8");
   const contentJson = yamlToJson(contentYaml);
 
-  if (!(contentJson && contentJson.projects)) {
+  if (!contentJson) {
     return [];
   }
 
-  return contentJson.projects.filter(({ name, id }) => name && id);
+  if (contentJson.projects) {
+    throw new Error(
+      `Support for "projects" as a top-level key has been removed; please use "sources.projects" instead.`
+    );
+  }
+
+  if (!contentJson.sources?.projects) {
+    return [];
+  }
+
+  return contentJson.sources.projects.filter(({ name, id }) => name && id);
 };
 
+/**
+ * Returns a boolean indicating whether or not the component library
+ * should be fetched. Defaults to `COMPONENTS_ENABLED_BY_DEFAULT`.
+ */
 export const getIsUsingComponents = (
   configFile = PROJECT_CONFIG_FILE
 ): boolean => {
@@ -51,5 +67,19 @@ export const getIsUsingComponents = (
   const contentYaml = fs.readFileSync(configFile, "utf8");
   const contentJson = yamlToJson(contentYaml);
 
-  return !!contentJson && !!contentJson.components;
+  if (!contentJson) {
+    return COMPONENTS_ENABLED_BY_DEFAULT;
+  }
+
+  if (contentJson.components !== undefined) {
+    throw new Error(
+      `Support for "components" as a top-level key has been removed; please use "sources.components" instead.`
+    );
+  }
+
+  if (contentJson.sources?.components === undefined) {
+    return COMPONENTS_ENABLED_BY_DEFAULT;
+  }
+
+  return Boolean(contentJson.sources.components);
 };

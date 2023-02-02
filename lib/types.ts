@@ -6,12 +6,20 @@ export interface Project {
 }
 
 export interface ConfigYAML {
-  components?: boolean;
-  projects?: Project[];
+  sources?: {
+    components?: boolean;
+    projects?: Project[];
+  };
   format?: string;
   status?: string;
   variants?: boolean;
   richText?: boolean;
+
+  // these are legacy fields - if they exist, we should output
+  // a deprecation error, and suggest that they nest them under
+  // a top-level `sources` property
+  components?: boolean;
+  projects?: Project[];
 }
 
 export interface SourceInformation {

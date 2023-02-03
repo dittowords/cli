@@ -4,68 +4,71 @@ import { program } from "commander";
 // to use V8's code cache to speed up instantiation time
 import "v8-compile-cache";
 
-import { init, needsInit } from "./init/init";
+import { init, needsTokenOrSource } from "./init/init";
 import { pull } from "./pull";
+import { quit } from "./utils/quit";
 
 import processMetaOption from "./utils/processMetaOption";
 
-/**
- * Catch and report unexpected error.
- * @param {any} error The thrown error object.
- * @returns {void}
- */
-function quit(exitCode = 2) {
-  console.log("\nExiting Ditto CLI...\n");
-  process.exitCode = exitCode;
-  process.exit();
-}
+const supportedCommands = [
+  {
+    name: "pull",
+    description: "Sync copy from Ditto into the current working directory",
+  },
+] as const;
+
+type Command = typeof supportedCommands[number]["name"];
 
 const setupCommands = () => {
   program.name("ditto-cli");
-  program
-    .command("pull")
-    .description("Sync copy from Ditto into working directory")
-    .action(() => checkInit("pull"));
+  supportedCommands.forEach((command) => {
+    program
+      .command(command.name)
+      .description(command.description)
+      .action(() => executeCommand(command.name));
+  });
 };
 
 const setupOptions = () => {
   program.option(
     "-m, --meta <data...>",
-    "Optional metadata for this command to send arbitrary data to the backend. Ex: -m githubActionRequest:true trigger:manual"
+    "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual"
   );
 };
 
-const checkInit = async (command: string) => {
-  if (needsInit() && command !== "project remove") {
+const executeCommand = async (command: Command | "none"): Promise<void> => {
+  if (needsTokenOrSource()) {
     try {
       await init();
-      if (command === "pull") main(); // re-run to actually pull text now that init is finished
     } catch (error) {
-      quit();
+      quit("Exiting Ditto CLI...");
+      return;
     }
-  } else {
-    const { meta } = program.opts();
-    switch (command) {
-      case "pull":
-        pull({ meta: processMetaOption(meta) });
-        break;
-      case "none":
-        setupCommands();
-        program.help();
-        break;
-      default:
-        quit();
+  }
+
+  const { meta } = program.opts();
+  switch (command) {
+    case "none":
+    case "pull": {
+      pull({ meta: processMetaOption(meta) });
+      return;
+    }
+    default: {
+      quit("Exiting Ditto CLI...");
+      return;
     }
   }
 };
 
 const main = async () => {
+  setupCommands();
+  setupOptions();
+
   if (process.argv.length <= 2 && process.argv[1].includes("ditto-cli")) {
-    await checkInit("none");
-  } else {
-    setupCommands();
-    setupOptions();
+    await executeCommand("none");
+    return;
   }
+
   program.parse(process.argv);
 };
 

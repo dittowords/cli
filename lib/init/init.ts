@@ -8,9 +8,10 @@ import { needsSource, collectAndSaveProject } from "./project";
 import { needsToken, collectAndSaveToken } from "./token";
 
 import config from "../config";
+import output from "../output";
 import sourcesToText from "../utils/sourcesToText";
 
-export const needsInit = () => needsToken() || needsSource();
+export const needsTokenOrSource = () => needsToken() || needsSource();
 
 function welcome() {
   const msg = chalk.white(`${chalk.bold(
@@ -29,8 +30,28 @@ export const init = async () => {
     await collectAndSaveToken();
   }
 
-  const { hasSourceData, validProjects, shouldFetchComponentLibrary } =
-    config.parseSourceInformation();
+  const {
+    hasSourceData,
+    validProjects,
+    shouldFetchComponentLibrary,
+    hasTopLevelComponentsField,
+    hasTopLevelProjectsField,
+  } = config.parseSourceInformation();
+
+  if (hasTopLevelProjectsField) {
+    console.info(
+      output.warnText(
+        "`projects` is deprecated as a top-level field. Please nest it under `sources` instead."
+      )
+    );
+  }
+  if (hasTopLevelComponentsField) {
+    console.info(
+      output.warnText(
+        "`components` is deprecated as a top-level field. Please nest it under `sources` instead."
+      )
+    );
+  }
 
   if (!hasSourceData) {
     await collectAndSaveProject(true);
@@ -44,4 +65,4 @@ export const init = async () => {
   console.log(message);
 };
 
-export default { needsInit, init };
+export default { init };

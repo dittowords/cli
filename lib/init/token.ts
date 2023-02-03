@@ -8,6 +8,7 @@ import { create } from "../api";
 import consts from "../consts";
 import output from "../output";
 import config from "../config";
+import { quit } from "../utils/quit";
 
 export const needsToken = (configFile?: string, host = consts.API_HOST) => {
   if (config.getTokenFromEnv()) {
@@ -75,12 +76,6 @@ async function collectToken(message: string | null) {
   return response.token;
 }
 
-function quit(exitCode = 2) {
-  console.log("API key was not saved.");
-  process.exitCode = exitCode;
-  process.exit();
-}
-
 /**
  *
  * @param {string | null} message
@@ -99,7 +94,7 @@ export const collectAndSaveToken = async (message: string | null = null) => {
     config.saveToken(consts.CONFIG_FILE, consts.API_HOST, token);
     return token;
   } catch (error) {
-    quit();
+    quit("API token was not saved");
   }
 };
 

@@ -12,14 +12,14 @@ import {
 import promptForProject from "../utils/promptForProject";
 import { AxiosResponse } from "axios";
 import { Project, Token } from "../types";
-
-function quit(exitCode = 2) {
-  console.log("\nExiting Ditto CLI...\n");
-  process.exitCode = exitCode;
-  process.exit();
-}
+import { quit } from "../utils/quit";
 
 function saveProject(file: string, name: string, id: string) {
+  if (id === "components") {
+    config.writeProjectConfigData(file, { sources: { components: true } });
+    return;
+  }
+
   const projects = [...getSelectedProjects(file), { name, id }];
   config.writeProjectConfigData(file, { sources: { projects } });
 }
@@ -69,7 +69,7 @@ async function collectProject(token: Token, initialize: boolean) {
   const path = process.cwd();
   if (initialize) {
     console.log(
-      `Looks like there are no Ditto projects selected for your current directory: ${output.info(
+      `Looks like there are no Ditto sources selected for your current directory: ${output.info(
         path
       )}.`
     );
@@ -93,14 +93,12 @@ async function collectProject(token: Token, initialize: boolean) {
     return null;
   }
 
-  const nonInitPrompt = usingComponents
-    ? "Add a project"
-    : "Add a project or library";
+  const nonInitPrompt = usingComponents ? "Add a project" : "Add a source";
 
   return promptForProject({
     projects,
     message: initialize
-      ? "Choose the project or library you'd like to sync text from"
+      ? "Choose the source you'd like to sync text from"
       : nonInitPrompt,
   });
 }
@@ -110,7 +108,7 @@ export const collectAndSaveProject = async (initialize = false) => {
     const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
     const project = await collectProject(token, initialize);
     if (!project) {
-      quit(0);
+      quit("", 0);
       return;
     }
 
@@ -118,7 +116,7 @@ export const collectAndSaveProject = async (initialize = false) => {
       "\n" +
         `Thanks for adding ${output.info(
           project.name
-        )} to your selected projects.\n` +
+        )} to your selected sources.\n` +
         `We saved your updated configuration to: ${output.info(
           consts.PROJECT_CONFIG_FILE
         )}\n`
@@ -131,7 +129,7 @@ export const collectAndSaveProject = async (initialize = false) => {
       await askForAnotherToken();
       await collectAndSaveProject();
     } else {
-      quit();
+      quit("", 2);
     }
   }
 };

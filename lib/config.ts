@@ -3,6 +3,7 @@ import path from "path";
 import url from "url";
 import yaml from "js-yaml";
 
+import output from "./output";
 import consts from "./consts";
 import { Project, ConfigYAML } from "./types";
 
@@ -185,10 +186,21 @@ function dedupeProjectName(projectNames: Set<string>, projectName: string) {
  * - an array of valid, deduped projects
  * - the `variants` and `format` config options
  */
-function parseSourceInformation() {
-  const { sources, variants, format, status, richText } =
-    readProjectConfigData();
-  const { projects, components } = sources || {};
+function parseSourceInformation(file?: string) {
+  const {
+    sources,
+    variants,
+    format,
+    status,
+    richText,
+    projects: projectsRoot,
+    components: componentsRoot,
+  } = readProjectConfigData(file);
+
+  const projects = [...(sources?.projects || []), ...(projectsRoot || [])];
+  const shouldFetchComponentLibrary = Boolean(
+    sources?.components || componentsRoot
+  );
 
   const projectNames = new Set<string>();
   const validProjects: Project[] = [];
@@ -211,8 +223,6 @@ function parseSourceInformation() {
     validProjects.push(project);
   });
 
-  const shouldFetchComponentLibrary = !!components;
-
   const hasSourceData = !!validProjects.length || shouldFetchComponentLibrary;
 
   return {
@@ -223,6 +233,8 @@ function parseSourceInformation() {
     format,
     status,
     richText,
+    hasTopLevelProjectsField: !!projectsRoot,
+    hasTopLevelComponentsField: !!componentsRoot,
   };
 }
 

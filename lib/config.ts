@@ -198,12 +198,10 @@ function parseSourceInformation(file?: string) {
   } = readProjectConfigData(file);
 
   const projects = [...(sources?.projects || []), ...(projectsRoot || [])];
-  const shouldFetchComponentLibrary = Boolean(
-    sources?.components || componentsRoot
-  );
 
   const projectNames = new Set<string>();
   const validProjects: Project[] = [];
+  let hasComponentLibraryInProjects = false;
 
   (projects || []).forEach((project) => {
     const isValid = project.id && project.name;
@@ -212,9 +210,13 @@ function parseSourceInformation(file?: string) {
     }
 
     if (project.id === "ditto_component_library") {
-      throw new Error(
-        `Support has been removed for including "ditto_component_library" as a project source. Please set "sources.components" to "true" instead.`
+      console.info(
+        output.warnText(
+          "It is deprecated to include the component library as a project source. Please remove it, and set `sources.components: true` instead."
+        )
       );
+      hasComponentLibraryInProjects = true;
+      return;
     }
 
     project.fileName = dedupeProjectName(projectNames, project.name);
@@ -222,6 +224,10 @@ function parseSourceInformation(file?: string) {
 
     validProjects.push(project);
   });
+
+  const shouldFetchComponentLibrary = Boolean(
+    sources?.components || componentsRoot
+  );
 
   const hasSourceData = !!validProjects.length || shouldFetchComponentLibrary;
 

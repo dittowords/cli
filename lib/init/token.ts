@@ -45,9 +45,10 @@ async function checkToken(token: string): Promise<any> {
       }
       return output.warnText("We're having trouble reaching the Ditto API.");
     })
-    .catch(() =>
-      output.errorText("Sorry! We're having trouble reaching the Ditto API.")
-    );
+    .catch((e) => {
+      output.errorText(e);
+      output.errorText("Sorry! We're having trouble reaching the Ditto API.");
+    });
   if (typeof resOrError === "string") return resOrError;
 
   if (resOrError.status === 200) return true;

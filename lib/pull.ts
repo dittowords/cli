@@ -53,6 +53,7 @@ async function downloadAndSaveVariant(
   projects: Project[],
   format: string | undefined,
   status: string | undefined,
+  richText: boolean | undefined,
   token?: Token
 ) {
   const params: Record<string, string | null> = {
@@ -63,6 +64,9 @@ async function downloadAndSaveVariant(
   }
   if (status) {
     params.status = status;
+  }
+  if (richText) {
+    params.includeRichText = richText.toString();
   }
 
   if (format && NON_DEFAULT_FORMATS.includes(format)) {
@@ -120,6 +124,7 @@ async function downloadAndSaveVariants(
   projects: Project[],
   format: string | undefined,
   status: string | undefined,
+  richText: boolean | undefined,
   token?: Token,
   options?: PullOptions
 ) {
@@ -134,9 +139,9 @@ async function downloadAndSaveVariants(
   });
 
   const messages = await Promise.all([
-    downloadAndSaveVariant(null, projects, format, status, token),
+    downloadAndSaveVariant(null, projects, format, status, richText, token),
     ...variants.map(({ apiID }: { apiID: string }) =>
-      downloadAndSaveVariant(apiID, projects, format, status, token)
+      downloadAndSaveVariant(apiID, projects, format, status, richText, token)
     ),
   ]);
 
@@ -147,6 +152,7 @@ async function downloadAndSaveBase(
   projects: Project[],
   format: string | undefined,
   status: string | undefined,
+  richText: boolean | undefined,
   token?: Token,
   options?: PullOptions
 ) {
@@ -160,6 +166,9 @@ async function downloadAndSaveBase(
   }
   if (status) {
     params.status = status;
+  }
+  if (richText) {
+    params.includeRichText = richText.toString();
   }
 
   if (format && NON_DEFAULT_FORMATS.includes(format)) {
@@ -339,6 +348,7 @@ async function downloadAndSave(
     format,
     shouldFetchComponentLibrary,
     status,
+    richText,
   } = sourceInformation;
 
   let msg = `\nFetching the latest text from ${sourcesToText(
@@ -365,12 +375,26 @@ async function downloadAndSave(
 
     const meta = options ? options.meta : {};
     msg += variants
-      ? await downloadAndSaveVariants(validProjects, format, status, token, {
-          meta,
-        })
-      : await downloadAndSaveBase(validProjects, format, status, token, {
-          meta,
-        });
+      ? await downloadAndSaveVariants(
+          validProjects,
+          format,
+          status,
+          richText,
+          token,
+          {
+            meta,
+          }
+        )
+      : await downloadAndSaveBase(
+          validProjects,
+          format,
+          status,
+          richText,
+          token,
+          {
+            meta,
+          }
+        );
 
     msg += generateJsDriver(validProjects, variants, format);
 

@@ -340,6 +340,14 @@ export const pull = (options?: PullOptions) => {
   const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
   const sourceInformation = config.parseSourceInformation();
 
+  if (sourceInformation.hasComponentLibraryInProjects) {
+    console.info(
+      output.warnText(
+        "It is deprecated to include the component library as a project source. Please remove it and set `sources.components: true` instead."
+      )
+    );
+  }
+
   return downloadAndSave(sourceInformation, token, { meta });
 };
 

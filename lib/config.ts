@@ -210,11 +210,6 @@ function parseSourceInformation(file?: string) {
     }
 
     if (project.id === "ditto_component_library") {
-      console.info(
-        output.warnText(
-          "It is deprecated to include the component library as a project source. Please remove it, and set `sources.components: true` instead."
-        )
-      );
       hasComponentLibraryInProjects = true;
       return;
     }
@@ -226,7 +221,7 @@ function parseSourceInformation(file?: string) {
   });
 
   const shouldFetchComponentLibrary = Boolean(
-    sources?.components || componentsRoot
+    sources?.components || componentsRoot || hasComponentLibraryInProjects
   );
 
   const hasSourceData = !!validProjects.length || shouldFetchComponentLibrary;
@@ -241,6 +236,7 @@ function parseSourceInformation(file?: string) {
     richText,
     hasTopLevelProjectsField: !!projectsRoot,
     hasTopLevelComponentsField: !!componentsRoot,
+    hasComponentLibraryInProjects,
   };
 }
 

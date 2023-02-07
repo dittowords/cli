@@ -31,9 +31,9 @@ async function checkToken(token: string): Promise<any> {
   const axios = create(token);
   const endpoint = "/token-check";
 
-  const resOrError = await axios
-    .get(endpoint)
-    .catch((error: any) => {
+  let resOrError;
+  try {
+    resOrError = await axios.get(endpoint).catch((error: any) => {
       if (error.code === "ENOTFOUND") {
         return output.errorText(
           `Can't connect to API: ${output.url(error.hostname)}`
@@ -45,14 +45,19 @@ async function checkToken(token: string): Promise<any> {
         );
       }
       return output.warnText("We're having trouble reaching the Ditto API.");
-    })
-    .catch((e) => {
-      output.errorText(e);
-      output.errorText("Sorry! We're having trouble reaching the Ditto API.");
     });
-  if (typeof resOrError === "string") return resOrError;
+  } catch (e: unknown) {
+    output.errorText(e as any);
+    output.errorText("Sorry! We're having trouble reaching the Ditto API.");
+  }
 
-  if (resOrError.status === 200) return true;
+  if (typeof resOrError === "string") {
+    return resOrError;
+  }
+
+  if (resOrError?.status === 200) {
+    return true;
+  }
 
   return output.errorText("This API key isn't valid. Please try another.");
 }

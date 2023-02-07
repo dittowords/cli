@@ -93,13 +93,11 @@ async function collectProject(token: Token, initialize: boolean) {
     return null;
   }
 
-  const nonInitPrompt = usingComponents ? "Add a project" : "Add a source";
-
   return promptForProject({
     projects,
     message: initialize
       ? "Choose the source you'd like to sync text from"
-      : nonInitPrompt,
+      : "Add a project",
   });
 }
 

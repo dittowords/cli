@@ -7,25 +7,51 @@ import "v8-compile-cache";
 import { init, needsTokenOrSource } from "./init/init";
 import { pull } from "./pull";
 import { quit } from "./utils/quit";
+import addProject from "./add-project";
+import removeProject from "./remove-project";
 
 import processMetaOption from "./utils/processMetaOption";
 
-const supportedCommands = [
+type Command = "pull" | "project" | "project add" | "project remove";
+
+const COMMANDS = [
   {
     name: "pull",
     description: "Sync copy from Ditto into the current working directory",
   },
+  {
+    name: "project",
+    description: "Add a Ditto project to sync copy from",
+    commands: [
+      {
+        name: "add",
+        description: "Add a Ditto project to sync copy from",
+      },
+      {
+        name: "remove",
+        description: "Stop syncing copy from a Ditto project",
+      },
+    ],
+  },
 ] as const;
-
-type Command = typeof supportedCommands[number]["name"];
 
 const setupCommands = () => {
   program.name("ditto-cli");
-  supportedCommands.forEach((command) => {
-    program
-      .command(command.name)
-      .description(command.description)
-      .action(() => executeCommand(command.name));
+
+  COMMANDS.forEach((config) => {
+    const cmd = program
+      .command(config.name)
+      .description(config.description)
+      .action(() => executeCommand(config.name));
+
+    if ("commands" in config) {
+      config.commands.forEach((nestedCommand) => {
+        cmd
+          .command(nestedCommand.name)
+          .description(nestedCommand.description)
+          .action(() => executeCommand(`${config.name} ${nestedCommand.name}`));
+      });
+    }
   });
 };
 
@@ -50,8 +76,14 @@ const executeCommand = async (command: Command | "none"): Promise<void> => {
   switch (command) {
     case "none":
     case "pull": {
-      pull({ meta: processMetaOption(meta) });
-      return;
+      return pull({ meta: processMetaOption(meta) });
+    }
+    case "project":
+    case "project add": {
+      return addProject();
+    }
+    case "project remove": {
+      return removeProject();
     }
     default: {
       quit("Exiting Ditto CLI...");

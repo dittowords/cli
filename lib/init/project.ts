@@ -16,7 +16,9 @@ import { quit } from "../utils/quit";
 
 function saveProject(file: string, name: string, id: string) {
   if (id === "components") {
-    config.writeProjectConfigData(file, { sources: { components: true } });
+    config.writeProjectConfigData(file, {
+      sources: { components: { enabled: true } },
+    });
     return;
   }
 

@@ -5,9 +5,19 @@ export interface Project {
   fileName?: string;
 }
 
+export type Source = Project;
+
+interface ComponentFolder {
+  id: string;
+  name: string;
+}
+
 export interface ConfigYAML {
   sources?: {
-    components?: boolean;
+    components?: {
+      enabled?: boolean;
+      folders?: ComponentFolder[];
+    };
     projects?: Project[];
   };
   format?: "flat" | "structured" | "android-xml" | "ios-strings";
@@ -30,6 +40,7 @@ export interface SourceInformation {
   format: string | undefined;
   status: string | undefined;
   richText: boolean | undefined;
+  componentFolders: ComponentFolder[] | null;
 }
 
 export type Token = string | undefined;

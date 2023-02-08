@@ -2,11 +2,11 @@ import fs from "fs";
 import path from "path";
 import consts from "../consts";
 import output from "../output";
-import { Project } from "../types";
+import { Project, Source } from "../types";
 
 // compatability with legacy method of specifying project ids
 // that is still used by the default format
-const stringifyProjectId = (projectId: string) =>
+const stringifySourceId = (projectId: string) =>
   projectId === "ditto_component_library" ? projectId : `project_${projectId}`;
 
 /**
@@ -22,7 +22,7 @@ const stringifyProjectId = (projectId: string) =>
  */
 
 export function generateJsDriver(
-  projects: Project[],
+  sources: Source[],
   variants: boolean,
   format: string | undefined
 ) {
@@ -30,11 +30,12 @@ export function generateJsDriver(
     .readdirSync(consts.TEXT_DIR)
     .filter((fileName) => /\.json$/.test(fileName));
 
-  const projectIdsByName: Record<string, string> = projects.reduce(
-    (agg, project) => {
-      if (project.fileName) {
-        return { ...agg, [project.fileName]: project.id };
+  const sourceIdsByName: Record<string, string> = sources.reduce(
+    (agg, source) => {
+      if (source.fileName) {
+        return { ...agg, [source.fileName]: source.id };
       }
+
       return agg;
     },
     {}
@@ -42,63 +43,17 @@ export function generateJsDriver(
 
   const data = fileNames.reduce(
     (obj: Record<string, Record<string, string>>, fileName) => {
-      // filename format: {project-name}__{variant-api-id}.json
-      // file format: flat or structured
-      if (variants && format) {
-        const [projectName, rest] = fileName.split("__");
-        const [variantApiId] = rest.split(".");
+      const [sourceId, rest] = fileName.split("__");
+      const [variantApiId] = rest.split(".");
 
-        const projectId = projectIdsByName[projectName];
-        if (!projectId) {
-          throw new Error(`Couldn't find id for ${projectName}`);
-        }
+      const projectId = sourceIdsByName[sourceId];
+      const projectIdStr = stringifySourceId(projectId);
 
-        const projectIdStr = stringifyProjectId(projectId);
-
-        if (!obj[projectIdStr]) {
-          obj[projectIdStr] = {};
-        }
-
-        obj[projectIdStr][variantApiId] = `require('./${fileName}')`;
-      }
-      // filename format: {variant-api-id}.json
-      // file format: default
-      else if (variants) {
-        const file = require(path.resolve(consts.TEXT_DIR, `./${fileName}`));
-        const [variantApiId] = fileName.split(".");
-
-        Object.keys(file.projects).forEach((projectId) => {
-          if (!obj[projectId]) {
-            obj[projectId] = {};
-          }
-
-          const project = file.projects[projectId];
-          obj[projectId][variantApiId] = project.frames || project.components;
-        });
-      }
-      // filename format: {project-name}.json
-      // file format: flat or structured
-      else if (format) {
-        const [projectName] = fileName.split(".");
-        const projectId = projectIdsByName[projectName];
-        if (!projectId) {
-          throw new Error(`Couldn't find id for ${projectName}`);
-        }
-
-        obj[stringifyProjectId(projectId)] = {
-          base: `require('./${fileName}')`,
-        };
-      }
-      // filename format: text.json (single file)
-      // file format: default
-      else {
-        const file = require(path.resolve(consts.TEXT_DIR, `./${fileName}`));
-        Object.keys(file.projects).forEach((projectId) => {
-          const project = file.projects[projectId];
-          obj[projectId] = { base: project.frames || project.components };
-        });
+      if (!obj[projectIdStr]) {
+        obj[projectIdStr] = {};
       }
 
+      obj[projectIdStr][variantApiId] = `require('./${fileName}')`;
       return obj;
     },
     {}

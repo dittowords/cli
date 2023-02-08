@@ -11,6 +11,7 @@ import { collectAndSaveToken } from "./init/token";
 import sourcesToText from "./utils/sourcesToText";
 import { generateJsDriver } from "./utils/generateJsDriver";
 import { SourceInformation, Token, Project } from "./types";
+import { fetchVariants } from "./http/fetchVariants";
 
 const NON_DEFAULT_FORMATS = ["flat", "structured", "android", "ios-strings"];
 
@@ -32,7 +33,7 @@ async function askForAnotherToken() {
   await collectAndSaveToken(message);
 }
 
-function getExtension(format: string) {
+function getExtension(format: string | undefined) {
   if (format === "android") {
     return ".xml";
   }
@@ -57,18 +58,10 @@ async function downloadAndSaveVariant(
   richText: boolean | undefined,
   token?: Token
 ) {
-  const params: Record<string, string | null> = {
-    variant: variantApiId,
-  };
-  if (format) {
-    params.format = format;
-  }
-  if (status) {
-    params.status = status;
-  }
-  if (richText) {
-    params.includeRichText = richText.toString();
-  }
+  const params: Record<string, string | null> = { variant: variantApiId };
+  if (format) params.format = format;
+  if (status) params.status = status;
+  if (richText) params.includeRichText = richText.toString();
 
   if (format && NON_DEFAULT_FORMATS.includes(format)) {
     const savedMessages = await Promise.all(
@@ -122,23 +115,13 @@ async function downloadAndSaveVariant(
 }
 
 async function downloadAndSaveVariants(
+  variants: { apiID: string }[],
   projects: Project[],
   format: string | undefined,
   status: string | undefined,
   richText: boolean | undefined,
-  token?: Token,
-  options?: PullOptions
+  token?: Token
 ) {
-  const meta = options ? options.meta : {};
-
-  const { data: variants } = await api.get("/variants", {
-    params: {
-      ...meta,
-      projectIds: projects.map(({ id }) => id),
-    },
-    headers: { Authorization: `token ${token}` },
-  });
-
   const messages = await Promise.all([
     downloadAndSaveVariant(null, projects, format, status, richText, token),
     ...variants.map(({ apiID }: { apiID: string }) =>
@@ -157,20 +140,10 @@ async function downloadAndSaveBase(
   token?: Token,
   options?: PullOptions
 ) {
-  const meta = options ? options.meta : {};
-
-  const params = {
-    ...meta,
-  };
-  if (format) {
-    params.format = format;
-  }
-  if (status) {
-    params.status = status;
-  }
-  if (richText) {
-    params.includeRichText = richText.toString();
-  }
+  const params = { ...options?.meta };
+  if (format) params.format = format;
+  if (status) params.status = status;
+  if (richText) params.includeRichText = richText.toString();
 
   if (format && NON_DEFAULT_FORMATS.includes(format)) {
     const savedMessages = await Promise.all(
@@ -230,71 +203,117 @@ function cleanOutputFiles() {
 }
 
 async function downloadAndSave(
-  sourceInformation: SourceInformation,
+  source: SourceInformation,
   token?: Token,
   options?: PullOptions
 ) {
   const {
     validProjects,
-    variants,
     format,
     shouldFetchComponentLibrary,
     status,
     richText,
-  } = sourceInformation;
+    componentFolders,
+  } = source;
 
-  let msg = `\nFetching the latest text from ${sourcesToText(
-    validProjects,
-    shouldFetchComponentLibrary
-  )}\n`;
-
+  let msg = "";
   const spinner = ora(msg);
   spinner.start();
 
-  // We'll need to move away from this solution if at some
-  // point down the road we stop allowing the component
-  // library to be returned from the /projects endpoint
-  if (shouldFetchComponentLibrary) {
-    validProjects.push({
-      id: "ditto_component_library",
-      name: "Ditto Component Library",
-      fileName: "ditto-component-library",
-    });
-  }
+  const variants = await fetchVariants(source);
 
   try {
     msg += cleanOutputFiles();
+    msg += `\nFetching the latest text from ${sourcesToText(
+      validProjects,
+      shouldFetchComponentLibrary
+    )}\n`;
 
     const meta = options ? options.meta : {};
-    msg += variants
-      ? await downloadAndSaveVariants(
-          validProjects,
-          format,
-          status,
-          richText,
-          token,
-          {
-            meta,
-          }
-        )
-      : await downloadAndSaveBase(
-          validProjects,
-          format,
-          status,
-          richText,
-          token,
-          {
-            meta,
-          }
-        );
 
-    msg += generateJsDriver(validProjects, variants, format);
+    if (shouldFetchComponentLibrary) {
+      const params = new URLSearchParams();
+      if (options?.meta)
+        Object.entries(options.meta).forEach(([k, v]) => params.append(k, v));
+      if (format) params.append("format", format);
+      if (status) params.append("status", status);
+      if (richText) params.append("includeRichText", richText.toString());
+      if (componentFolders) {
+        componentFolders.forEach(({ id }) => params.append("folder_id[]", id));
+      }
+
+      // default to making a single request with a variant apiID of undefined
+      // to only fetch the base
+      const v = variants || [{ apiID: undefined }];
+
+      const messages = await Promise.all(
+        v.map(async ({ apiID: variantApiId }) => {
+          const p = new URLSearchParams(params);
+          if (variantApiId) p.append("variant", variantApiId);
+
+          const { data } = await api.get(`/components`, { params: p });
+
+          const nameExt = getExtension(source.format);
+          const nameBase = "ditto-component-library";
+          const namePostfix = `__${variantApiId || "base"}`;
+
+          const fileName = `${nameBase}${namePostfix}${nameExt}`;
+          const filePath = path.join(consts.TEXT_DIR, fileName);
+
+          let dataString = data;
+          if (nameExt === ".json") {
+            dataString = JSON.stringify(data, null, 2);
+          }
+
+          await new Promise((r) => fs.writeFile(filePath, dataString, r));
+
+          return getSavedMessage(fileName);
+        })
+      );
+
+      msg += messages.join("");
+    }
+
+    if (validProjects.length) {
+      msg += variants
+        ? await downloadAndSaveVariants(
+            variants,
+            validProjects,
+            format,
+            status,
+            richText,
+            token
+          )
+        : await downloadAndSaveBase(
+            validProjects,
+            format,
+            status,
+            richText,
+            token,
+            {
+              meta,
+            }
+          );
+    }
+
+    const sources = [...validProjects];
+    if (shouldFetchComponentLibrary) {
+      sources.push({
+        id: "ditto_component_library",
+        name: "Ditto Component Library",
+        fileName: "ditto-component-library",
+      });
+    }
+
+    msg += generateJsDriver(sources, !!variants?.length, format);
 
     msg += `\n${output.success("Done")}!`;
 
     spinner.stop();
     return console.log(msg);
   } catch (e: any) {
+    console.error(e);
+
     spinner.stop();
     let error = e.message;
     if (e.response && e.response.status === 404) {
@@ -331,7 +350,7 @@ async function downloadAndSave(
   }
 }
 
-interface PullOptions {
+export interface PullOptions {
   meta?: Record<string, string>;
 }
 

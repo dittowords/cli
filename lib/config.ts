@@ -9,7 +9,7 @@ import { Project, ConfigYAML } from "./types";
 
 export const DEFAULT_CONFIG_JSON: ConfigYAML = {
   sources: {
-    components: true,
+    components: { enabled: true },
   },
   variants: true,
   format: "flat",
@@ -237,6 +237,7 @@ function parseSourceInformation(file?: string) {
     hasTopLevelProjectsField: !!projectsRoot,
     hasTopLevelComponentsField: !!componentsRoot,
     hasComponentLibraryInProjects,
+    componentFolders: sources?.components?.folders || null,
   };
 }
 

@@ -209,12 +209,15 @@ async function downloadAndSave(
 ) {
   const {
     validProjects,
-    format,
+    format: formatFromSource,
     shouldFetchComponentLibrary,
     status,
     richText,
     componentFolders,
   } = source;
+
+  let format =
+    formatFromSource && formatFromSource !== "full" ? formatFromSource : "flat";
 
   let msg = "";
   const spinner = ora(msg);

@@ -197,7 +197,7 @@ function parseSourceInformation(file?: string) {
     components: componentsRoot,
   } = readProjectConfigData(file);
 
-  const projects = [...(sources?.projects || []), ...(projectsRoot || [])];
+  const projects = sources?.projects || [];
 
   const projectNames = new Set<string>();
   const validProjects: Project[] = [];
@@ -220,9 +220,7 @@ function parseSourceInformation(file?: string) {
     validProjects.push(project);
   });
 
-  const shouldFetchComponentLibrary = Boolean(
-    sources?.components || componentsRoot || hasComponentLibraryInProjects
-  );
+  const shouldFetchComponentLibrary = Boolean(sources?.components);
 
   const hasSourceData = !!validProjects.length || shouldFetchComponentLibrary;
 

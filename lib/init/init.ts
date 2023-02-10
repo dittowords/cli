@@ -40,18 +40,22 @@ export const init = async () => {
   } = config.parseSourceInformation();
 
   if (hasTopLevelProjectsField) {
-    return quit(
-      output.errorText(
-        "Support for `projects` as a top-level field has been removed; please configure `sources.projects` instead."
-      )
-    );
+    return quit(`${output.errorText(
+      `Support for ${output.warnText(
+        "projects"
+      )} as a top-level field has been removed; please configure ${output.warnText(
+        "sources.projects"
+      )} instead.`
+    )}
+See ${output.url("https://github.com/dittowords/cli")} for more information.`);
   }
 
   if (hasTopLevelComponentsField) {
     return quit(
-      output.errorText(
+      `${output.errorText(
         "Support for `components` as a top-level field has been removed; please configure `sources.components` instead."
-      )
+      )}
+See ${output.url("https://github.com/dittowords/cli")} for more information.`
     );
   }
 

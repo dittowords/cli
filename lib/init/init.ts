@@ -10,6 +10,7 @@ import { needsToken, collectAndSaveToken } from "./token";
 import config from "../config";
 import output from "../output";
 import sourcesToText from "../utils/sourcesToText";
+import { quit } from "../utils/quit";
 
 export const needsTokenOrSource = () => needsToken() || needsSource();
 
@@ -39,16 +40,17 @@ export const init = async () => {
   } = config.parseSourceInformation();
 
   if (hasTopLevelProjectsField) {
-    console.info(
-      output.warnText(
-        "`projects` is deprecated as a top-level field. Please nest it under `sources` instead."
+    return quit(
+      output.errorText(
+        "Support for `projects` as a top-level field has been removed; please configure `sources.projects` instead."
       )
     );
   }
+
   if (hasTopLevelComponentsField) {
-    console.info(
-      output.warnText(
-        "`components` is deprecated as a top-level field. Please nest it under `sources` instead."
+    return quit(
+      output.errorText(
+        "Support for `components` as a top-level field has been removed; please configure `sources.components` instead."
       )
     );
   }

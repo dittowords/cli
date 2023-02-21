@@ -214,12 +214,12 @@ async function downloadAndSave(
         componentFolders.forEach(({ id }) => params.append("folder_id[]", id));
       }
 
-      // default to making a single request with a variant apiID of undefined
-      // to only fetch the base
-      const v = variants || [{ apiID: undefined }];
+      // Always include a variant with an apiID of undefined to ensure that we
+      // fetch the base text for the component library.
+      const componentVariants = [{ apiID: undefined }, ...(variants || [])];
 
       const messages = await Promise.all(
-        v.map(async ({ apiID: variantApiId }) => {
+        componentVariants.map(async ({ apiID: variantApiId }) => {
           const p = new URLSearchParams(params);
           if (variantApiId) p.append("variant", variantApiId);
 
@@ -237,7 +237,9 @@ async function downloadAndSave(
             dataString = JSON.stringify(data, null, 2);
           }
 
-          await new Promise((r) => fs.writeFile(filePath, dataString, r));
+          // Only write the file if it there is content to be written.
+          if (dataString !== "{}")
+            await new Promise((r) => fs.writeFile(filePath, dataString, r));
 
           return getSavedMessage(fileName);
         })

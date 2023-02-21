@@ -38,7 +38,7 @@ async function askForAnotherToken() {
 }
 
 async function listProjects(token: Token, projectsAlreadySelected: Project[]) {
-  const spinner = ora("Fetching projects in your workspace...");
+  const spinner = ora("Fetching sources in your workspace...");
   spinner.start();
 
   let response: AxiosResponse<{ id: string; name: string }[]>;

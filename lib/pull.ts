@@ -10,6 +10,7 @@ import output from "./output";
 import { collectAndSaveToken } from "./init/token";
 import sourcesToText from "./utils/sourcesToText";
 import { generateJsDriver } from "./utils/generateJsDriver";
+import { cleanFileName } from "./utils/cleanFileName";
 import { SourceInformation, Token, Project } from "./types";
 import { fetchVariants } from "./http/fetchVariants";
 
@@ -63,55 +64,36 @@ async function downloadAndSaveVariant(
   if (status) params.status = status;
   if (richText) params.includeRichText = richText.toString();
 
-  if (format && NON_DEFAULT_FORMATS.includes(format)) {
-    const savedMessages = await Promise.all(
-      projects.map(async ({ id, fileName }: Project) => {
-        const { data } = await api.get(`/projects/${id}`, {
-          params,
-          headers: { Authorization: `token ${token}` },
-        });
+  const savedMessages = await Promise.all(
+    projects.map(async ({ id, fileName }: Project) => {
+      const { data } = await api.get(`/projects/${id}`, {
+        params,
+        headers: { Authorization: `token ${token}` },
+      });
 
-        if (!hasVariantData(data)) {
-          return "";
-        }
+      if (!hasVariantData(data)) {
+        return "";
+      }
 
-        const extension = getExtension(format);
+      const extension = getExtension(format);
 
-        const filename =
-          fileName + ("__" + (variantApiId || "base")) + extension;
-        const filepath = path.join(consts.TEXT_DIR, filename);
+      const filename = cleanFileName(
+        fileName + ("__" + (variantApiId || "base")) + extension
+      );
+      const filepath = path.join(consts.TEXT_DIR, filename);
 
-        let dataString = data;
-        if (extension === ".json") {
-          dataString = JSON.stringify(data, null, 2);
-        }
+      let dataString = data;
+      if (extension === ".json") {
+        dataString = JSON.stringify(data, null, 2);
+      }
 
-        fs.writeFileSync(filepath, dataString);
+      fs.writeFileSync(filepath, dataString);
 
-        return getSavedMessage(filename);
-      })
-    );
+      return getSavedMessage(filename);
+    })
+  );
 
-    return savedMessages.join("");
-  } else {
-    const { data } = await api.get("/projects", {
-      params: { ...params, projectIds: projects.map(({ id }) => id) },
-      headers: { Authorization: `token ${token}` },
-    });
-
-    if (!hasVariantData(data)) {
-      return "";
-    }
-
-    const filename = `${variantApiId || "base"}.json`;
-    const filepath = path.join(consts.TEXT_DIR, filename);
-
-    const dataString = JSON.stringify(data, null, 2);
-
-    fs.writeFileSync(filepath, dataString);
-
-    return getSavedMessage(filename);
-  }
+  return savedMessages.join("");
 }
 
 async function downloadAndSaveVariants(
@@ -145,42 +127,29 @@ async function downloadAndSaveBase(
   if (status) params.status = status;
   if (richText) params.includeRichText = richText.toString();
 
-  if (format && NON_DEFAULT_FORMATS.includes(format)) {
-    const savedMessages = await Promise.all(
-      projects.map(async ({ id, fileName }: Project) => {
-        const { data } = await api.get(`/projects/${id}`, {
-          params,
-          headers: { Authorization: `token ${token}` },
-        });
+  const savedMessages = await Promise.all(
+    projects.map(async ({ id, fileName }: Project) => {
+      const { data } = await api.get(`/projects/${id}`, {
+        params,
+        headers: { Authorization: `token ${token}` },
+      });
 
-        const extension = getExtension(format);
-        const filename = `${fileName}${extension}`;
-        const filepath = path.join(consts.TEXT_DIR, filename);
+      const extension = getExtension(format);
+      const filename = cleanFileName(`${fileName}__base${extension}`);
+      const filepath = path.join(consts.TEXT_DIR, filename);
 
-        let dataString = data;
-        if (extension === ".json") {
-          dataString = JSON.stringify(data, null, 2);
-        }
+      let dataString = data;
+      if (extension === ".json") {
+        dataString = JSON.stringify(data, null, 2);
+      }
 
-        fs.writeFileSync(filepath, dataString);
+      fs.writeFileSync(filepath, dataString);
 
-        return getSavedMessage(filename);
-      })
-    );
+      return getSavedMessage(filename);
+    })
+  );
 
-    return savedMessages.join("");
-  } else {
-    const { data } = await api.get(`/projects`, {
-      params: { ...params, projectIds: projects.map(({ id }) => id) },
-      headers: { Authorization: `token ${token}` },
-    });
-
-    const dataString = JSON.stringify(data, null, 2);
-
-    fs.writeFileSync(consts.TEXT_FILE, dataString);
-
-    return getSavedMessage("text.json");
-  }
+  return savedMessages.join("");
 }
 
 function getSavedMessage(file: string) {
@@ -260,7 +229,7 @@ async function downloadAndSave(
           const nameBase = "ditto-component-library";
           const namePostfix = `__${variantApiId || "base"}`;
 
-          const fileName = `${nameBase}${namePostfix}${nameExt}`;
+          const fileName = cleanFileName(`${nameBase}${namePostfix}${nameExt}`);
           const filePath = path.join(consts.TEXT_DIR, fileName);
 
           let dataString = data;
@@ -308,7 +277,7 @@ async function downloadAndSave(
       });
     }
 
-    msg += generateJsDriver(sources, !!variants?.length, format);
+    msg += generateJsDriver(sources);
 
     msg += `\n${output.success("Done")}!`;
 

@@ -2,7 +2,8 @@ import fs from "fs";
 import path from "path";
 import consts from "../consts";
 import output from "../output";
-import { Project, Source } from "../types";
+import { Source } from "../types";
+import { cleanFileName } from "./cleanFileName";
 
 // compatability with legacy method of specifying project ids
 // that is still used by the default format
@@ -21,11 +22,8 @@ const stringifySourceId = (projectId: string) =>
  * data from Ditto.
  */
 
-export function generateJsDriver(
-  sources: Source[],
-  variants: boolean,
-  format: string | undefined
-) {
+// TODO: support ESM
+export function generateJsDriver(sources: Source[]) {
   const fileNames = fs
     .readdirSync(consts.TEXT_DIR)
     .filter((fileName) => /\.json$/.test(fileName));
@@ -33,7 +31,7 @@ export function generateJsDriver(
   const sourceIdsByName: Record<string, string> = sources.reduce(
     (agg, source) => {
       if (source.fileName) {
-        return { ...agg, [source.fileName]: source.id };
+        return { ...agg, [cleanFileName(source.fileName)]: source.id };
       }
 
       return agg;

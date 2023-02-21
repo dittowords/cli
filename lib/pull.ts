@@ -14,7 +14,43 @@ import { cleanFileName } from "./utils/cleanFileName";
 import { SourceInformation, Token, Project } from "./types";
 import { fetchVariants } from "./http/fetchVariants";
 
-const NON_DEFAULT_FORMATS = ["flat", "structured", "android", "ios-strings"];
+type SupportedFormat = "flat" | "structured" | "android" | "ios-strings";
+
+const SUPPORTED_FORMATS: SupportedFormat[] = [
+  "flat",
+  "structured",
+  "android",
+  "ios-strings",
+];
+
+const JSON_FORMATS: SupportedFormat[] = ["flat", "structured"];
+
+const FORMAT_EXTENSIONS = {
+  flat: ".json",
+  structured: ".json",
+  android: ".xml",
+  "ios-strings": ".strings",
+};
+
+const getFormatDataIsValid = {
+  flat: (data: string) => data !== "{}",
+  structured: (data: string) => data !== "{}",
+  android: (data: string) => data.includes("<string"),
+  "ios-strings": (data: string) => !!data,
+};
+
+const getFormat = (formatFromSource: string | undefined): SupportedFormat => {
+  const f = formatFromSource as SupportedFormat | undefined;
+  if (f && SUPPORTED_FORMATS.includes(f)) {
+    return f;
+  }
+
+  return "flat";
+};
+
+const getFormatExtension = (format: SupportedFormat) => {
+  return FORMAT_EXTENSIONS[format];
+};
 
 const DEFAULT_FORMAT_KEYS = ["projects", "exported_at"];
 const hasVariantData = (data: any) => {
@@ -34,16 +70,6 @@ async function askForAnotherToken() {
   await collectAndSaveToken(message);
 }
 
-function getExtension(format: string | undefined) {
-  if (format === "android") {
-    return ".xml";
-  }
-  if (format === "ios-strings") {
-    return ".strings";
-  }
-  return ".json";
-}
-
 /**
  * For a given variant:
  * - if format is unspecified, fetch data for all projects from `/projects` and
@@ -54,7 +80,7 @@ function getExtension(format: string | undefined) {
 async function downloadAndSaveVariant(
   variantApiId: string | null,
   projects: Project[],
-  format: string | undefined,
+  format: SupportedFormat,
   status: string | undefined,
   richText: boolean | undefined,
   token?: Token
@@ -75,7 +101,7 @@ async function downloadAndSaveVariant(
         return "";
       }
 
-      const extension = getExtension(format);
+      const extension = getFormatExtension(format);
 
       const filename = cleanFileName(
         fileName + ("__" + (variantApiId || "base")) + extension
@@ -87,8 +113,12 @@ async function downloadAndSaveVariant(
         dataString = JSON.stringify(data, null, 2);
       }
 
-      fs.writeFileSync(filepath, dataString);
+      const dataIsValid = getFormatDataIsValid[format];
+      if (!dataIsValid(dataString)) {
+        return "";
+      }
 
+      fs.writeFileSync(filepath, dataString);
       return getSavedMessage(filename);
     })
   );
@@ -99,7 +129,7 @@ async function downloadAndSaveVariant(
 async function downloadAndSaveVariants(
   variants: { apiID: string }[],
   projects: Project[],
-  format: string | undefined,
+  format: SupportedFormat,
   status: string | undefined,
   richText: boolean | undefined,
   token?: Token
@@ -116,7 +146,7 @@ async function downloadAndSaveVariants(
 
 async function downloadAndSaveBase(
   projects: Project[],
-  format: string | undefined,
+  format: SupportedFormat,
   status: string | undefined,
   richText?: boolean | undefined,
   token?: Token,
@@ -134,7 +164,7 @@ async function downloadAndSaveBase(
         headers: { Authorization: `token ${token}` },
       });
 
-      const extension = getExtension(format);
+      const extension = getFormatExtension(format);
       const filename = cleanFileName(`${fileName}__base${extension}`);
       const filepath = path.join(consts.TEXT_DIR, filename);
 
@@ -143,8 +173,12 @@ async function downloadAndSaveBase(
         dataString = JSON.stringify(data, null, 2);
       }
 
-      fs.writeFileSync(filepath, dataString);
+      const dataIsValid = getFormatDataIsValid[format];
+      if (!dataIsValid(dataString)) {
+        return "";
+      }
 
+      fs.writeFileSync(filepath, dataString);
       return getSavedMessage(filename);
     })
   );
@@ -185,8 +219,7 @@ async function downloadAndSave(
     componentFolders,
   } = source;
 
-  let format =
-    formatFromSource && formatFromSource !== "full" ? formatFromSource : "flat";
+  const format = getFormat(formatFromSource);
 
   let msg = "";
   const spinner = ora(msg);
@@ -204,6 +237,10 @@ async function downloadAndSave(
     const meta = options ? options.meta : {};
 
     if (shouldFetchComponentLibrary) {
+      // Always include a variant with an apiID of undefined to ensure that we
+      // fetch the base text for the component library.
+      const componentVariants = [{ apiID: undefined }, ...(variants || [])];
+
       const params = new URLSearchParams();
       if (options?.meta)
         Object.entries(options.meta).forEach(([k, v]) => params.append(k, v));
@@ -214,10 +251,6 @@ async function downloadAndSave(
         componentFolders.forEach(({ id }) => params.append("folder_id[]", id));
       }
 
-      // Always include a variant with an apiID of undefined to ensure that we
-      // fetch the base text for the component library.
-      const componentVariants = [{ apiID: undefined }, ...(variants || [])];
-
       const messages = await Promise.all(
         componentVariants.map(async ({ apiID: variantApiId }) => {
           const p = new URLSearchParams(params);
@@ -225,7 +258,7 @@ async function downloadAndSave(
 
           const { data } = await api.get(`/components`, { params: p });
 
-          const nameExt = getExtension(source.format);
+          const nameExt = getFormatExtension(format);
           const nameBase = "ditto-component-library";
           const namePostfix = `__${variantApiId || "base"}`;
 
@@ -237,10 +270,12 @@ async function downloadAndSave(
             dataString = JSON.stringify(data, null, 2);
           }
 
-          // Only write the file if it there is content to be written.
-          if (dataString !== "{}")
-            await new Promise((r) => fs.writeFile(filePath, dataString, r));
+          const dataIsValid = getFormatDataIsValid[format];
+          if (!dataIsValid(dataString)) {
+            return "";
+          }
 
+          await new Promise((r) => fs.writeFile(filePath, dataString, r));
           return getSavedMessage(fileName);
         })
       );
@@ -279,7 +314,7 @@ async function downloadAndSave(
       });
     }
 
-    msg += generateJsDriver(sources);
+    if (JSON_FORMATS.includes(format)) msg += generateJsDriver(sources);
 
     msg += `\n${output.success("Done")}!`;
 

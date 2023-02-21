@@ -4,7 +4,7 @@ import boxen from "boxen";
 import chalk from "chalk";
 import projectsToText from "../utils/projectsToText";
 
-import { needsSource, collectAndSaveProject } from "./project";
+import { needsSource, collectAndSaveSource } from "./project";
 import { needsToken, collectAndSaveToken } from "./token";
 
 import config from "../config";
@@ -60,7 +60,12 @@ See ${output.url("https://github.com/dittowords/cli")} for more information.`
   }
 
   if (!hasSourceData) {
-    await collectAndSaveProject(true);
+    console.log(
+      `Looks like there are no Ditto sources selected for your current directory: ${output.info(
+        process.cwd()
+      )}.`
+    );
+    await collectAndSaveSource({ initialize: true, components: true });
     return;
   }
 

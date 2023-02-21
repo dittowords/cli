@@ -63,7 +63,8 @@ const setupOptions = () => {
 };
 
 const executeCommand = async (command: Command | "none"): Promise<void> => {
-  if (needsTokenOrSource()) {
+  const needsInitialization = needsTokenOrSource();
+  if (needsInitialization) {
     try {
       await init();
     } catch (error) {
@@ -80,6 +81,11 @@ const executeCommand = async (command: Command | "none"): Promise<void> => {
     }
     case "project":
     case "project add": {
+      // initialization already includes the selection of a source,
+      // so if `project add` is called during initialization, don't
+      // prompt the user to select a source again
+      if (needsInitialization) return;
+
       return addProject();
     }
     case "project remove": {

@@ -220,7 +220,7 @@ function parseSourceInformation(file?: string) {
     validProjects.push(project);
   });
 
-  const shouldFetchComponentLibrary = Boolean(sources?.components);
+  const shouldFetchComponentLibrary = Boolean(sources?.components?.enabled);
 
   const hasSourceData = !!validProjects.length || shouldFetchComponentLibrary;
 

@@ -12,25 +12,18 @@ import {
 import promptForProject from "../utils/promptForProject";
 import { AxiosResponse } from "axios";
 import { Project, Token } from "../types";
-
-function quit(exitCode = 2) {
-  console.log("\nExiting Ditto CLI...\n");
-  process.exitCode = exitCode;
-  process.exit();
-}
+import { quit } from "../utils/quit";
 
 function saveProject(file: string, name: string, id: string) {
-  // old functionality included "ditto_component_library" in the `projects`
-  // array, but we want to always treat the component library as a separate
-  // entity and use the new notation of a top-level `components` key
   if (id === "components") {
-    config.writeProjectConfigData(file, { components: true });
+    config.writeProjectConfigData(file, {
+      sources: { components: { enabled: true } },
+    });
     return;
   }
 
-  const projects = [...getSelectedProjects(), { name, id }];
-
-  config.writeProjectConfigData(file, { projects });
+  const projects = [...getSelectedProjects(file), { name, id }];
+  config.writeProjectConfigData(file, { sources: { projects } });
 }
 
 export const needsSource = () => {
@@ -44,12 +37,8 @@ async function askForAnotherToken() {
   await collectAndSaveToken(message);
 }
 
-async function listProjects(
-  token: Token,
-  projectsAlreadySelected: Project[],
-  componentsSelected: boolean
-) {
-  const spinner = ora("Fetching projects in your workspace...");
+async function listProjects(token: Token, projectsAlreadySelected: Project[]) {
+  const spinner = ora("Fetching sources in your workspace...");
   spinner.start();
 
   let response: AxiosResponse<{ id: string; name: string }[]>;
@@ -64,35 +53,37 @@ async function listProjects(
     throw e;
   }
 
-  spinner.stop();
-  return response.data.filter(({ id }: Project) => {
-    if (id === "ditto_component_library") {
-      return !componentsSelected;
-    } else {
-      return !projectsAlreadySelected.some((project) => project.id === id);
-    }
-  });
-}
-
-async function collectProject(token: Token, initialize: boolean) {
-  const path = process.cwd();
-  if (initialize) {
-    console.log(
-      `Looks like there are no Ditto projects selected for your current directory: ${output.info(
-        path
-      )}.`
-    );
-  }
-
-  const projectsAlreadySelected = getSelectedProjects();
-  const usingComponents = getIsUsingComponents();
-  const projects = await listProjects(
-    token,
-    projectsAlreadySelected,
-    usingComponents
+  const projectsAlreadySelectedSet = projectsAlreadySelected.reduce(
+    (set, project) => set.add(project.id.toString()),
+    new Set<string>()
   );
 
-  if (!(projects && projects.length)) {
+  const result = response.data.filter(
+    ({ id }) =>
+      // covers an edge case where v0 of the API includes the component library
+      // in the response from the `/project-names` endpoint
+      id !== "ditto_component_library" &&
+      !projectsAlreadySelectedSet.has(id.toString())
+  );
+
+  spinner.stop();
+
+  return result;
+}
+
+async function collectSource(token: Token, includeComponents: boolean) {
+  const projectsAlreadySelected = getSelectedProjects();
+  const componentSourceSelected = getIsUsingComponents();
+
+  let sources = await listProjects(token, projectsAlreadySelected);
+  if (includeComponents && !componentSourceSelected) {
+    sources = [
+      { id: "ditto_component_library", name: "Ditto Component Library" },
+      ...sources,
+    ];
+  }
+
+  if (!sources?.length) {
     console.log("You're currently syncing all projects in your workspace.");
     console.log(
       output.warnText(
@@ -102,24 +93,22 @@ async function collectProject(token: Token, initialize: boolean) {
     return null;
   }
 
-  const nonInitPrompt = usingComponents
-    ? "Add a project"
-    : "Add a project or library";
-
   return promptForProject({
-    projects,
-    message: initialize
-      ? "Choose the project or library you'd like to sync text from"
-      : nonInitPrompt,
+    projects: sources,
+    message: "Choose the source you'd like to sync text from",
   });
 }
 
-export const collectAndSaveProject = async (initialize = false) => {
+export const collectAndSaveSource = async (
+  { components = false }: { initialize?: boolean; components?: boolean } = {
+    components: false,
+  }
+) => {
   try {
     const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
-    const project = await collectProject(token, initialize);
+    const project = await collectSource(token, components);
     if (!project) {
-      quit(0);
+      quit("", 0);
       return;
     }
 
@@ -127,7 +116,7 @@ export const collectAndSaveProject = async (initialize = false) => {
       "\n" +
         `Thanks for adding ${output.info(
           project.name
-        )} to your selected projects.\n` +
+        )} to your selected sources.\n` +
         `We saved your updated configuration to: ${output.info(
           consts.PROJECT_CONFIG_FILE
         )}\n`
@@ -138,13 +127,13 @@ export const collectAndSaveProject = async (initialize = false) => {
     console.log(e);
     if (e.response && e.response.status === 404) {
       await askForAnotherToken();
-      await collectAndSaveProject();
+      await collectAndSaveSource({ components });
     } else {
-      quit();
+      quit("", 2);
     }
   }
 };
 
 export const _testing = { saveProject, needsSource };
 
-export default { needsSource, collectAndSaveProject };
+export default { needsSource, collectAndSaveSource };

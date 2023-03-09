@@ -2,3 +2,4 @@ node_modules
 testing/tmp
 ditto
 bin/
+.env

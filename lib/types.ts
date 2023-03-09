@@ -5,13 +5,31 @@ export interface Project {
   fileName?: string;
 }
 
+export type Source = Project;
+
+interface ComponentFolder {
+  id: string;
+  name: string;
+}
+
 export interface ConfigYAML {
-  components?: boolean;
-  projects?: Project[];
-  format?: string;
+  sources?: {
+    components?: {
+      enabled?: boolean;
+      folders?: ComponentFolder[];
+    };
+    projects?: Project[];
+  };
+  format?: "flat" | "structured" | "android-xml" | "ios-strings";
   status?: string;
   variants?: boolean;
   richText?: boolean;
+
+  // these are legacy fields - if they exist, we should output
+  // a deprecation error, and suggest that they nest them under
+  // a top-level `sources` property
+  components?: boolean;
+  projects?: Project[];
 }
 
 export interface SourceInformation {
@@ -22,6 +40,7 @@ export interface SourceInformation {
   format: string | undefined;
   status: string | undefined;
   richText: boolean | undefined;
+  componentFolders: ComponentFolder[] | null;
 }
 
 export type Token = string | undefined;

@@ -6,7 +6,8 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "strictNullChecks": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "strict": true
   },
   "include": ["lib/ditto.ts"]
 }

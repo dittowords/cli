@@ -19,15 +19,9 @@ async function removeProject() {
     return;
   }
 
-  const allProjects = isUsingComponents
-    ? [{ id: "components", name: "Ditto Component Library" }, ...projects]
-    : projects;
-
   const projectToRemove = await promptForProject({
-    projects: allProjects,
-    message: isUsingComponents
-      ? "Select a project or library to remove"
-      : "Select a project to remove",
+    projects,
+    message: "Select a project to remove",
   });
   if (!projectToRemove) return;
 

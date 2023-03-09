@@ -244,6 +244,8 @@ All files created will adhere to the following template:
 - `variant_name`: the ID of a variant or `base` for files generated for non-variant text
 - `extension`: the file extension that corresponds to your configured format
 
+To help with keeping cross-platform behavior consistent, file names will be fully lowercase, have whitespace replaced with hyphens, and have non-word characters (with the exception of `-` and `_`) removed.
+
 If the configured format results in JSON files being generated, an `index.js` "driver file" is also created to simplify the process of integrating Ditto into web apps:
 
 ```js

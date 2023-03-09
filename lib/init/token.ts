@@ -8,6 +8,7 @@ import { create } from "../api";
 import consts from "../consts";
 import output from "../output";
 import config from "../config";
+import { quit } from "../utils/quit";
 
 export const needsToken = (configFile?: string, host = consts.API_HOST) => {
   if (config.getTokenFromEnv()) {
@@ -30,9 +31,9 @@ async function checkToken(token: string): Promise<any> {
   const axios = create(token);
   const endpoint = "/token-check";
 
-  const resOrError = await axios
-    .get(endpoint)
-    .catch((error: any) => {
+  let resOrError;
+  try {
+    resOrError = await axios.get(endpoint).catch((error: any) => {
       if (error.code === "ENOTFOUND") {
         return output.errorText(
           `Can't connect to API: ${output.url(error.hostname)}`
@@ -44,14 +45,19 @@ async function checkToken(token: string): Promise<any> {
         );
       }
       return output.warnText("We're having trouble reaching the Ditto API.");
-    })
-    .catch((e) => {
-      output.errorText(e);
-      output.errorText("Sorry! We're having trouble reaching the Ditto API.");
     });
-  if (typeof resOrError === "string") return resOrError;
+  } catch (e: unknown) {
+    output.errorText(e as any);
+    output.errorText("Sorry! We're having trouble reaching the Ditto API.");
+  }
 
-  if (resOrError.status === 200) return true;
+  if (typeof resOrError === "string") {
+    return resOrError;
+  }
+
+  if (resOrError?.status === 200) {
+    return true;
+  }
 
   return output.errorText("This API key isn't valid. Please try another.");
 }
@@ -76,12 +82,6 @@ async function collectToken(message: string | null) {
   return response.token;
 }
 
-function quit(exitCode = 2) {
-  console.log("API key was not saved.");
-  process.exitCode = exitCode;
-  process.exit();
-}
-
 /**
  *
  * @param {string | null} message
@@ -100,7 +100,7 @@ export const collectAndSaveToken = async (message: string | null = null) => {
     config.saveToken(consts.CONFIG_FILE, consts.API_HOST, token);
     return token;
   } catch (error) {
-    quit();
+    quit("API token was not saved");
   }
 };
 

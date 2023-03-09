@@ -4,93 +4,109 @@ import { program } from "commander";
 // to use V8's code cache to speed up instantiation time
 import "v8-compile-cache";
 
-import { init, needsInit } from "./init/init";
+import { init, needsTokenOrSource } from "./init/init";
 import { pull } from "./pull";
-
+import { quit } from "./utils/quit";
 import addProject from "./add-project";
 import removeProject from "./remove-project";
+
 import processMetaOption from "./utils/processMetaOption";
 
-/**
- * Catch and report unexpected error.
- * @param {any} error The thrown error object.
- * @returns {void}
- */
-function quit(exitCode = 2) {
-  console.log("\nExiting Ditto CLI...\n");
-  process.exitCode = exitCode;
-  process.exit();
-}
+type Command = "pull" | "project" | "project add" | "project remove";
+
+const COMMANDS = [
+  {
+    name: "pull",
+    description: "Sync copy from Ditto into the current working directory",
+  },
+  {
+    name: "project",
+    description: "Add a Ditto project to sync copy from",
+    commands: [
+      {
+        name: "add",
+        description: "Add a Ditto project to sync copy from",
+      },
+      {
+        name: "remove",
+        description: "Stop syncing copy from a Ditto project",
+      },
+    ],
+  },
+] as const;
 
 const setupCommands = () => {
   program.name("ditto-cli");
-  program
-    .command("pull")
-    .description("Sync copy from Ditto into working directory")
-    .action(() => checkInit("pull"));
 
-  const projectDescription = "Add a Ditto project to sync copy from";
-  const projectCommand = program
-    .command("project")
-    .description(projectDescription)
-    .action(() => checkInit("project"));
+  COMMANDS.forEach((config) => {
+    const cmd = program
+      .command(config.name)
+      .description(config.description)
+      .action(() => executeCommand(config.name));
 
-  projectCommand
-    .command("add")
-    .description(projectDescription)
-    .action(() => checkInit("project"));
-
-  projectCommand
-    .command("remove")
-    .description("Stop syncing copy from a Ditto project")
-    .action(() => checkInit("project remove"));
+    if ("commands" in config) {
+      config.commands.forEach((nestedCommand) => {
+        cmd
+          .command(nestedCommand.name)
+          .description(nestedCommand.description)
+          .action(() => executeCommand(`${config.name} ${nestedCommand.name}`));
+      });
+    }
+  });
 };
 
 const setupOptions = () => {
   program.option(
     "-m, --meta <data...>",
-    "Optional metadata for this command to send arbitrary data to the backend. Ex: -m githubActionRequest:true trigger:manual"
+    "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual"
   );
 };
 
-const checkInit = async (command: string) => {
-  if (needsInit() && command !== "project remove") {
+const executeCommand = async (command: Command | "none"): Promise<void> => {
+  const needsInitialization = needsTokenOrSource();
+  if (needsInitialization) {
     try {
       await init();
-      if (command === "pull") main(); // re-run to actually pull text now that init is finished
     } catch (error) {
-      quit();
+      quit("Exiting Ditto CLI...");
+      return;
     }
-  } else {
-    const { meta } = program.opts();
-    switch (command) {
-      case "pull":
-        pull({ meta: processMetaOption(meta) });
-        break;
-      case "project":
-      case "project add":
-        addProject();
-        break;
-      case "project remove":
-        removeProject();
-        break;
-      case "none":
-        setupCommands();
-        program.help();
-        break;
-      default:
-        quit();
+  }
+
+  const { meta } = program.opts();
+  switch (command) {
+    case "none":
+    case "pull": {
+      return pull({ meta: processMetaOption(meta) });
+    }
+    case "project":
+    case "project add": {
+      // initialization already includes the selection of a source,
+      // so if `project add` is called during initialization, don't
+      // prompt the user to select a source again
+      if (needsInitialization) return;
+
+      return addProject();
+    }
+    case "project remove": {
+      return removeProject();
+    }
+    default: {
+      quit("Exiting Ditto CLI...");
+      return;
     }
   }
 };
 
 const main = async () => {
+  setupCommands();
+  setupOptions();
+
   if (process.argv.length <= 2 && process.argv[1].includes("ditto-cli")) {
-    await checkInit("none");
-  } else {
-    setupCommands();
-    setupOptions();
+    await executeCommand("none");
+    return;
   }
+
   program.parse(process.argv);
 };
 

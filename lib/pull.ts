@@ -9,9 +9,48 @@ import consts from "./consts";
 import output from "./output";
 import { collectAndSaveToken } from "./init/token";
 import sourcesToText from "./utils/sourcesToText";
+import { generateJsDriver } from "./utils/generateJsDriver";
+import { cleanFileName } from "./utils/cleanFileName";
 import { SourceInformation, Token, Project } from "./types";
+import { fetchVariants } from "./http/fetchVariants";
 
-const NON_DEFAULT_FORMATS = ["flat", "structured", "android", "ios-strings"];
+type SupportedFormat = "flat" | "structured" | "android" | "ios-strings";
+
+const SUPPORTED_FORMATS: SupportedFormat[] = [
+  "flat",
+  "structured",
+  "android",
+  "ios-strings",
+];
+
+const JSON_FORMATS: SupportedFormat[] = ["flat", "structured"];
+
+const FORMAT_EXTENSIONS = {
+  flat: ".json",
+  structured: ".json",
+  android: ".xml",
+  "ios-strings": ".strings",
+};
+
+const getFormatDataIsValid = {
+  flat: (data: string) => data !== "{}",
+  structured: (data: string) => data !== "{}",
+  android: (data: string) => data.includes("<string"),
+  "ios-strings": (data: string) => !!data,
+};
+
+const getFormat = (formatFromSource: string | undefined): SupportedFormat => {
+  const f = formatFromSource as SupportedFormat | undefined;
+  if (f && SUPPORTED_FORMATS.includes(f)) {
+    return f;
+  }
+
+  return "flat";
+};
+
+const getFormatExtension = (format: SupportedFormat) => {
+  return FORMAT_EXTENSIONS[format];
+};
 
 const DEFAULT_FORMAT_KEYS = ["projects", "exported_at"];
 const hasVariantData = (data: any) => {
@@ -31,16 +70,6 @@ async function askForAnotherToken() {
   await collectAndSaveToken(message);
 }
 
-function getExtension(format: string) {
-  if (format === "android") {
-    return ".xml";
-  }
-  if (format === "ios-strings") {
-    return ".strings";
-  }
-  return ".json";
-}
-
 /**
  * For a given variant:
  * - if format is unspecified, fetch data for all projects from `/projects` and
@@ -51,93 +80,60 @@ function getExtension(format: string) {
 async function downloadAndSaveVariant(
   variantApiId: string | null,
   projects: Project[],
-  format: string | undefined,
+  format: SupportedFormat,
   status: string | undefined,
   richText: boolean | undefined,
   token?: Token
 ) {
-  const params: Record<string, string | null> = {
-    variant: variantApiId,
-  };
-  if (format) {
-    params.format = format;
-  }
-  if (status) {
-    params.status = status;
-  }
-  if (richText) {
-    params.includeRichText = richText.toString();
-  }
+  const params: Record<string, string | null> = { variant: variantApiId };
+  if (format) params.format = format;
+  if (status) params.status = status;
+  if (richText) params.includeRichText = richText.toString();
 
-  if (format && NON_DEFAULT_FORMATS.includes(format)) {
-    const savedMessages = await Promise.all(
-      projects.map(async ({ id, fileName }: Project) => {
-        const { data } = await api.get(`/projects/${id}`, {
-          params,
-          headers: { Authorization: `token ${token}` },
-        });
+  const savedMessages = await Promise.all(
+    projects.map(async ({ id, fileName }: Project) => {
+      const { data } = await api.get(`/projects/${id}`, {
+        params,
+        headers: { Authorization: `token ${token}` },
+      });
 
-        if (!hasVariantData(data)) {
-          return "";
-        }
+      if (!hasVariantData(data)) {
+        return "";
+      }
 
-        const extension = getExtension(format);
+      const extension = getFormatExtension(format);
 
-        const filename =
-          fileName + ("__" + (variantApiId || "base")) + extension;
-        const filepath = path.join(consts.TEXT_DIR, filename);
+      const filename = cleanFileName(
+        fileName + ("__" + (variantApiId || "base")) + extension
+      );
+      const filepath = path.join(consts.TEXT_DIR, filename);
 
-        let dataString = data;
-        if (extension === ".json") {
-          dataString = JSON.stringify(data, null, 2);
-        }
+      let dataString = data;
+      if (extension === ".json") {
+        dataString = JSON.stringify(data, null, 2);
+      }
 
-        fs.writeFileSync(filepath, dataString);
+      const dataIsValid = getFormatDataIsValid[format];
+      if (!dataIsValid(dataString)) {
+        return "";
+      }
 
-        return getSavedMessage(filename);
-      })
-    );
+      fs.writeFileSync(filepath, dataString);
+      return getSavedMessage(filename);
+    })
+  );
 
-    return savedMessages.join("");
-  } else {
-    const { data } = await api.get("/projects", {
-      params: { ...params, projectIds: projects.map(({ id }) => id) },
-      headers: { Authorization: `token ${token}` },
-    });
-
-    if (!hasVariantData(data)) {
-      return "";
-    }
-
-    const filename = `${variantApiId || "base"}.json`;
-    const filepath = path.join(consts.TEXT_DIR, filename);
-
-    const dataString = JSON.stringify(data, null, 2);
-
-    fs.writeFileSync(filepath, dataString);
-
-    return getSavedMessage(filename);
-  }
+  return savedMessages.join("");
 }
 
 async function downloadAndSaveVariants(
+  variants: { apiID: string }[],
   projects: Project[],
-  format: string | undefined,
+  format: SupportedFormat,
   status: string | undefined,
   richText: boolean | undefined,
-  token?: Token,
-  options?: PullOptions
+  token?: Token
 ) {
-  const meta = options ? options.meta : {};
-
-  const { data: variants } = await api.get("/variants", {
-    params: {
-      ...meta,
-      projectIds: projects.map(({ id }) => id),
-    },
-    headers: { Authorization: `token ${token}` },
-  });
-
   const messages = await Promise.all([
     downloadAndSaveVariant(null, projects, format, status, richText, token),
     ...variants.map(({ apiID }: { apiID: string }) =>
@@ -150,63 +146,44 @@ async function downloadAndSaveVariants(
 
 async function downloadAndSaveBase(
   projects: Project[],
-  format: string | undefined,
+  format: SupportedFormat,
   status: string | undefined,
-  richText: boolean | undefined,
+  richText?: boolean | undefined,
   token?: Token,
   options?: PullOptions
 ) {
-  const meta = options ? options.meta : {};
+  const params = { ...options?.meta };
+  if (format) params.format = format;
+  if (status) params.status = status;
+  if (richText) params.includeRichText = richText.toString();
 
-  const params = {
-    ...meta,
-  };
-  if (format) {
-    params.format = format;
-  }
-  if (status) {
-    params.status = status;
-  }
-  if (richText) {
-    params.includeRichText = richText.toString();
-  }
+  const savedMessages = await Promise.all(
+    projects.map(async ({ id, fileName }: Project) => {
+      const { data } = await api.get(`/projects/${id}`, {
+        params,
+        headers: { Authorization: `token ${token}` },
+      });
 
-  if (format && NON_DEFAULT_FORMATS.includes(format)) {
-    const savedMessages = await Promise.all(
-      projects.map(async ({ id, fileName }: Project) => {
-        const { data } = await api.get(`/projects/${id}`, {
-          params,
-          headers: { Authorization: `token ${token}` },
-        });
+      const extension = getFormatExtension(format);
+      const filename = cleanFileName(`${fileName}__base${extension}`);
+      const filepath = path.join(consts.TEXT_DIR, filename);
 
-        const extension = getExtension(format);
-        const filename = `${fileName}${extension}`;
-        const filepath = path.join(consts.TEXT_DIR, filename);
+      let dataString = data;
+      if (extension === ".json") {
+        dataString = JSON.stringify(data, null, 2);
+      }
 
-        let dataString = data;
-        if (extension === ".json") {
-          dataString = JSON.stringify(data, null, 2);
-        }
+      const dataIsValid = getFormatDataIsValid[format];
+      if (!dataIsValid(dataString)) {
+        return "";
+      }
 
-        fs.writeFileSync(filepath, dataString);
+      fs.writeFileSync(filepath, dataString);
+      return getSavedMessage(filename);
+    })
+  );
 
-        return getSavedMessage(filename);
-      })
-    );
-
-    return savedMessages.join("");
-  } else {
-    const { data } = await api.get(`/projects`, {
-      params: { ...params, projectIds: projects.map(({ id }) => id) },
-      headers: { Authorization: `token ${token}` },
-    });
-
-    const dataString = JSON.stringify(data, null, 2);
-
-    fs.writeFileSync(consts.TEXT_FILE, dataString);
-
-    return getSavedMessage("text.json");
-  }
+  return savedMessages.join("");
 }
 
 function getSavedMessage(file: string) {
@@ -228,181 +205,124 @@ function cleanOutputFiles() {
   return "Cleaning old output files..\n";
 }
 
-// compatability with legacy method of specifying project ids
-// that is still used by the default format
-const stringifyProjectId = (projectId: string) =>
-  projectId === "ditto_component_library" ? projectId : `project_${projectId}`;
-
-/**
- * Generates an index.js file that can be consumed
- * by an SDK - this is a big DX improvement because
- * it provides a single entry point to get all data
- * (including variants) instead of having to import
- * each generated file individually.
- *
- * The generated file will have a unified format
- * independent of the CLI configuration used to fetch
- * data from Ditto.
- */
-function generateJsDriver(
-  projects: Project[],
-  variants: boolean,
-  format: string | undefined
-) {
-  const fileNames = fs
-    .readdirSync(consts.TEXT_DIR)
-    .filter((fileName) => /\.json$/.test(fileName));
-
-  const projectIdsByName: Record<string, string> = projects.reduce(
-    (agg, project) => {
-      if (project.fileName) {
-        return { ...agg, [project.fileName]: project.id };
-      }
-      return agg;
-    },
-    {}
-  );
-
-  const data = fileNames.reduce(
-    (obj: Record<string, Record<string, string>>, fileName) => {
-      // filename format: {project-name}__{variant-api-id}.json
-      // file format: flat or structured
-      if (variants && format) {
-        const [projectName, rest] = fileName.split("__");
-        const [variantApiId] = rest.split(".");
-
-        const projectId = projectIdsByName[projectName];
-        if (!projectId) {
-          throw new Error(`Couldn't find id for ${projectName}`);
-        }
-
-        const projectIdStr = stringifyProjectId(projectId);
-
-        if (!obj[projectIdStr]) {
-          obj[projectIdStr] = {};
-        }
-
-        obj[projectIdStr][variantApiId] = `require('./${fileName}')`;
-      }
-      // filename format: {variant-api-id}.json
-      // file format: default
-      else if (variants) {
-        const file = require(path.resolve(consts.TEXT_DIR, `./${fileName}`));
-        const [variantApiId] = fileName.split(".");
-
-        Object.keys(file.projects).forEach((projectId) => {
-          if (!obj[projectId]) {
-            obj[projectId] = {};
-          }
-
-          const project = file.projects[projectId];
-          obj[projectId][variantApiId] = project.frames || project.components;
-        });
-      }
-      // filename format: {project-name}.json
-      // file format: flat or structured
-      else if (format) {
-        const [projectName] = fileName.split(".");
-        const projectId = projectIdsByName[projectName];
-        if (!projectId) {
-          throw new Error(`Couldn't find id for ${projectName}`);
-        }
-
-        obj[stringifyProjectId(projectId)] = {
-          base: `require('./${fileName}')`,
-        };
-      }
-      // filename format: text.json (single file)
-      // file format: default
-      else {
-        const file = require(path.resolve(consts.TEXT_DIR, `./${fileName}`));
-        Object.keys(file.projects).forEach((projectId) => {
-          const project = file.projects[projectId];
-          obj[projectId] = { base: project.frames || project.components };
-        });
-      }
-
-      return obj;
-    },
-    {}
-  );
-
-  let dataString = `module.exports = ${JSON.stringify(data, null, 2)}`
-    // remove quotes around require statements
-    .replace(/"require\((.*)\)"/g, "require($1)");
-
-  const filePath = path.resolve(consts.TEXT_DIR, "index.js");
-  fs.writeFileSync(filePath, dataString, { encoding: "utf8" });
-
-  return `Generated .js SDK driver at ${output.info(filePath)}`;
-}
-
 async function downloadAndSave(
-  sourceInformation: SourceInformation,
+  source: SourceInformation,
   token?: Token,
   options?: PullOptions
 ) {
   const {
     validProjects,
-    variants,
-    format,
+    format: formatFromSource,
     shouldFetchComponentLibrary,
     status,
     richText,
-  } = sourceInformation;
+    componentFolders,
+  } = source;
 
-  let msg = `\nFetching the latest text from ${sourcesToText(
-    validProjects,
-    shouldFetchComponentLibrary
-  )}\n`;
+  const format = getFormat(formatFromSource);
 
+  let msg = "";
   const spinner = ora(msg);
   spinner.start();
 
-  // We'll need to move away from this solution if at some
-  // point down the road we stop allowing the component
-  // library to be returned from the /projects endpoint
-  if (shouldFetchComponentLibrary) {
-    validProjects.push({
-      id: "ditto_component_library",
-      name: "Ditto Component Library",
-      fileName: "ditto-component-library",
-    });
-  }
+  const variants = await fetchVariants(source);
 
   try {
     msg += cleanOutputFiles();
+    msg += `\nFetching the latest text from ${sourcesToText(
+      validProjects,
+      shouldFetchComponentLibrary
+    )}\n`;
 
     const meta = options ? options.meta : {};
-    msg += variants
-      ? await downloadAndSaveVariants(
-          validProjects,
-          format,
-          status,
-          richText,
-          token,
-          {
-            meta,
-          }
-        )
-      : await downloadAndSaveBase(
-          validProjects,
-          format,
-          status,
-          richText,
-          token,
-          {
-            meta,
-          }
-        );
 
-    msg += generateJsDriver(validProjects, variants, format);
+    if (shouldFetchComponentLibrary) {
+      // Always include a variant with an apiID of undefined to ensure that we
+      // fetch the base text for the component library.
+      const componentVariants = [{ apiID: undefined }, ...(variants || [])];
+
+      const params = new URLSearchParams();
+      if (options?.meta)
+        Object.entries(options.meta).forEach(([k, v]) => params.append(k, v));
+      if (format) params.append("format", format);
+      if (status) params.append("status", status);
+      if (richText) params.append("includeRichText", richText.toString());
+      if (componentFolders) {
+        componentFolders.forEach(({ id }) => params.append("folder_id[]", id));
+      }
+
+      const messages = await Promise.all(
+        componentVariants.map(async ({ apiID: variantApiId }) => {
+          const p = new URLSearchParams(params);
+          if (variantApiId) p.append("variant", variantApiId);
+
+          const { data } = await api.get(`/components`, { params: p });
+
+          const nameExt = getFormatExtension(format);
+          const nameBase = "ditto-component-library";
+          const namePostfix = `__${variantApiId || "base"}`;
+
+          const fileName = cleanFileName(`${nameBase}${namePostfix}${nameExt}`);
+          const filePath = path.join(consts.TEXT_DIR, fileName);
+
+          let dataString = data;
+          if (nameExt === ".json") {
+            dataString = JSON.stringify(data, null, 2);
+          }
+
+          const dataIsValid = getFormatDataIsValid[format];
+          if (!dataIsValid(dataString)) {
+            return "";
+          }
+
+          await new Promise((r) => fs.writeFile(filePath, dataString, r));
+          return getSavedMessage(fileName);
+        })
+      );
+
+      msg += messages.join("");
+    }
+
+    if (validProjects.length) {
+      msg += variants
+        ? await downloadAndSaveVariants(
+            variants,
+            validProjects,
+            format,
+            status,
+            richText,
+            token
+          )
+        : await downloadAndSaveBase(
+            validProjects,
+            format,
+            status,
+            richText,
+            token,
+            {
+              meta,
+            }
+          );
+    }
+
+    const sources = [...validProjects];
+    if (shouldFetchComponentLibrary) {
+      sources.push({
+        id: "ditto_component_library",
+        name: "Ditto Component Library",
+        fileName: "ditto-component-library",
+      });
+    }
+
+    if (JSON_FORMATS.includes(format)) msg += generateJsDriver(sources);
 
     msg += `\n${output.success("Done")}!`;
 
     spinner.stop();
     return console.log(msg);
   } catch (e: any) {
+    console.error(e);
+
     spinner.stop();
     let error = e.message;
     if (e.response && e.response.status === 404) {
@@ -439,7 +359,7 @@ async function downloadAndSave(
   }
 }
 
-interface PullOptions {
+export interface PullOptions {
   meta?: Record<string, string>;
 }
 

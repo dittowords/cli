@@ -2,12 +2,11 @@ const { AutoComplete } = require("enquirer");
 
 import output from "../output";
 import { Project } from "../types";
+import { getSourceUrl } from "./projectsToText";
 
 function formatProjectChoice(project: Project) {
   return (
-    project.name +
-    " " +
-    output.subtle(project.url || `https://app.dittowords.com/doc/${project.id}`)
+    project.name + " " + output.subtle(project.url || getSourceUrl(project.id))
   );
 }
 

@@ -42,8 +42,8 @@ describe("saveProject", () => {
   it("creates a config file with config data", () => {
     const fileContents = fs.readFileSync(configFile, "utf8");
     const data = yaml.load(fileContents);
-    expect(data.projects).toBeDefined();
-    expect(data.projects[0].name).toEqual(projectName);
-    expect(data.projects[0].id).toEqual(projectId);
+    expect(data.sources.projects).toBeDefined();
+    expect(data.sources.projects[0].name).toEqual(projectName);
+    expect(data.sources.projects[0].id).toEqual(projectId);
   });
 });

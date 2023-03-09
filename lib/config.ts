@@ -3,16 +3,30 @@ import path from "path";
 import url from "url";
 import yaml from "js-yaml";
 
+import output from "./output";
 import consts from "./consts";
 import { Project, ConfigYAML } from "./types";
 
-function createFileIfMissing(filename: string) {
+export const DEFAULT_CONFIG_JSON: ConfigYAML = {
+  sources: {
+    components: { enabled: true },
+  },
+  variants: true,
+  format: "flat",
+};
+
+export const DEFAULT_CONFIG = yaml.dump(DEFAULT_CONFIG_JSON);
+
+function createFileIfMissing(filename: string, defaultContents?: any) {
   const dir = path.dirname(filename);
 
+  // create the directory if it doesn't already exist
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 
+  // create the file if it doesn't already exist
   if (!fs.existsSync(filename)) {
-    fs.closeSync(fs.openSync(filename, "w"));
+    // create the file, writing the `defaultContents` if provided
+    fs.writeFileSync(filename, defaultContents || "", "utf-8");
   }
 }
 
@@ -26,11 +40,13 @@ function jsonIsGlobalYAML(
   return (
     !!json &&
     typeof json === "object" &&
-    Object.values(json).every((arr) =>
-      arr.every(
-        (val: any) =>
-          typeof val === "object" && Object.keys(val).includes("token")
-      )
+    Object.values(json).every(
+      (arr) =>
+        (arr as any).every &&
+        arr.every(
+          (val: any) =>
+            typeof val === "object" && Object.keys(val).includes("token")
+        )
     )
   );
 }
@@ -45,7 +61,7 @@ function readProjectConfigData(
   file = consts.PROJECT_CONFIG_FILE,
   defaultData = {}
 ): ConfigYAML {
-  createFileIfMissing(file);
+  createFileIfMissing(file, DEFAULT_CONFIG);
   const fileContents = fs.readFileSync(file, "utf8");
   const yamlData = yaml.load(fileContents);
   if (jsonIsConfigYAML(yamlData)) {
@@ -73,10 +89,20 @@ function readGlobalConfigData(
   return defaultData;
 }
 
-function writeProjectConfigData(file: string, data: object) {
-  createFileIfMissing(file);
+function writeProjectConfigData(file: string, data: Partial<ConfigYAML>) {
+  createFileIfMissing(file, DEFAULT_CONFIG);
   const existingData = readProjectConfigData(file);
-  const yamlStr = yaml.dump({ ...existingData, ...data });
+
+  const configData: ConfigYAML = {
+    ...existingData,
+    ...data,
+    sources: {
+      ...existingData.sources,
+      ...data.sources,
+    },
+  };
+
+  const yamlStr = yaml.dump(configData);
   fs.writeFileSync(file, yamlStr, "utf8");
 }
 
@@ -160,14 +186,22 @@ function dedupeProjectName(projectNames: Set<string>, projectName: string) {
  * - an array of valid, deduped projects
  * - the `variants` and `format` config options
  */
-function parseSourceInformation() {
-  const { projects, components, variants, format, status, richText } =
-    readProjectConfigData();
+function parseSourceInformation(file?: string) {
+  const {
+    sources,
+    variants,
+    format,
+    status,
+    richText,
+    projects: projectsRoot,
+    components: componentsRoot,
+  } = readProjectConfigData(file);
+
+  const projects = sources?.projects || [];
 
   const projectNames = new Set<string>();
   const validProjects: Project[] = [];
-
-  let componentLibraryInProjects = false;
+  let hasComponentLibraryInProjects = false;
 
   (projects || []).forEach((project) => {
     const isValid = project.id && project.name;
@@ -176,7 +210,7 @@ function parseSourceInformation() {
     }
 
     if (project.id === "ditto_component_library") {
-      componentLibraryInProjects = true;
+      hasComponentLibraryInProjects = true;
       return;
     }
 
@@ -186,8 +220,7 @@ function parseSourceInformation() {
     validProjects.push(project);
   });
 
-  const shouldFetchComponentLibrary =
-    !!components || componentLibraryInProjects;
+  const shouldFetchComponentLibrary = Boolean(sources?.components?.enabled);
 
   const hasSourceData = !!validProjects.length || shouldFetchComponentLibrary;
 
@@ -199,6 +232,10 @@ function parseSourceInformation() {
     format,
     status,
     richText,
+    hasTopLevelProjectsField: !!projectsRoot,
+    hasTopLevelComponentsField: !!componentsRoot,
+    hasComponentLibraryInProjects,
+    componentFolders: sources?.components?.folders || null,
   };
 }
 

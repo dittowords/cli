@@ -1,16 +1,11 @@
-import { collectAndSaveProject } from "./init/project";
+import { collectAndSaveSource } from "./init/project";
 import projectsToText from "./utils/projectsToText";
 import {
   getSelectedProjects,
   getIsUsingComponents,
 } from "./utils/getSelectedProjects";
 import output from "./output";
-
-function quit(exitCode = 2) {
-  console.log("Project selection was not updated.");
-  process.exitCode = exitCode;
-  process.exit();
-}
+import { quit } from "./utils/quit";
 
 const addProject = async () => {
   const projects = getSelectedProjects();
@@ -38,13 +33,15 @@ const addProject = async () => {
         )}`
       );
     }
-    await collectAndSaveProject(false);
+    await collectAndSaveSource({
+      components: false,
+    });
   } catch (error) {
     console.log(
       `\nSorry, there was an error adding a project to your workspace: `,
       error
     );
-    quit();
+    quit("Project selection was not updated.");
   }
 };
 

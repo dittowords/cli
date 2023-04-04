@@ -72,7 +72,7 @@ function replace(options: string[]) {
   } catch (e) {
     console.error(e);
     console.error(
-      "Usage for replace: ditto replace <file path> <search string> <replace with>"
+      "Usage for replace: ditto-cli replace <file path> <search string> <replace with>"
     );
     return;
   }

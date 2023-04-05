@@ -1,16 +1,16 @@
-import * as fs from "fs";
+import fs from "fs/promises";
 import { parseOptions, replaceJSXTextInFile } from "./replace"; // Assuming the function is exported in a separate file
 
 // Helper function to create a temporary file
-async function createTempJSXFile(content: string): Promises<string> {
+async function createTempJSXFile(content: string): Promise<string> {
   const tempFile = "tempFile.jsx";
-  await fs.promises.writeFile(tempFile, content);
+  await fs.writeFile(tempFile, content);
   return tempFile;
 }
 
 // Helper function to delete the temporary file
 async function deleteTempFile(filePath: string): Promise<void> {
-  await fs.promises.unlink(filePath);
+  await fs.unlink(filePath);
 }
 
 describe("parseOptions", () => {
@@ -69,7 +69,7 @@ describe("replaceJSXTextInFile", () => {
 
     await replaceJSXTextInFile(tempFile, { searchString, replaceWith });
 
-    const transformedCode = await fs.promises.readFile(tempFile, "utf-8");
+    const transformedCode = await fs.readFile(tempFile, "utf-8");
     expect(transformedCode).toContain(
       `<div>Hello, <DittoComponent componentId="${replaceWith}" /></div>`
     );
@@ -82,7 +82,7 @@ describe("replaceJSXTextInFile", () => {
 
     await replaceJSXTextInFile(tempFile, { searchString, replaceWith });
 
-    const transformedCode = await fs.promises.readFile(tempFile, "utf-8");
+    const transformedCode = await fs.readFile(tempFile, "utf-8");
     expect(transformedCode).toContain(
       `<div>HeLLo, <DittoComponent componentId="${replaceWith}" /></div>`
     );
@@ -95,7 +95,7 @@ describe("replaceJSXTextInFile", () => {
 
     await replaceJSXTextInFile(tempFile, { searchString, replaceWith });
 
-    const transformedCode = await fs.promises.readFile(tempFile, "utf-8");
+    const transformedCode = await fs.readFile(tempFile, "utf-8");
     expect(transformedCode).toContain("<div>Hello, world!</div>");
   });
 });

@@ -9,10 +9,16 @@ import { pull } from "./pull";
 import { quit } from "./utils/quit";
 import addProject from "./add-project";
 import removeProject from "./remove-project";
+import { replace } from "./replace";
 
 import processMetaOption from "./utils/processMetaOption";
 
-type Command = "pull" | "project" | "project add" | "project remove";
+type Command =
+  | "pull"
+  | "project"
+  | "project add"
+  | "project remove"
+  | "replace";
 
 const COMMANDS = [
   {
@@ -33,23 +39,32 @@ const COMMANDS = [
       },
     ],
   },
+  {
+    name: "replace",
+    description: "Find and replace Ditto text with code",
+  },
 ] as const;
 
 const setupCommands = () => {
   program.name("ditto-cli");
 
-  COMMANDS.forEach((config) => {
+  COMMANDS.forEach((commandConfig) => {
     const cmd = program
-      .command(config.name)
-      .description(config.description)
-      .action(() => executeCommand(config.name));
+      .command(commandConfig.name)
+      .description(commandConfig.description)
+      .action((str, options) => executeCommand(commandConfig.name, options));
 
-    if ("commands" in config) {
-      config.commands.forEach((nestedCommand) => {
+    if ("commands" in commandConfig) {
+      commandConfig.commands.forEach((nestedCommand) => {
         cmd
           .command(nestedCommand.name)
           .description(nestedCommand.description)
-          .action(() => executeCommand(`${config.name} ${nestedCommand.name}`));
+          .action((str, options) =>
+            executeCommand(
+              `${commandConfig.name} ${nestedCommand.name}`,
+              options
+            )
+          );
       });
     }
   });
@@ -62,7 +77,10 @@ const setupOptions = () => {
   );
 };
 
-const executeCommand = async (command: Command | "none"): Promise<void> => {
+const executeCommand = async (
+  command: Command | "none",
+  options: string[]
+): Promise<void> => {
   const needsInitialization = needsTokenOrSource();
   if (needsInitialization) {
     try {
@@ -91,6 +109,9 @@ const executeCommand = async (command: Command | "none"): Promise<void> => {
     case "project remove": {
       return removeProject();
     }
+    case "replace": {
+      return replace(options);
+    }
     default: {
       quit("Exiting Ditto CLI...");
       return;
@@ -103,7 +124,7 @@ const main = async () => {
   setupOptions();
 
   if (process.argv.length <= 2 && process.argv[1].includes("ditto-cli")) {
-    await executeCommand("none");
+    await executeCommand("none", []);
     return;
   }
 

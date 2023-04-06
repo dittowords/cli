@@ -10,6 +10,7 @@ import { quit } from "./utils/quit";
 import addProject from "./add-project";
 import removeProject from "./remove-project";
 import { replace } from "./replace";
+import { generateSuggestions } from "./generate-suggestions";
 
 import processMetaOption from "./utils/processMetaOption";
 
@@ -18,6 +19,7 @@ type Command =
   | "project"
   | "project add"
   | "project remove"
+  | "generate-suggestions"
   | "replace";
 
 const COMMANDS = [
@@ -38,6 +40,10 @@ const COMMANDS = [
         description: "Stop syncing copy from a Ditto project",
       },
     ],
+  },
+  {
+    name: "generate-suggestions",
+    description: "Find text that can be potentially replaced with Ditto text",
   },
   {
     name: "replace",
@@ -108,6 +114,9 @@ const executeCommand = async (
     }
     case "project remove": {
       return removeProject();
+    }
+    case "generate-suggestions": {
+      return generateSuggestions();
     }
     case "replace": {
       return replace(options);

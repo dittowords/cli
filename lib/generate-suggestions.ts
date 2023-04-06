@@ -33,7 +33,9 @@ async function findTextInJSXFiles(
   searchString: string
 ): Promise<FindResults> {
   const result: { file: string; occurrences: Occurence[] }[] = [];
-  const files = glob.sync(`${path}/**/*.+(jsx|tsx)`);
+  const files = glob.sync(`${path}/**/*.+(jsx|tsx)`, {
+    ignore: "**/node_modules/**",
+  });
 
   for (const file of files) {
     const code = await fs.readFile(file, "utf-8");

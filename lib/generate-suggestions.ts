@@ -39,48 +39,55 @@ async function findTextInJSXFiles(
     ignore: "**/node_modules/**",
   });
 
+  const promises: Promise<any>[] = [];
+
   for (const file of files) {
-    const code = await fs.readFile(file, "utf-8");
-    const ast = parse(code, {
-      sourceType: "module",
-      plugins: ["jsx", "typescript"],
-    });
+    promises.push(
+      fs.readFile(file, "utf-8").then((code) => {
+        const ast = parse(code, {
+          sourceType: "module",
+          plugins: ["jsx", "typescript"],
+        });
 
-    const occurrences: Occurence[] = [];
+        const occurrences: Occurence[] = [];
 
-    traverse(ast, {
-      JSXText(path) {
-        if (path.node.value.includes(searchString)) {
-          const regex = new RegExp(searchString, "g");
-          let match;
-          while ((match = regex.exec(path.node.value)) !== null) {
-            const lines = path.node.value.slice(0, match.index).split("\n");
+        traverse(ast, {
+          JSXText(path) {
+            if (path.node.value.includes(searchString)) {
+              const regex = new RegExp(searchString, "g");
+              let match;
+              while ((match = regex.exec(path.node.value)) !== null) {
+                const lines = path.node.value.slice(0, match.index).split("\n");
 
-            if (!path.node.loc) {
-              continue;
+                if (!path.node.loc) {
+                  continue;
+                }
+
+                const lineNumber = path.node.loc.start.line + lines.length - 1;
+
+                const codeLines = code.split("\n");
+                const line = codeLines[lineNumber - 1];
+                const preview = replaceAt(
+                  line,
+                  match.index,
+                  searchString,
+                  `{{${searchString}}}`
+                );
+
+                occurrences.push({ lineNumber, preview });
+              }
             }
+          },
+        });
 
-            const lineNumber = path.node.loc.start.line + lines.length - 1;
-
-            const codeLines = code.split("\n");
-            const line = codeLines[lineNumber - 1];
-            const preview = replaceAt(
-              line,
-              match.index,
-              searchString,
-              `{{${searchString}}}`
-            );
-
-            occurrences.push({ lineNumber, preview });
-          }
+        if (occurrences.length > 0) {
+          result.push({ file, occurrences });
         }
-      },
-    });
-
-    if (occurrences.length > 0) {
-      result.push({ file, occurrences });
-    }
+      })
+    );
   }
+
+  await Promise.all(promises);
 
   return result;
 }

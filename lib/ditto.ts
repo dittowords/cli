@@ -48,19 +48,22 @@ const COMMANDS = [
 const setupCommands = () => {
   program.name("ditto-cli");
 
-  COMMANDS.forEach((command) => {
+  COMMANDS.forEach((commandConfig) => {
     const cmd = program
-      .command(command.name)
-      .description(command.description)
-      .action((str, options) => executeCommand(command.name, options));
+      .command(commandConfig.name)
+      .description(commandConfig.description)
+      .action((str, options) => executeCommand(commandConfig.name, options));
 
-    if ("commands" in command) {
-      command.commands.forEach((nestedCommand) => {
+    if ("commands" in commandConfig) {
+      commandConfig.commands.forEach((nestedCommand) => {
         cmd
           .command(nestedCommand.name)
           .description(nestedCommand.description)
           .action((str, options) =>
-            executeCommand(`${command.name} ${nestedCommand.name}`, options)
+            executeCommand(
+              `${commandConfig.name} ${nestedCommand.name}`,
+              options
+            )
           );
       });
     }

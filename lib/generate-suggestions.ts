@@ -18,6 +18,8 @@ async function generateSuggestions() {
     const result = await findTextInJSXFiles(".", component.text);
     results[compApiId] = [...results[compApiId], ...result];
   }
+
+  // Display results to user
   console.log(JSON.stringify(results, null, 2));
 }
 

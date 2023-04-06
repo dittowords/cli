@@ -32,13 +32,13 @@ describe("parseOptions", () => {
 
   test("should throw error when options array does not have exactly three strings", () => {
     expect(() => parseOptions(["oneString"])).toThrow(
-      "The options array must contain exactly three strings."
+      "The options array must contain <file path> <search string> <replace with>."
     );
     expect(() => parseOptions(["one", "two"])).toThrow(
-      "The options array must contain exactly three strings."
+      "The options array must contain <file path> <search string> <replace with>."
     );
     expect(() => parseOptions(["one", "two", "three", "four"])).toThrow(
-      "The options array must contain exactly three strings."
+      "The options array must contain <file path> <search string> <replace with>."
     );
   });
 

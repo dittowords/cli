@@ -86,7 +86,9 @@ function parseOptions(options: string[]): {
   replaceWith: string;
 } {
   if (options.length !== 3) {
-    throw new Error("The options array must contain exactly three strings.");
+    throw new Error(
+      "The options array must contain <file path> <search string> <replace with>."
+    );
   }
 
   const filePath = options[0];

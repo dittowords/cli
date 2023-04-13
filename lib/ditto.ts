@@ -4,6 +4,8 @@ import { program } from "commander";
 // to use V8's code cache to speed up instantiation time
 import "v8-compile-cache";
 
+import packageJson from "../package.json";
+
 import { init, needsTokenOrSource } from "./init/init";
 import { pull } from "./pull";
 import { quit } from "./utils/quit";
@@ -13,6 +15,8 @@ import { replace } from "./replace";
 import { generateSuggestions } from "./generate-suggestions";
 
 import processMetaOption from "./utils/processMetaOption";
+
+const VERSION = packageJson.version;
 
 type Command =
   | "pull"
@@ -81,6 +85,7 @@ const setupOptions = () => {
     "-m, --meta <data...>",
     "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual"
   );
+  program.version(VERSION, "-v, --version", "Output the current version");
 };
 
 const executeCommand = async (

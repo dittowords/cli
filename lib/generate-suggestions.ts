@@ -17,6 +17,11 @@ async function generateSuggestions() {
     }
     const result = await findTextInJSXFiles(".", component.text);
     results[compApiId] = [...results[compApiId], ...result];
+
+    // Remove if there the length is zero
+    if (results[compApiId].length === 0) {
+      delete results[compApiId];
+    }
   }
 
   // Display results to user
@@ -28,13 +33,13 @@ interface Occurence {
   preview: string;
 }
 
-type FindResults = { file: string; occurrences: Occurence[] }[];
+type FindResults = { file: string; text: string; occurrences: Occurence[] }[];
 
 async function findTextInJSXFiles(
   path: string,
   searchString: string
 ): Promise<FindResults> {
-  const result: { file: string; occurrences: Occurence[] }[] = [];
+  const result: FindResults = [];
   const files = glob.sync(`${path}/**/*.+(jsx|tsx)`, {
     ignore: "**/node_modules/**",
   });
@@ -81,7 +86,7 @@ async function findTextInJSXFiles(
         });
 
         if (occurrences.length > 0) {
-          result.push({ file, occurrences });
+          result.push({ file, occurrences, text: searchString });
         }
       })
     );

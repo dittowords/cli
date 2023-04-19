@@ -3,8 +3,8 @@
 import { program } from "commander";
 // to use V8's code cache to speed up instantiation time
 import "v8-compile-cache";
-
-import packageJson from "../package.json";
+import fs from "fs";
+import path from "path";
 
 import { init, needsTokenOrSource } from "./init/init";
 import { pull } from "./pull";
@@ -16,7 +16,16 @@ import { generateSuggestions } from "./generate-suggestions";
 
 import processMetaOption from "./utils/processMetaOption";
 
-const VERSION = packageJson.version;
+function getVersion(): string {
+  const packageJsonPath = path.join(__dirname, "..", "package.json");
+  const packageJsonContent = fs.readFileSync(packageJsonPath, "utf8");
+  const packageJson = JSON.parse(packageJsonContent) as { version: string };
+  const version = packageJson.version;
+
+  return version;
+}
+
+const VERSION = getVersion();
 
 type Command =
   | "pull"

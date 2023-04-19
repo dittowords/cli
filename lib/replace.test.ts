@@ -67,11 +67,30 @@ describe("replaceJSXTextInFile", () => {
     const searchString = "world";
     const replaceWith = "some-id";
 
-    await replaceJSXTextInFile(tempFile, { searchString, replaceWith });
+    await replaceJSXTextInFile(tempFile, { searchString, replaceWith }, {});
 
     const transformedCode = await fs.readFile(tempFile, "utf-8");
     expect(transformedCode).toContain(
       `<div>Hello, <DittoComponent componentId="${replaceWith}" /></div>`
+    );
+  });
+
+  test("should replace JSX text with a DittoComponent with a flag", async () => {
+    const tempFile = await createTempJSXFile(
+      `<>\n<div>Hello, world</div>\n<div>Hello, world</div>\n</>`
+    );
+    const searchString = "world";
+    const replaceWith = "some-id";
+
+    await replaceJSXTextInFile(
+      tempFile,
+      { searchString, replaceWith },
+      { lineNumber: 3 }
+    );
+
+    const transformedCode = await fs.readFile(tempFile, "utf-8");
+    expect(transformedCode).toContain(
+      `<>\n  <div>Hello, world</div>\n  <div>Hello, <DittoComponent componentId=\"some-id\" /></div>\n</>;`
     );
   });
 
@@ -80,7 +99,7 @@ describe("replaceJSXTextInFile", () => {
     const searchString = "world";
     const replaceWith = "some-id";
 
-    await replaceJSXTextInFile(tempFile, { searchString, replaceWith });
+    await replaceJSXTextInFile(tempFile, { searchString, replaceWith }, {});
 
     const transformedCode = await fs.readFile(tempFile, "utf-8");
     expect(transformedCode).toContain(
@@ -93,7 +112,7 @@ describe("replaceJSXTextInFile", () => {
     const searchString = "foobar";
     const replaceWith = "some-id";
 
-    await replaceJSXTextInFile(tempFile, { searchString, replaceWith });
+    await replaceJSXTextInFile(tempFile, { searchString, replaceWith }, {});
 
     const transformedCode = await fs.readFile(tempFile, "utf-8");
     expect(transformedCode).toContain("<div>Hello, world!</div>");

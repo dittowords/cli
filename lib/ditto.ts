@@ -20,9 +20,19 @@ type Command =
   | "project add"
   | "project remove"
   | "generate-suggestions"
-  | "replace";
+  | "replace"
+  | string;
 
-const COMMANDS = [
+type ProjectSubCommand = "add" | "remove";
+
+interface CommandConfig<T extends Command | ProjectSubCommand> {
+  name: T;
+  description: string;
+  commands?: CommandConfig<ProjectSubCommand>[];
+  flags?: { [flag: string]: string };
+}
+
+const COMMANDS: CommandConfig<Command>[] = [
   {
     name: "pull",
     description: "Sync copy from Ditto into the current working directory",
@@ -48,8 +58,12 @@ const COMMANDS = [
   {
     name: "replace",
     description: "Find and replace Ditto text with code",
+    flags: {
+      "-ln, --line-number [value]":
+        "Only replace text on a specific line number",
+    },
   },
-] as const;
+];
 
 const setupCommands = () => {
   program.name("ditto-cli");
@@ -58,9 +72,17 @@ const setupCommands = () => {
     const cmd = program
       .command(commandConfig.name)
       .description(commandConfig.description)
-      .action((str, options) => executeCommand(commandConfig.name, options));
+      .action((options) => {
+        return executeCommand(commandConfig.name, options);
+      });
 
-    if ("commands" in commandConfig) {
+    if (commandConfig.flags) {
+      Object.entries(commandConfig.flags).forEach(([flag, description]) => {
+        cmd.option(flag, description);
+      });
+    }
+
+    if ("commands" in commandConfig && commandConfig.commands) {
       commandConfig.commands.forEach((nestedCommand) => {
         cmd
           .command(nestedCommand.name)
@@ -85,7 +107,7 @@ const setupOptions = () => {
 
 const executeCommand = async (
   command: Command | "none",
-  options: string[]
+  options: any
 ): Promise<void> => {
   const needsInitialization = needsTokenOrSource();
   if (needsInitialization) {
@@ -119,7 +141,10 @@ const executeCommand = async (
       return generateSuggestions();
     }
     case "replace": {
-      return replace(options);
+      const lineNumber = parseInt(options.lineNumber);
+      return replace(options.args, {
+        ...(lineNumber ? { lineNumber } : {}),
+      });
     }
     default: {
       quit("Exiting Ditto CLI...");

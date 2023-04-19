@@ -6,7 +6,10 @@ import { transformFromAst } from "@babel/core";
 
 async function replaceJSXTextInFile(
   filePath: string,
-  replacement: { searchString: string; replaceWith: string }
+  replacement: { searchString: string; replaceWith: string },
+  flags: {
+    lineNumber?: number;
+  }
 ) {
   const code = await fs.readFile(filePath, "utf-8");
   const ast = parse(code, {
@@ -20,6 +23,13 @@ async function replaceJSXTextInFile(
 
       const regex = new RegExp(searchString, "gi");
       if (regex.test(path.node.value)) {
+        if (
+          flags.lineNumber &&
+          path.node.loc?.start.line !== flags.lineNumber
+        ) {
+          return;
+        }
+
         const splitValues = splitByCaseInsensitive(
           path.node.value,
           searchString
@@ -59,7 +69,7 @@ function splitByCaseInsensitive(str: string, delimiter: string) {
   return str.split(new RegExp(`(${delimiter})`, "gi")).filter((s) => s !== "");
 }
 
-function replace(options: string[]) {
+function replace(options: string[], flags: { lineNumber?: number }) {
   let filePath: string;
   let searchString: string;
   let replaceWith: string;
@@ -77,7 +87,7 @@ function replace(options: string[]) {
     return;
   }
 
-  replaceJSXTextInFile(filePath, { searchString, replaceWith });
+  replaceJSXTextInFile(filePath, { searchString, replaceWith }, flags);
 }
 
 function parseOptions(options: string[]): {

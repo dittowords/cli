@@ -76,7 +76,7 @@ async function findTextInJSXFiles(
                   line,
                   match.index,
                   searchString,
-                  `{{${searchString}}}`
+                  `${searchString}`
                 );
 
                 occurrences.push({ lineNumber, preview });

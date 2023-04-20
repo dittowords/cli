@@ -8,7 +8,7 @@ async function replaceJSXTextInFile(
   filePath: string,
   replacement: { searchString: string; replaceWith: string },
   flags: {
-    lineNumber?: number;
+    lineNumbers?: number[];
   }
 ) {
   const code = await fs.readFile(filePath, "utf-8");
@@ -23,9 +23,11 @@ async function replaceJSXTextInFile(
 
       const regex = new RegExp(searchString, "gi");
       if (regex.test(path.node.value)) {
+        // Ignore if not on a line number that we want to replace.
         if (
-          flags.lineNumber &&
-          path.node.loc?.start.line !== flags.lineNumber
+          flags.lineNumbers &&
+          path.node.loc &&
+          !flags.lineNumbers.includes(path.node.loc.start.line)
         ) {
           return;
         }
@@ -69,7 +71,7 @@ function splitByCaseInsensitive(str: string, delimiter: string) {
   return str.split(new RegExp(`(${delimiter})`, "gi")).filter((s) => s !== "");
 }
 
-function replace(options: string[], flags: { lineNumber?: number }) {
+function replace(options: string[], flags: { lineNumbers?: number[] }) {
   let filePath: string;
   let searchString: string;
   let replaceWith: string;

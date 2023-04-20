@@ -85,7 +85,7 @@ describe("replaceJSXTextInFile", () => {
     await replaceJSXTextInFile(
       tempFile,
       { searchString, replaceWith },
-      { lineNumber: 3 }
+      { lineNumbers: [3] }
     );
 
     const transformedCode = await fs.readFile(tempFile, "utf-8");

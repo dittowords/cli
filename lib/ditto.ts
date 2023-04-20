@@ -29,7 +29,9 @@ interface CommandConfig<T extends Command | ProjectSubCommand> {
   name: T;
   description: string;
   commands?: CommandConfig<ProjectSubCommand>[];
-  flags?: { [flag: string]: string };
+  flags?: {
+    [flag: string]: { description: string; processor?: (value: string) => any };
+  };
 }
 
 const COMMANDS: CommandConfig<Command>[] = [
@@ -59,8 +61,10 @@ const COMMANDS: CommandConfig<Command>[] = [
     name: "replace",
     description: "Find and replace Ditto text with code",
     flags: {
-      "-ln, --line-number [value]":
-        "Only replace text on a specific line number",
+      "-ln, --line-numbers [value]": {
+        description: "Only replace text on a specific line number",
+        processor: (value: string) => value.split(",").map(Number),
+      },
     },
   },
 ];
@@ -77,9 +81,15 @@ const setupCommands = () => {
       });
 
     if (commandConfig.flags) {
-      Object.entries(commandConfig.flags).forEach(([flag, description]) => {
-        cmd.option(flag, description);
-      });
+      Object.entries(commandConfig.flags).forEach(
+        ([flag, { description, processor }]) => {
+          if (processor) {
+            cmd.option(flag, description, processor);
+          } else {
+            cmd.option(flag, description);
+          }
+        }
+      );
     }
 
     if ("commands" in commandConfig && commandConfig.commands) {
@@ -141,9 +151,8 @@ const executeCommand = async (
       return generateSuggestions();
     }
     case "replace": {
-      const lineNumber = parseInt(options.lineNumber);
       return replace(options.args, {
-        ...(lineNumber ? { lineNumber } : {}),
+        ...(options.lineNumbers ? { lineNumbers: options.lineNumbers } : {}),
       });
     }
     default: {

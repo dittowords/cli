@@ -44,13 +44,11 @@ describe("findTextInJSXFiles", () => {
         occurrences: [
           {
             lineNumber: 1,
-            preview:
-              "<div>Test {{searchString}} and another searchString</div>",
+            preview: "<div>Test searchString and another searchString</div>",
           },
           {
             lineNumber: 1,
-            preview:
-              "<div>Test searchString and another {{searchString}}</div>",
+            preview: "<div>Test searchString and another searchString</div>",
           },
         ],
       },

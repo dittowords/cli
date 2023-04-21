@@ -5,7 +5,7 @@ import traverse from "@babel/traverse";
 
 import { fetchComponents } from "./http/fetchComponents";
 
-async function generateSuggestions() {
+async function generateSuggestions(flags: { directory?: string }) {
   const components = await fetchComponents();
   const results: {
     [compApiId: string]: FindResults;
@@ -15,7 +15,9 @@ async function generateSuggestions() {
     if (!results[compApiId]) {
       results[compApiId] = [];
     }
-    const result = await findTextInJSXFiles(".", component.text);
+
+    const directory = flags.directory || ".";
+    const result = await findTextInJSXFiles(directory, component.text);
     results[compApiId] = [...results[compApiId], ...result];
 
     // Remove if there the length is zero

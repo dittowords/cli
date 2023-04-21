@@ -56,6 +56,11 @@ const COMMANDS: CommandConfig<Command>[] = [
   {
     name: "generate-suggestions",
     description: "Find text that can be potentially replaced with Ditto text",
+    flags: {
+      "-d, --directory [value]": {
+        description: "Directory to search for text",
+      },
+    },
   },
   {
     name: "replace",
@@ -82,11 +87,11 @@ const setupCommands = () => {
 
     if (commandConfig.flags) {
       Object.entries(commandConfig.flags).forEach(
-        ([flag, { description, processor }]) => {
+        ([flags, { description, processor }]) => {
           if (processor) {
-            cmd.option(flag, description, processor);
+            cmd.option(flags, description, processor);
           } else {
-            cmd.option(flag, description);
+            cmd.option(flags, description);
           }
         }
       );
@@ -148,7 +153,9 @@ const executeCommand = async (
       return removeProject();
     }
     case "generate-suggestions": {
-      return generateSuggestions();
+      return generateSuggestions({
+        ...(options.directory ? { directory: options.directory } : {}),
+      });
     }
     case "replace": {
       return replace(options.args, {

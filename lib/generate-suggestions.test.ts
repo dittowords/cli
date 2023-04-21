@@ -51,6 +51,7 @@ describe("findTextInJSXFiles", () => {
             preview: "<div>Test searchString and another searchString</div>",
           },
         ],
+        text: "searchString",
       },
     ];
 

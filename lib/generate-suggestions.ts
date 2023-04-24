@@ -11,11 +11,11 @@ import {
 interface Result extends FetchComponentResponseComponent {
   apiId: string;
   occurrences: {
-    [file: string]: Occurence[];
+    [file: string]: Occurrence[];
   };
 }
 
-interface Occurence {
+interface Occurrence {
   lineNumber: number;
   preview: string;
 }
@@ -64,7 +64,7 @@ async function findTextInJSXFiles(
           plugins: ["jsx", "typescript"],
         });
 
-        const occurrences: Occurence[] = [];
+        const occurrences: Occurrence[] = [];
 
         traverse(ast, {
           JSXText(path) {

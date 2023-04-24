@@ -3,7 +3,10 @@ import glob from "glob";
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 
-import { fetchComponents } from "./http/fetchComponents";
+import {
+  FetchComponentResponseComponent,
+  fetchComponents,
+} from "./http/fetchComponents";
 
 async function generateSuggestions(flags: { directory?: string }) {
   const components = await fetchComponents();
@@ -17,7 +20,7 @@ async function generateSuggestions(flags: { directory?: string }) {
     }
 
     const directory = flags.directory || ".";
-    const result = await findTextInJSXFiles(directory, component.text);
+    const result = await findTextInJSXFiles(directory, component);
     results[compApiId] = [...results[compApiId], ...result];
 
     // Remove if there the length is zero
@@ -35,11 +38,18 @@ interface Occurence {
   preview: string;
 }
 
-type FindResults = { file: string; text: string; occurrences: Occurence[] }[];
+type FindResults = {
+  file: string;
+  name: string;
+  text: string;
+  status: "NONE" | "WIP" | "REVIEW" | "FINAL";
+  folder: "string" | null;
+  occurrences: Occurence[];
+}[];
 
 async function findTextInJSXFiles(
   path: string,
-  searchString: string
+  component: FetchComponentResponseComponent
 ): Promise<FindResults> {
   const result: FindResults = [];
   const files = glob.sync(`${path}/**/*.+(jsx|tsx)`, {
@@ -60,8 +70,8 @@ async function findTextInJSXFiles(
 
         traverse(ast, {
           JSXText(path) {
-            if (path.node.value.includes(searchString)) {
-              const regex = new RegExp(searchString, "g");
+            if (path.node.value.includes(component.text)) {
+              const regex = new RegExp(component.text, "g");
               let match;
               while ((match = regex.exec(path.node.value)) !== null) {
                 const lines = path.node.value.slice(0, match.index).split("\n");
@@ -77,8 +87,8 @@ async function findTextInJSXFiles(
                 const preview = replaceAt(
                   line,
                   match.index,
-                  searchString,
-                  `${searchString}`
+                  component.text,
+                  `${component.text}`
                 );
 
                 occurrences.push({ lineNumber, preview });
@@ -88,7 +98,7 @@ async function findTextInJSXFiles(
         });
 
         if (occurrences.length > 0) {
-          result.push({ file, occurrences, text: searchString });
+          result.push({ file, occurrences, ...component });
         }
       })
     );

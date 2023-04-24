@@ -8,23 +8,33 @@ import {
   fetchComponents,
 } from "./http/fetchComponents";
 
+interface Result extends FetchComponentResponseComponent {
+  apiId: string;
+  occurrences: {
+    [file: string]: Occurence[];
+  };
+}
+
+interface Occurence {
+  lineNumber: number;
+  preview: string;
+}
+
 async function generateSuggestions(flags: { directory?: string }) {
   const components = await fetchComponents();
-  const results: {
-    [compApiId: string]: FindResults;
-  } = {};
+  const results: { [apiId: string]: Result } = {};
 
   for (const [compApiId, component] of Object.entries(components)) {
     if (!results[compApiId]) {
-      results[compApiId] = [];
+      results[compApiId] = { apiId: compApiId, ...component, occurrences: {} };
     }
 
     const directory = flags.directory || ".";
     const result = await findTextInJSXFiles(directory, component);
-    results[compApiId] = [...results[compApiId], ...result];
+    results[compApiId].occurrences = result;
 
     // Remove if there the length is zero
-    if (results[compApiId].length === 0) {
+    if (Object.keys(results[compApiId].occurrences).length === 0) {
       delete results[compApiId];
     }
   }
@@ -33,25 +43,11 @@ async function generateSuggestions(flags: { directory?: string }) {
   console.log(JSON.stringify(results, null, 2));
 }
 
-interface Occurence {
-  lineNumber: number;
-  preview: string;
-}
-
-type FindResults = {
-  file: string;
-  name: string;
-  text: string;
-  status: "NONE" | "WIP" | "REVIEW" | "FINAL";
-  folder: "string" | null;
-  occurrences: Occurence[];
-}[];
-
 async function findTextInJSXFiles(
   path: string,
   component: FetchComponentResponseComponent
-): Promise<FindResults> {
-  const result: FindResults = [];
+) {
+  const result: Result["occurrences"] = {};
   const files = glob.sync(`${path}/**/*.+(jsx|tsx)`, {
     ignore: "**/node_modules/**",
   });
@@ -59,6 +55,8 @@ async function findTextInJSXFiles(
   const promises: Promise<any>[] = [];
 
   for (const file of files) {
+    result[file] = [];
+
     promises.push(
       fs.readFile(file, "utf-8").then((code) => {
         const ast = parse(code, {
@@ -98,7 +96,9 @@ async function findTextInJSXFiles(
         });
 
         if (occurrences.length > 0) {
-          result.push({ file, occurrences, ...component });
+          result[file] = occurrences;
+        } else {
+          delete result[file];
         }
       })
     );

@@ -20,15 +20,12 @@ type Command =
   | "project add"
   | "project remove"
   | "generate-suggestions"
-  | "replace"
-  | string;
+  | "replace";
 
-type ProjectSubCommand = "add" | "remove";
-
-interface CommandConfig<T extends Command | ProjectSubCommand> {
+interface CommandConfig<T extends Command | "add" | "remove"> {
   name: T;
   description: string;
-  commands?: CommandConfig<ProjectSubCommand>[];
+  commands?: CommandConfig<"add" | "remove">[];
   flags?: {
     [flag: string]: { description: string; processor?: (value: string) => any };
   };
@@ -102,12 +99,13 @@ const setupCommands = () => {
         cmd
           .command(nestedCommand.name)
           .description(nestedCommand.description)
-          .action((str, options) =>
-            executeCommand(
-              `${commandConfig.name} ${nestedCommand.name}`,
-              options
-            )
-          );
+          .action((str, options) => {
+            if (commandConfig.name === "project") {
+              const command =
+                `${commandConfig.name} ${nestedCommand.name}` as Command;
+              return executeCommand(command, options);
+            }
+          });
       });
     }
   });

@@ -85,11 +85,7 @@ const setupCommands = () => {
     if (commandConfig.flags) {
       Object.entries(commandConfig.flags).forEach(
         ([flags, { description, processor }]) => {
-          if (processor) {
-            cmd.option(flags, description, processor);
-          } else {
-            cmd.option(flags, description);
-          }
+          cmd.option(flags, description, processor);
         }
       );
     }

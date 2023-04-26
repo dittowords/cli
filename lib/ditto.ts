@@ -153,7 +153,7 @@ const executeCommand = async (
     }
     case "replace": {
       return replace(options.args, {
-        ...(options.lineNumbers ? { lineNumbers: options.lineNumbers } : {}),
+        ...(options?.lineNumbers ? { lineNumbers: options.lineNumbers } : {}),
       });
     }
     default: {

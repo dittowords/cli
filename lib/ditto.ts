@@ -22,7 +22,16 @@ type Command =
   | "generate-suggestions"
   | "replace";
 
-const COMMANDS = [
+interface CommandConfig<T extends Command | "add" | "remove"> {
+  name: T;
+  description: string;
+  commands?: CommandConfig<"add" | "remove">[];
+  flags?: {
+    [flag: string]: { description: string; processor?: (value: string) => any };
+  };
+}
+
+const COMMANDS: CommandConfig<Command>[] = [
   {
     name: "pull",
     description: "Sync copy from Ditto into the current working directory",
@@ -44,12 +53,23 @@ const COMMANDS = [
   {
     name: "generate-suggestions",
     description: "Find text that can be potentially replaced with Ditto text",
+    flags: {
+      "-d, --directory [value]": {
+        description: "Directory to search for text",
+      },
+    },
   },
   {
     name: "replace",
     description: "Find and replace Ditto text with code",
+    flags: {
+      "-ln, --line-numbers [value]": {
+        description: "Only replace text on a specific line number",
+        processor: (value: string) => value.split(",").map(Number),
+      },
+    },
   },
-] as const;
+];
 
 const setupCommands = () => {
   program.name("ditto-cli");
@@ -58,19 +78,30 @@ const setupCommands = () => {
     const cmd = program
       .command(commandConfig.name)
       .description(commandConfig.description)
-      .action((str, options) => executeCommand(commandConfig.name, options));
+      .action((options) => {
+        return executeCommand(commandConfig.name, options);
+      });
 
-    if ("commands" in commandConfig) {
+    if (commandConfig.flags) {
+      Object.entries(commandConfig.flags).forEach(
+        ([flags, { description, processor }]) => {
+          cmd.option(flags, description, processor);
+        }
+      );
+    }
+
+    if ("commands" in commandConfig && commandConfig.commands) {
       commandConfig.commands.forEach((nestedCommand) => {
         cmd
           .command(nestedCommand.name)
           .description(nestedCommand.description)
-          .action((str, options) =>
-            executeCommand(
-              `${commandConfig.name} ${nestedCommand.name}`,
-              options
-            )
-          );
+          .action((str, options) => {
+            if (commandConfig.name === "project") {
+              const command =
+                `${commandConfig.name} ${nestedCommand.name}` as Command;
+              return executeCommand(command, options);
+            }
+          });
       });
     }
   });
@@ -85,7 +116,7 @@ const setupOptions = () => {
 
 const executeCommand = async (
   command: Command | "none",
-  options: string[]
+  options: any
 ): Promise<void> => {
   const needsInitialization = needsTokenOrSource();
   if (needsInitialization) {
@@ -116,10 +147,14 @@ const executeCommand = async (
       return removeProject();
     }
     case "generate-suggestions": {
-      return generateSuggestions();
+      return generateSuggestions({
+        ...(options.directory ? { directory: options.directory } : {}),
+      });
     }
     case "replace": {
-      return replace(options);
+      return replace(options.args, {
+        ...(options?.lineNumbers ? { lineNumbers: options.lineNumbers } : {}),
+      });
     }
     default: {
       quit("Exiting Ditto CLI...");

@@ -1,6 +1,17 @@
 import api from "../api";
 
-export async function fetchComponents() {
+export interface FetchComponentResponseComponent {
+  name: string;
+  text: string;
+  status: "NONE" | "WIP" | "REVIEW" | "FINAL";
+  folder: "string" | null;
+}
+
+export interface FetchComponentResponse {
+  [compApiId: string]: FetchComponentResponseComponent;
+}
+
+export async function fetchComponents(): Promise<FetchComponentResponse> {
   const { data } = await api.get<{
     [compApiId: string]: {
       name: string;

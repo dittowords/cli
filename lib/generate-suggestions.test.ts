@@ -14,19 +14,23 @@ describe("findTextInJSXFiles", () => {
     await fs.unlink(filePath);
   }
 
-  it("should return an empty array when no files are found", async () => {
-    const result = await findTextInJSXFiles(".", "searchString");
+  it("should return an empty obj when no files are found", async () => {
+    const result = await findTextInJSXFiles(".", {
+      text: "searchString",
+    } as any);
 
-    expect(result).toEqual([]);
+    expect(result).toEqual({});
   });
 
-  it("should return an empty array when searchString is not found in any file", async () => {
+  it("should return an empty obj when searchString is not found in any file", async () => {
     const file1 = await createTempFile("file1.jsx", "<div>No match</div>");
     const file2 = await createTempFile("file2.tsx", "<div>No match</div>");
 
-    const result = await findTextInJSXFiles(".", "searchString");
+    const result = await findTextInJSXFiles(".", {
+      text: "searchString",
+    } as any);
 
-    expect(result).toEqual([]);
+    expect(result).toEqual({});
 
     await deleteTempFile(file1);
     await deleteTempFile(file2);
@@ -38,25 +42,22 @@ describe("findTextInJSXFiles", () => {
       `<div>Test searchString and another searchString</div>`
     );
 
-    const expectedResult = [
-      {
-        file: file1,
-        occurrences: [
-          {
-            lineNumber: 1,
-            preview:
-              "<div>Test {{searchString}} and another searchString</div>",
-          },
-          {
-            lineNumber: 1,
-            preview:
-              "<div>Test searchString and another {{searchString}}</div>",
-          },
-        ],
-      },
-    ];
+    const expectedResult = {
+      [file1]: [
+        {
+          lineNumber: 1,
+          preview: "<div>Test searchString and another searchString</div>",
+        },
+        {
+          lineNumber: 1,
+          preview: "<div>Test searchString and another searchString</div>",
+        },
+      ],
+    };
 
-    const result = await findTextInJSXFiles(".", "searchString");
+    const result = await findTextInJSXFiles(".", {
+      text: "searchString",
+    } as any);
 
     expect(result).toEqual(expectedResult);
 

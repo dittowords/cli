@@ -3,38 +3,51 @@ import glob from "glob";
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 
-import { fetchComponents } from "./http/fetchComponents";
+import {
+  FetchComponentResponseComponent,
+  fetchComponents,
+} from "./http/fetchComponents";
 
-async function generateSuggestions() {
+interface Result extends FetchComponentResponseComponent {
+  apiId: string;
+  occurrences: {
+    [file: string]: Occurrence[];
+  };
+}
+
+interface Occurrence {
+  lineNumber: number;
+  preview: string;
+}
+
+async function generateSuggestions(flags: { directory?: string }) {
   const components = await fetchComponents();
-  const results: {
-    [compApiId: string]: FindResults;
-  } = {};
+  const results: { [apiId: string]: Result } = {};
 
   for (const [compApiId, component] of Object.entries(components)) {
     if (!results[compApiId]) {
-      results[compApiId] = [];
+      results[compApiId] = { apiId: compApiId, ...component, occurrences: {} };
     }
-    const result = await findTextInJSXFiles(".", component.text);
-    results[compApiId] = [...results[compApiId], ...result];
+
+    const directory = flags.directory || ".";
+    const result = await findTextInJSXFiles(directory, component);
+    results[compApiId].occurrences = result;
+
+    // Remove if there the length is zero
+    if (Object.keys(results[compApiId].occurrences).length === 0) {
+      delete results[compApiId];
+    }
   }
 
   // Display results to user
   console.log(JSON.stringify(results, null, 2));
 }
 
-interface Occurence {
-  lineNumber: number;
-  preview: string;
-}
-
-type FindResults = { file: string; occurrences: Occurence[] }[];
-
 async function findTextInJSXFiles(
   path: string,
-  searchString: string
-): Promise<FindResults> {
-  const result: { file: string; occurrences: Occurence[] }[] = [];
+  component: FetchComponentResponseComponent
+) {
+  const result: Result["occurrences"] = {};
   const files = glob.sync(`${path}/**/*.+(jsx|tsx)`, {
     ignore: "**/node_modules/**",
   });
@@ -42,6 +55,8 @@ async function findTextInJSXFiles(
   const promises: Promise<any>[] = [];
 
   for (const file of files) {
+    result[file] = [];
+
     promises.push(
       fs.readFile(file, "utf-8").then((code) => {
         const ast = parse(code, {
@@ -49,12 +64,12 @@ async function findTextInJSXFiles(
           plugins: ["jsx", "typescript"],
         });
 
-        const occurrences: Occurence[] = [];
+        const occurrences: Occurrence[] = [];
 
         traverse(ast, {
           JSXText(path) {
-            if (path.node.value.includes(searchString)) {
-              const regex = new RegExp(searchString, "g");
+            if (path.node.value.includes(component.text)) {
+              const regex = new RegExp(component.text, "g");
               let match;
               while ((match = regex.exec(path.node.value)) !== null) {
                 const lines = path.node.value.slice(0, match.index).split("\n");
@@ -70,8 +85,8 @@ async function findTextInJSXFiles(
                 const preview = replaceAt(
                   line,
                   match.index,
-                  searchString,
-                  `{{${searchString}}}`
+                  component.text,
+                  `${component.text}`
                 );
 
                 occurrences.push({ lineNumber, preview });
@@ -81,7 +96,9 @@ async function findTextInJSXFiles(
         });
 
         if (occurrences.length > 0) {
-          result.push({ file, occurrences });
+          result[file] = occurrences;
+        } else {
+          delete result[file];
         }
       })
     );

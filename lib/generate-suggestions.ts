@@ -69,7 +69,11 @@ async function findTextInJSXFiles(
         traverse(ast, {
           JSXText(path) {
             if (path.node.value.includes(component.text)) {
-              const regex = new RegExp(component.text, "g");
+              const escapedText = component.text.replace(
+                /[.*+?^${}()|[\]\\]/g,
+                "\\$&"
+              );
+              const regex = new RegExp(escapedText, "g");
               let match;
               while ((match = regex.exec(path.node.value)) !== null) {
                 const lines = path.node.value.slice(0, match.index).split("\n");

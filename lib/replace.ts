@@ -21,7 +21,11 @@ async function replaceJSXTextInFile(
     JSXText(path) {
       const { searchString, replaceWith } = replacement;
 
-      const regex = new RegExp(searchString, "gi");
+      const searchStringEscaped = searchString.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      );
+      const regex = new RegExp(searchStringEscaped, "gi");
       if (regex.test(path.node.value)) {
         // Ignore if not on a line number that we want to replace.
         if (
@@ -34,7 +38,7 @@ async function replaceJSXTextInFile(
 
         const splitValues = splitByCaseInsensitive(
           path.node.value,
-          searchString
+          searchStringEscaped
         );
         const nodes: (t.JSXElement | t.JSXText)[] = [];
 

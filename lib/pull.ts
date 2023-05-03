@@ -26,6 +26,7 @@ const SUPPORTED_FORMATS: SupportedFormat[] = [
   "structured",
   "android",
   "ios-strings",
+  "icu",
 ];
 
 const JSON_FORMATS: SupportedFormat[] = ["flat", "structured", "icu"];

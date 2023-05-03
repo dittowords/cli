@@ -1,5 +1,5 @@
 import { AxiosRequestConfig } from "axios";
-import api from "../api";
+import { createApiClient } from "../api";
 import { PullOptions } from "../pull";
 import { SourceInformation } from "../types";
 
@@ -7,6 +7,7 @@ export async function fetchVariants(
   source: SourceInformation,
   options: PullOptions = {}
 ) {
+  const api = createApiClient();
   if (!source.variants) {
     return null;
   }

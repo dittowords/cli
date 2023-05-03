@@ -3,7 +3,7 @@ import path from "path";
 
 import ora from "ora";
 
-import api from "./api";
+import { createApiClient } from "./api";
 import config from "./config";
 import consts from "./consts";
 import output from "./output";
@@ -14,7 +14,12 @@ import { cleanFileName } from "./utils/cleanFileName";
 import { SourceInformation, Token, Project } from "./types";
 import { fetchVariants } from "./http/fetchVariants";
 
-type SupportedFormat = "flat" | "structured" | "android" | "ios-strings";
+type SupportedFormat =
+  | "flat"
+  | "structured"
+  | "android"
+  | "ios-strings"
+  | "icu";
 
 const SUPPORTED_FORMATS: SupportedFormat[] = [
   "flat",
@@ -23,18 +28,20 @@ const SUPPORTED_FORMATS: SupportedFormat[] = [
   "ios-strings",
 ];
 
-const JSON_FORMATS: SupportedFormat[] = ["flat", "structured"];
+const JSON_FORMATS: SupportedFormat[] = ["flat", "structured", "icu"];
 
 const FORMAT_EXTENSIONS = {
   flat: ".json",
   structured: ".json",
   android: ".xml",
   "ios-strings": ".strings",
+  icu: ".json",
 };
 
 const getFormatDataIsValid = {
   flat: (data: string) => data !== "{}",
   structured: (data: string) => data !== "{}",
+  icu: (data: string) => data !== "{}",
   android: (data: string) => data.includes("<string"),
   "ios-strings": (data: string) => !!data,
 };
@@ -85,6 +92,7 @@ async function downloadAndSaveVariant(
   richText: boolean | undefined,
   token?: Token
 ) {
+  const api = createApiClient();
   const params: Record<string, string | null> = { variant: variantApiId };
   if (format) params.format = format;
   if (status) params.status = status;
@@ -152,6 +160,7 @@ async function downloadAndSaveBase(
   token?: Token,
   options?: PullOptions
 ) {
+  const api = createApiClient();
   const params = { ...options?.meta };
   if (format) params.format = format;
   if (status) params.status = status;
@@ -210,6 +219,7 @@ async function downloadAndSave(
   token?: Token,
   options?: PullOptions
 ) {
+  const api = createApiClient();
   const {
     validProjects,
     format: formatFromSource,

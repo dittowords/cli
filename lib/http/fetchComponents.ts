@@ -1,4 +1,4 @@
-import api from "../api";
+import { createApiClient } from "../api";
 
 export interface FetchComponentResponseComponent {
   name: string;
@@ -12,6 +12,7 @@ export interface FetchComponentResponse {
 }
 
 export async function fetchComponents(): Promise<FetchComponentResponse> {
+  const api = createApiClient();
   const { data } = await api.get<{
     [compApiId: string]: {
       name: string;

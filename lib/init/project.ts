@@ -1,6 +1,6 @@
 import ora from "ora";
 
-import api from "../api";
+import { createApiClient } from "../api";
 import config from "../config";
 import consts from "../consts";
 import output from "../output";
@@ -38,16 +38,13 @@ async function askForAnotherToken() {
 }
 
 async function listProjects(token: Token, projectsAlreadySelected: Project[]) {
+  const api = createApiClient();
   const spinner = ora("Fetching sources in your workspace...");
   spinner.start();
 
   let response: AxiosResponse<{ id: string; name: string }[]>;
   try {
-    response = await api.get("/project-names", {
-      headers: {
-        Authorization: `token ${token}`,
-      },
-    });
+    response = await api.get("/project-names");
   } catch (e) {
     spinner.stop();
     throw e;

@@ -7,9 +7,9 @@ The Ditto CLI helps teams integrate [Ditto](https://dittowords.com/) into their 
 You can install the CLI from npm:
 
 ```bash
-# as a dev dependency (recommended)
+# as a dev dependency (**recommended**)
 npm install --save-dev @dittowords/cli
-
+****
 # as a global package
 npm install --global @dittowords/cli
 ```
@@ -35,11 +35,11 @@ Thanks for authenticating.
 We'll save the key to: /Users/{username}/.config/ditto
 ```
 
-Once you've successfully authenticated, you'll be asked to choose a source (a project or your component library) to pull data from:
+Once you've successfully authenticated, you'll be asked to choose a source (a project or your component library) to pull data **from**:
 
 ```
 Looks like there are no Ditto sources selected for your current directory: /Users/ditto
-
+****
 ? Choose the source you'd like to sync text from:
 - Ditto Component Library https://app.dittowords.com/components
 - NUX Onboarding Flow https://app.dittowords.com/doc/609e9981c313f8018d0c346a
@@ -231,6 +231,7 @@ The CLI outputs data from Ditto by writing files to disk in your `ditto/` direct
 | :---------: | :----------------: | :-----------------: |
 |    flat     |        JSON        |      Web apps       |
 | structured  |        JSON        |      Web apps       |
+|     icu     |        JSON        |      Web apps       |
 |   android   |        XML         | Native Android apps |
 | ios-strings |      STRINGS       |   Native iOS apps   |
 

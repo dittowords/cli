@@ -3,13 +3,13 @@ import axios from "axios";
 import config from "./config";
 import consts from "./consts";
 
-export const create = (token?: string) => {
+export function createApiClient(token?: string) {
   return axios.create({
     baseURL: consts.API_HOST,
     headers: {
-      Authorization: `token ${token}`,
+      Authorization: `token ${
+        token || config.getToken(consts.CONFIG_FILE, consts.API_HOST)
+      }`,
     },
   });
-};
-
-export default create(config.getToken(consts.CONFIG_FILE, consts.API_HOST));
+}

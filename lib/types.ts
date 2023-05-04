@@ -20,7 +20,7 @@ export interface ConfigYAML {
     };
     projects?: Project[];
   };
-  format?: "flat" | "structured" | "android-xml" | "ios-strings";
+  format?: "flat" | "structured" | "android-xml" | "ios-strings" | "icu";
   status?: string;
   variants?: boolean;
   richText?: boolean;

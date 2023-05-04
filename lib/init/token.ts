@@ -4,7 +4,7 @@ import chalk from "chalk";
 
 import { prompt } from "enquirer";
 
-import { create } from "../api";
+import { createApiClient } from "../api";
 import consts from "../consts";
 import output from "../output";
 import config from "../config";
@@ -28,7 +28,7 @@ export const needsToken = (configFile?: string, host = consts.API_HOST) => {
 
 // Returns true if valid, otherwise an error message.
 async function checkToken(token: string): Promise<any> {
-  const axios = create(token);
+  const axios = createApiClient(token);
   const endpoint = "/token-check";
 
   let resOrError;

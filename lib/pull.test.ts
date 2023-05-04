@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
-import api from "./api";
-import config from "./config";
+import { createApiClient } from "./api";
 
 const testProjects = [
   {
@@ -14,7 +13,9 @@ const testProjects = [
 
 jest.mock("./api");
 
-const mockApi = api as jest.Mocked<typeof api>;
+const mockApi = createApiClient() as jest.Mocked<
+  ReturnType<typeof createApiClient>
+>;
 
 jest.mock("./consts", () => ({
   TEXT_DIR: ".testing",
@@ -116,7 +117,11 @@ describe("downloadAndSaveBase", () => {
     cleanOutputDir();
 
     mockApi.get.mockResolvedValueOnce({ data: [] });
-    const output = await downloadAndSaveBase(testProjects, "", undefined);
+    const output = await downloadAndSaveBase(
+      testProjects,
+      "" as any,
+      undefined
+    );
 
     expect(/saved to.*text\.json/.test(output)).toEqual(true);
     expect(output.match(/saved to/g)?.length).toEqual(1);

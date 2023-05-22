@@ -45,13 +45,14 @@ afterAll(() => {
 });
 
 describe("cleanOutputFiles", () => {
-  it("removes .js, .json, .xml, and .strings files", () => {
+  it("removes .js, .json, .xml, .strings, .stringsdict files", () => {
     cleanOutputDir();
 
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.json"), "test");
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.js"), "test");
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.xml"), "test");
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.strings"), "test");
+    fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.stringsdict"), "test");
     // this file shouldn't be deleted
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.txt"), "test");
 

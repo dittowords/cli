@@ -57,6 +57,7 @@ describe("parseOptions", () => {
   });
 });
 
+// TODO: this is flaky
 describe("replaceJSXTextInFile", () => {
   afterEach(async () => {
     await deleteTempFile("tempFile.jsx");

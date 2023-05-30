@@ -131,4 +131,4 @@ function replaceAt(
   );
 }
 
-export { findComponentsInJSXFiles as findTextInJSXFiles, generateSuggestions };
+export { findComponentsInJSXFiles, generateSuggestions };

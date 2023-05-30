@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { findTextInJSXFiles } from "./generate-suggestions";
+import { findComponentsInJSXFiles } from "./generate-suggestions";
 
 describe("findTextInJSXFiles", () => {
   async function createTempFile(filename, content) {
@@ -15,9 +15,7 @@ describe("findTextInJSXFiles", () => {
   }
 
   it("should return an empty obj when no files are found", async () => {
-    const result = await findTextInJSXFiles(".", {
-      text: "searchString",
-    } as any);
+    const result = await findComponentsInJSXFiles(".", {});
 
     expect(result).toEqual({});
   });
@@ -26,9 +24,14 @@ describe("findTextInJSXFiles", () => {
     const file1 = await createTempFile("file1.jsx", "<div>No match</div>");
     const file2 = await createTempFile("file2.tsx", "<div>No match</div>");
 
-    const result = await findTextInJSXFiles(".", {
-      text: "searchString",
-    } as any);
+    const result = await findComponentsInJSXFiles(".", {
+      acomponent: {
+        name: "A Component",
+        text: "A Component",
+        status: "NONE",
+        folder: null,
+      },
+    });
 
     expect(result).toEqual({});
 
@@ -43,21 +46,35 @@ describe("findTextInJSXFiles", () => {
     );
 
     const expectedResult = {
-      [file1]: [
-        {
-          lineNumber: 1,
-          preview: "<div>Test searchString and another searchString</div>",
+      "search-string": {
+        apiId: "search-string",
+        folder: null,
+        name: "Search String",
+        occurrences: {
+          [file1]: [
+            {
+              lineNumber: 1,
+              preview: "<div>Test searchString and another searchString</div>",
+            },
+            {
+              lineNumber: 1,
+              preview: "<div>Test searchString and another searchString</div>",
+            },
+          ],
         },
-        {
-          lineNumber: 1,
-          preview: "<div>Test searchString and another searchString</div>",
-        },
-      ],
+        status: "NONE",
+        text: "searchString",
+      },
     };
 
-    const result = await findTextInJSXFiles(".", {
-      text: "searchString",
-    } as any);
+    const result = await findComponentsInJSXFiles(".", {
+      "search-string": {
+        name: "Search String",
+        text: "searchString",
+        status: "NONE",
+        folder: null,
+      },
+    });
 
     expect(result).toEqual(expectedResult);
 

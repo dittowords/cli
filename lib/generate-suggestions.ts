@@ -23,8 +23,6 @@ interface Occurrence {
 
 async function generateSuggestions(flags: { directory?: string }) {
   const components = await fetchComponents();
-
-  console.log("debug3");
   const directory = flags.directory || ".";
 
   const results: { [apiId: string]: Result } = await findComponentsInJSXFiles(

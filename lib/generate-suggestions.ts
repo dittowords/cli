@@ -4,6 +4,7 @@ import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 
 import {
+  FetchComponentResponse,
   FetchComponentResponseComponent,
   fetchComponents,
 } from "./http/fetchComponents";
@@ -22,32 +23,24 @@ interface Occurrence {
 
 async function generateSuggestions(flags: { directory?: string }) {
   const components = await fetchComponents();
-  const results: { [apiId: string]: Result } = {};
 
-  for (const [compApiId, component] of Object.entries(components)) {
-    if (!results[compApiId]) {
-      results[compApiId] = { apiId: compApiId, ...component, occurrences: {} };
-    }
+  console.log("debug3");
+  const directory = flags.directory || ".";
 
-    const directory = flags.directory || ".";
-    const result = await findTextInJSXFiles(directory, component);
-    results[compApiId].occurrences = result;
-
-    // Remove if there the length is zero
-    if (Object.keys(results[compApiId].occurrences).length === 0) {
-      delete results[compApiId];
-    }
-  }
+  const results: { [apiId: string]: Result } = await findComponentsInJSXFiles(
+    directory,
+    components
+  );
 
   // Display results to user
   console.log(JSON.stringify(results, null, 2));
 }
 
-async function findTextInJSXFiles(
+async function findComponentsInJSXFiles(
   path: string,
-  component: FetchComponentResponseComponent
-) {
-  const result: Result["occurrences"] = {};
+  components: FetchComponentResponse
+): Promise<{ [apiId: string]: Result }> {
+  const result: { [apiId: string]: Result } = {};
   const files = glob.sync(`${path}/**/*.+(jsx|tsx)`, {
     ignore: "**/node_modules/**",
   });
@@ -55,8 +48,6 @@ async function findTextInJSXFiles(
   const promises: Promise<any>[] = [];
 
   for (const file of files) {
-    result[file] = [];
-
     promises.push(
       fs.readFile(file, "utf-8").then((code) => {
         const ast = parse(code, {
@@ -68,42 +59,59 @@ async function findTextInJSXFiles(
 
         traverse(ast, {
           JSXText(path) {
-            if (path.node.value.includes(component.text)) {
-              const escapedText = component.text.replace(
-                /[.*+?^${}()|[\]\\]/g,
-                "\\$&"
-              );
-              const regex = new RegExp(escapedText, "g");
-              let match;
-              while ((match = regex.exec(path.node.value)) !== null) {
-                const lines = path.node.value.slice(0, match.index).split("\n");
+            for (const [compApiId, component] of Object.entries(components)) {
+              // If we haven't seen this component before, add it to the result
+              if (!result[compApiId]) {
+                result[compApiId] = {
+                  apiId: compApiId,
+                  ...component,
+                  occurrences: {},
+                };
+              }
 
-                if (!path.node.loc) {
-                  continue;
-                }
-
-                const lineNumber = path.node.loc.start.line + lines.length - 1;
-
-                const codeLines = code.split("\n");
-                const line = codeLines[lineNumber - 1];
-                const preview = replaceAt(
-                  line,
-                  match.index,
-                  component.text,
-                  `${component.text}`
+              if (path.node.value.includes(component.text)) {
+                // Escape all special characters from the text so we can use it in a regex
+                const escapedText = component.text.replace(
+                  /[.*+?^${}()|[\]\\]/g,
+                  "\\$&"
                 );
+                const regex = new RegExp(escapedText, "g");
+                let match;
+                while ((match = regex.exec(path.node.value)) !== null) {
+                  const lines = path.node.value
+                    .slice(0, match.index)
+                    .split("\n");
 
-                occurrences.push({ lineNumber, preview });
+                  if (!path.node.loc) {
+                    continue;
+                  }
+
+                  const lineNumber =
+                    path.node.loc.start.line + lines.length - 1;
+
+                  const codeLines = code.split("\n");
+                  const line = codeLines[lineNumber - 1];
+                  const preview = replaceAt(
+                    line,
+                    match.index,
+                    component.text,
+                    `${component.text}`
+                  );
+
+                  // Initialize the occurrences array if it doesn't exist
+                  if (!result[compApiId]["occurrences"][file]) {
+                    result[compApiId]["occurrences"][file] = [];
+                  }
+
+                  result[compApiId]["occurrences"][file].push({
+                    lineNumber,
+                    preview,
+                  });
+                }
               }
             }
           },
         });
-
-        if (occurrences.length > 0) {
-          result[file] = occurrences;
-        } else {
-          delete result[file];
-        }
       })
     );
   }
@@ -125,4 +133,4 @@ function replaceAt(
   );
 }
 
-export { findTextInJSXFiles, generateSuggestions };
+export { findComponentsInJSXFiles as findTextInJSXFiles, generateSuggestions };

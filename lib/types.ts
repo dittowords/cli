@@ -12,6 +12,14 @@ interface ComponentFolder {
   name: string;
 }
 
+export type SupportedFormat =
+  | "flat"
+  | "structured"
+  | "android"
+  | "ios-strings"
+  | "ios-stringsdict"
+  | "icu";
+
 export interface ConfigYAML {
   sources?: {
     components?: {
@@ -20,7 +28,7 @@ export interface ConfigYAML {
     };
     projects?: Project[];
   };
-  format?: "flat" | "structured" | "android-xml" | "ios-strings" | "icu";
+  format?: SupportedFormat;
   status?: string;
   variants?: boolean;
   richText?: boolean;

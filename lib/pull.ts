@@ -11,21 +11,15 @@ import { collectAndSaveToken } from "./init/token";
 import sourcesToText from "./utils/sourcesToText";
 import { generateJsDriver } from "./utils/generateJsDriver";
 import { cleanFileName } from "./utils/cleanFileName";
-import { SourceInformation, Token, Project } from "./types";
+import { SourceInformation, Token, Project, SupportedFormat } from "./types";
 import { fetchVariants } from "./http/fetchVariants";
-
-type SupportedFormat =
-  | "flat"
-  | "structured"
-  | "android"
-  | "ios-strings"
-  | "icu";
 
 const SUPPORTED_FORMATS: SupportedFormat[] = [
   "flat",
   "structured",
   "android",
   "ios-strings",
+  "ios-stringsdict",
   "icu",
 ];
 
@@ -36,6 +30,7 @@ const FORMAT_EXTENSIONS = {
   structured: ".json",
   android: ".xml",
   "ios-strings": ".strings",
+  "ios-stringsdict": ".stringsdict",
   icu: ".json",
 };
 
@@ -45,6 +40,7 @@ const getFormatDataIsValid = {
   icu: (data: string) => data !== "{}",
   android: (data: string) => data.includes("<string"),
   "ios-strings": (data: string) => !!data,
+  "ios-stringsdict": (data: string) => data.includes("<key>"),
 };
 
 const getFormat = (formatFromSource: string | undefined): SupportedFormat => {
@@ -207,7 +203,7 @@ function cleanOutputFiles() {
 
   const fileNames = fs.readdirSync(consts.TEXT_DIR);
   fileNames.forEach((fileName) => {
-    if (/\.js(on)?|\.xml|\.strings$/.test(fileName)) {
+    if (/\.js(on)?|\.xml|\.strings(dict)?$/.test(fileName)) {
       fs.unlinkSync(path.resolve(consts.TEXT_DIR, fileName));
     }
   });

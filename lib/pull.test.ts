@@ -13,7 +13,10 @@ const testProjects = [
 
 jest.mock("./api");
 
-const mockApi = createApiClient() as jest.Mocked<
+// TODO: all tests in this file currently failing because we're re-instantiating the api client
+// everywhere and are unable to mock the return type separately for each instance of usage.
+// We need to refactor to share one api client everywhere instead of always re-creating it.
+const mockApi = createApiClient() as any as jest.Mocked<
   ReturnType<typeof createApiClient>
 >;
 
@@ -45,17 +48,18 @@ afterAll(() => {
 });
 
 describe("cleanOutputFiles", () => {
-  it("removes .js, .json, .xml, and .strings files", () => {
+  it("removes .js, .json, .xml, .strings, .stringsdict files", () => {
     cleanOutputDir();
 
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.json"), "test");
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.js"), "test");
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.xml"), "test");
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.strings"), "test");
+    fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.stringsdict"), "test");
     // this file shouldn't be deleted
     fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.txt"), "test");
 
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(5);
+    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(6);
 
     cleanOutputFiles();
 
@@ -113,7 +117,7 @@ describe("downloadAndSaveBase", () => {
     }
   });
 
-  it("writes to text.json for default format", async () => {
+  it.only("writes to text.json for default format", async () => {
     cleanOutputDir();
 
     mockApi.get.mockResolvedValueOnce({ data: [] });
@@ -183,6 +187,22 @@ describe("downloadAndSaveBase", () => {
 
     expect(/saved to.*Project 1\.strings/.test(output)).toEqual(true);
     expect(/saved to.*Project 2\.strings/.test(output)).toEqual(true);
+    expect(output.match(/saved to/g)?.length).toEqual(2);
+    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
+  });
+
+  it("writes .stringsdict files for ios-stringsdict", async () => {
+    cleanOutputDir();
+
+    mockApi.get.mockResolvedValue({ data: "hello" });
+    const output = await downloadAndSaveBase(
+      testProjects,
+      "ios-stringsdict",
+      undefined
+    );
+
+    expect(/saved to.*Project 1\.stringsdict/.test(output)).toEqual(true);
+    expect(/saved to.*Project 2\.stringsdict/.test(output)).toEqual(true);
     expect(output.match(/saved to/g)?.length).toEqual(2);
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
   });

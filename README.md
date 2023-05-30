@@ -160,7 +160,7 @@ variants: true
 The format that text data should be generated in. Accepted values:
 
 - `structured`
-- `flat`
+  \*\*\*\*- `flat`
 - `android`
 - `ios-strings`
 - `ios-stringsdict` (will only include text that has pluralization enabled in Ditto)
@@ -230,12 +230,12 @@ The CLI outputs data from Ditto by writing files to disk in your `ditto/` direct
 
 |   **Format**    | **File Extension** |  **Common Usage**   |
 | :-------------: | :----------------: | :-----------------: |
-|      flat       |        JSON        |      Web apps       |
-|   structured    |        JSON        |      Web apps       |
-|       icu       |        JSON        |      Web apps       |
-|     android     |        XML         | Native Android apps |
-|   ios-strings   |      STRINGS       |   Native iOS apps   |
-| ios-stringsdict |    STRINGSDICT     |   Native iOS apps   |
+|      flat       |       .json        |      Web apps       |
+|   structured    |       .json        |      Web apps       |
+|       icu       |       .json        |      Web apps       |
+|     android     |        .xml        | Native Android apps |
+|   ios-strings   |      .strings      |   Native iOS apps   |
+| ios-stringsdict |    .stringsdict    |   Native iOS apps   |
 
 All files created will adhere to the following template:
 

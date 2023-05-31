@@ -53,8 +53,6 @@ async function findComponentsInJSXFiles(
           plugins: ["jsx", "typescript"],
         });
 
-        const occurrences: Occurrence[] = [];
-
         traverse(ast, {
           JSXText(path) {
             for (const [compApiId, component] of Object.entries(components)) {

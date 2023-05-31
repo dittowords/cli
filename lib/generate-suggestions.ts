@@ -21,27 +21,34 @@ interface Occurrence {
   preview: string;
 }
 
-async function generateSuggestions(flags: { directory?: string }) {
+async function generateSuggestions(flags: {
+  directory?: string;
+  files?: string[];
+}) {
   const components = await fetchComponents();
   const directory = flags.directory || ".";
 
-  const results: { [apiId: string]: Result } = await findComponentsInJSXFiles(
+  const results: { [apiId: string]: Result } = await findComponentsInJSXFiles({
     directory,
-    components
-  );
+    files: flags.files,
+    components,
+  });
 
   // Display results to user
   console.log(JSON.stringify(results, null, 2));
 }
 
-async function findComponentsInJSXFiles(
-  path: string,
-  components: FetchComponentResponse
-): Promise<{ [apiId: string]: Result }> {
+async function findComponentsInJSXFiles(params: {
+  directory: string;
+  files?: string[];
+  components: FetchComponentResponse;
+}): Promise<{ [apiId: string]: Result }> {
   const result: { [apiId: string]: Result } = {};
-  const files = glob.sync(`${path}/**/*.+(jsx|tsx)`, {
-    ignore: "**/node_modules/**",
-  });
+  const files =
+    params.files ||
+    glob.sync(`${params.directory}/**/*.+(jsx|tsx)`, {
+      ignore: "**/node_modules/**",
+    });
 
   const promises: Promise<any>[] = [];
 
@@ -55,7 +62,9 @@ async function findComponentsInJSXFiles(
 
         traverse(ast, {
           JSXText(path) {
-            for (const [compApiId, component] of Object.entries(components)) {
+            for (const [compApiId, component] of Object.entries(
+              params.components
+            )) {
               // If we haven't seen this component before, add it to the result
               if (!result[compApiId]) {
                 result[compApiId] = {
@@ -104,6 +113,11 @@ async function findComponentsInJSXFiles(
                     preview,
                   });
                 }
+              }
+
+              // Remove from result if no occurrences were found
+              if (Object.keys(result[compApiId]["occurrences"]).length === 0) {
+                delete result[compApiId];
               }
             }
           },

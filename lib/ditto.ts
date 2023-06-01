@@ -70,6 +70,10 @@ const COMMANDS: CommandConfig<Command>[] = [
       "-d, --directory [value]": {
         description: "Directory to search for text",
       },
+      "-f, --files [value]": {
+        description: "Files to search for text (will override -d)",
+        processor: (value: string) => value.split(","),
+      },
     },
   },
   {
@@ -167,6 +171,7 @@ const executeCommand = async (
     case "generate-suggestions": {
       return generateSuggestions({
         ...(options.directory ? { directory: options.directory } : {}),
+        ...(options.files ? { files: options.files } : {}),
       });
     }
     case "replace": {

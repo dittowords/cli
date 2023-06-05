@@ -74,6 +74,9 @@ const COMMANDS: CommandConfig<Command>[] = [
         description: "Files to search for text (will override -d)",
         processor: (value: string) => value.split(","),
       },
+      "-cf, --component-folder [value]": {
+        description: "Component folder to search for matches",
+      },
     },
   },
   {
@@ -172,6 +175,7 @@ const executeCommand = async (
       return generateSuggestions({
         ...(options.directory ? { directory: options.directory } : {}),
         ...(options.files ? { files: options.files } : {}),
+        ...(options.componentFolder ? { componentFolder: options.componentFolder } : {}),
       });
     }
     case "replace": {

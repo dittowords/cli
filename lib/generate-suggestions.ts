@@ -9,6 +9,11 @@ import {
   fetchComponents,
 } from "./http/fetchComponents";
 
+interface Occurrence {
+  lineNumber: number;
+  preview: string;
+}
+
 interface Result extends FetchComponentResponseComponent {
   apiId: string;
   occurrences: {
@@ -16,16 +21,14 @@ interface Result extends FetchComponentResponseComponent {
   };
 }
 
-interface Occurrence {
-  lineNumber: number;
-  preview: string;
-}
-
 async function generateSuggestions(flags: {
   directory?: string;
   files?: string[];
+  componentFolder?: string;
 }) {
-  const components = await fetchComponents();
+  const components = await fetchComponents({
+     ...(flags.componentFolder ? { componentFolder: flags.componentFolder} : {})
+  });
   const directory = flags.directory || ".";
 
   const results: { [apiId: string]: Result } = await findComponentsInJSXFiles({

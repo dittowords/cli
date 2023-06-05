@@ -20,9 +20,7 @@ function getVersion(): string {
   const packageJsonPath = path.join(__dirname, "..", "package.json");
   const packageJsonContent = fs.readFileSync(packageJsonPath, "utf8");
   const packageJson = JSON.parse(packageJsonContent) as { version: string };
-  const version = packageJson.version;
-
-  return version;
+  return packageJson.version;
 }
 
 const VERSION = getVersion();

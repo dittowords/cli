@@ -15,6 +15,7 @@ import { replace } from "./replace";
 import { generateSuggestions } from "./generate-suggestions";
 
 import processMetaOption from "./utils/processMetaOption";
+import { showComponentFolders } from "./component-folders";
 
 function getVersion(): string {
   const packageJsonPath = path.join(__dirname, "..", "package.json");
@@ -30,6 +31,7 @@ type Command =
   | "project"
   | "project add"
   | "project remove"
+  | "component-folders"
   | "generate-suggestions"
   | "replace";
 
@@ -60,6 +62,11 @@ const COMMANDS: CommandConfig<Command>[] = [
         description: "Stop syncing copy from a Ditto project",
       },
     ],
+  },
+  {
+    name: "component-folders",
+    description:
+      "List component folders in your workspace. More information about component folders can be found here: https://www.dittowords.com/docs/component-folders.",
   },
   {
     name: "generate-suggestions",
@@ -169,11 +176,14 @@ const executeCommand = async (
     case "project remove": {
       return removeProject();
     }
+    case "component-folders": {
+      return showComponentFolders();
+    }
     case "generate-suggestions": {
       return generateSuggestions({
-        ...(options.directory ? { directory: options.directory } : {}),
-        ...(options.files ? { files: options.files } : {}),
-        ...(options.componentFolder ? { componentFolder: options.componentFolder } : {}),
+        directory: options.directory,
+        files: options.files,
+        componentFolder: options.componentFolder,
       });
     }
     case "replace": {

@@ -31,7 +31,8 @@ type Command =
   | "project add"
   | "project remove"
   | "generate-suggestions"
-  | "replace";
+  | "replace"
+  | "import-components";
 
 interface CommandConfig<T extends Command | "add" | "remove"> {
   name: T;
@@ -84,6 +85,32 @@ const COMMANDS: CommandConfig<Command>[] = [
       "-ln, --line-numbers [value]": {
         description: "Only replace text on a specific line number",
         processor: (value: string) => value.split(",").map(Number),
+      },
+    },
+  },
+  {
+    name: "import-components",
+    description:
+      "Import components via a file. For more information please see: https://www.dittowords.com/docs/importing-string-files.",
+    flags: {
+      "-t, --text [value]": {
+        description: "Text column index",
+      },
+      "-n, --component-name": {
+        description: "Name column indexes",
+        processor: (value: string) => value.split(",").map(String),
+      },
+      "-no, --notes": {
+        description: "Notes column index",
+      },
+      "-t, --tags": {
+        description: "Tags column index",
+      },
+      "-s, --status": {
+        description: "Status column index",
+      },
+      "-c, --component-id": {
+        description: "Component ID column index",
       },
     },
   },
@@ -173,7 +200,9 @@ const executeCommand = async (
       return generateSuggestions({
         ...(options.directory ? { directory: options.directory } : {}),
         ...(options.files ? { files: options.files } : {}),
-        ...(options.componentFolder ? { componentFolder: options.componentFolder } : {}),
+        ...(options.componentFolder
+          ? { componentFolder: options.componentFolder }
+          : {}),
       });
     }
     case "replace": {

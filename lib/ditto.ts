@@ -66,7 +66,7 @@ const COMMANDS: CommandConfig<Command>[] = [
   {
     name: "component-folders",
     description:
-      "List component folders exist in your workspace. More information about component folders can be found here: https://www.dittowords.com/docs/component-folders.",
+      "List component folders in your workspace. More information about component folders can be found here: https://www.dittowords.com/docs/component-folders.",
   },
   {
     name: "generate-suggestions",

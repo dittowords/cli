@@ -181,11 +181,9 @@ const executeCommand = async (
     }
     case "generate-suggestions": {
       return generateSuggestions({
-        ...(options.directory ? { directory: options.directory } : {}),
-        ...(options.files ? { files: options.files } : {}),
-        ...(options.componentFolder
-          ? { componentFolder: options.componentFolder }
-          : {}),
+        directory: options.directory,
+        files: options.files,
+        componentFolder: options.componentFolder,
       });
     }
     case "replace": {

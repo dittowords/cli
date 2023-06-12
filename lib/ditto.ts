@@ -15,6 +15,7 @@ import { replace } from "./replace";
 import { generateSuggestions } from "./generate-suggestions";
 
 import processMetaOption from "./utils/processMetaOption";
+import { importComponents } from "./importComponents";
 
 function getVersion(): string {
   const packageJsonPath = path.join(__dirname, "..", "package.json");
@@ -96,20 +97,19 @@ const COMMANDS: CommandConfig<Command>[] = [
       "-t, --text [value]": {
         description: "Text column index",
       },
-      "-n, --component-name": {
-        description: "Name column indexes",
-        processor: (value: string) => value.split(",").map(String),
+      "-n, --component-name [value]": {
+        description: "Name column indexes (comma separated)",
       },
-      "-no, --notes": {
+      "-no, --notes [value]": {
         description: "Notes column index",
       },
-      "-t, --tags": {
+      "-t, --tags [value]": {
         description: "Tags column index",
       },
-      "-s, --status": {
+      "-s, --status [value]": {
         description: "Status column index",
       },
-      "-c, --component-id": {
+      "-c, --component-id [value]": {
         description: "Component ID column index",
       },
     },
@@ -208,6 +208,22 @@ const executeCommand = async (
     case "replace": {
       return replace(options.args, {
         ...(options?.lineNumbers ? { lineNumbers: options.lineNumbers } : {}),
+      });
+    }
+    case "import-components": {
+      if (options.args.length === 0) {
+        console.error("Please provide a file path.");
+        return;
+      }
+      return importComponents(options.args[0], {
+        csvColumnMapping: {
+          name: options.componentName,
+          text: options.text,
+          notes: options.notes,
+          tags: options.tags,
+          status: options.status,
+          componentId: options.componentId,
+        },
       });
     }
     default: {

@@ -1,5 +1,6 @@
 import { createApiClient } from "../api";
 import FormData from "form-data";
+import fs from "fs";
 
 export interface ImportComponentResponse {
   componentsInserted: number;
@@ -8,7 +9,7 @@ export interface ImportComponentResponse {
 
 export interface CsvColumnMapping {
   text: number;
-  name: number[];
+  name: string;
   notes?: number;
   tags?: number;
   status?: number;
@@ -24,20 +25,35 @@ export async function importComponents(
   const api = createApiClient();
 
   const form = new FormData();
-  form.append("import", path);
+  form.append("import", fs.createReadStream(path));
 
   const requestOptions = {
     method: "POST",
-    url: "/v1/components",
-    ...(options.csvColumnMapping ? { params: options.csvColumnMapping } : {}),
-    headers: {
-      "content-type":
-        "multipart/form-data; boundary=---011000010111000001101001",
+    url: "/v1/components/file",
+    params: {
+      ...(options.csvColumnMapping?.name
+        ? { name: `[${options.csvColumnMapping.name}]` }
+        : {}),
+      ...(options.csvColumnMapping?.text
+        ? { text: options.csvColumnMapping.text }
+        : {}),
     },
-    data: "[form]",
+    headers: {
+      "content-type": "multipart/form-data",
+    },
+    data: form,
   };
 
-  const { data } = await api(requestOptions);
+  try {
+    const { data } = await api(requestOptions);
 
-  return data;
+    return data;
+  } catch (e: any) {
+    console.error("Failed to import file.");
+    console.error(e.response?.data?.message || e.message);
+    return {
+      componentsInserted: 0,
+      firstImportedId: "null",
+    };
+  }
 }

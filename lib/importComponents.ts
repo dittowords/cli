@@ -6,7 +6,7 @@ import {
 async function importComponents(
   filePath: string,
   options: {
-    csvColumnMapping: CsvColumnMapping;
+    csvColumnMapping?: CsvColumnMapping;
   }
 ) {
   const importResult = await importComponentsHttp(filePath, options);

@@ -15,6 +15,7 @@ import { replace } from "./replace";
 import { generateSuggestions } from "./generate-suggestions";
 
 import processMetaOption from "./utils/processMetaOption";
+import { importComponents } from "./importComponents";
 import { showComponentFolders } from "./component-folders";
 
 function getVersion(): string {
@@ -33,7 +34,8 @@ type Command =
   | "project remove"
   | "component-folders"
   | "generate-suggestions"
-  | "replace";
+  | "replace"
+  | "import-components";
 
 interface CommandConfig<T extends Command | "add" | "remove"> {
   name: T;
@@ -91,6 +93,31 @@ const COMMANDS: CommandConfig<Command>[] = [
       "-ln, --line-numbers [value]": {
         description: "Only replace text on a specific line number",
         processor: (value: string) => value.split(",").map(Number),
+      },
+    },
+  },
+  {
+    name: "import-components",
+    description:
+      "Import components via a file. For more information please see: https://www.dittowords.com/docs/importing-string-files.",
+    flags: {
+      "-t, --text [value]": {
+        description: "Text column index (.csv format only)",
+      },
+      "-n, --component-name [value]": {
+        description: "Name column indexes (comma separated) (.csv format only)",
+      },
+      "-no, --notes [value]": {
+        description: "Notes column index (.csv format only)",
+      },
+      "-t, --tags [value]": {
+        description: "Tags column index (.csv format only)",
+      },
+      "-s, --status [value]": {
+        description: "Status column index (.csv format only)",
+      },
+      "-c, --component-id [value]": {
+        description: "Component ID column index (.csv format only)",
       },
     },
   },
@@ -189,6 +216,22 @@ const executeCommand = async (
     case "replace": {
       return replace(options.args, {
         ...(options?.lineNumbers ? { lineNumbers: options.lineNumbers } : {}),
+      });
+    }
+    case "import-components": {
+      if (options.args.length === 0) {
+        console.info("Please provide a file path.");
+        return;
+      }
+      return importComponents(options.args[0], {
+        csvColumnMapping: {
+          name: options.componentName,
+          text: options.text,
+          notes: options.notes,
+          tags: options.tags,
+          status: options.status,
+          componentId: options.componentId,
+        },
       });
     }
     default: {

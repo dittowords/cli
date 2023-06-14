@@ -220,7 +220,7 @@ const executeCommand = async (
     }
     case "import-components": {
       if (options.args.length === 0) {
-        console.error("Please provide a file path.");
+        console.info("Please provide a file path.");
         return;
       }
       return importComponents(options.args[0], {

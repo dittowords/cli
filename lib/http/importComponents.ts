@@ -37,6 +37,18 @@ export async function importComponents(
       ...(options.csvColumnMapping?.text
         ? { text: options.csvColumnMapping.text }
         : {}),
+      ...(options.csvColumnMapping?.notes
+        ? { notes: options.csvColumnMapping.notes }
+        : {}),
+      ...(options.csvColumnMapping?.status
+        ? { status: options.csvColumnMapping.status }
+        : {}),
+      ...(options.csvColumnMapping?.tags
+        ? { tags: options.csvColumnMapping.tags }
+        : {}),
+      ...(options.csvColumnMapping?.componentId
+        ? { componentId: options.csvColumnMapping.componentId }
+        : {}),
     },
     headers: {
       "content-type": "multipart/form-data",

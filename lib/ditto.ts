@@ -102,22 +102,22 @@ const COMMANDS: CommandConfig<Command>[] = [
       "Import components via a file. For more information please see: https://www.dittowords.com/docs/importing-string-files.",
     flags: {
       "-t, --text [value]": {
-        description: "Text column index",
+        description: "Text column index (.csv format only)",
       },
       "-n, --component-name [value]": {
-        description: "Name column indexes (comma separated)",
+        description: "Name column indexes (comma separated) (.csv format only)",
       },
       "-no, --notes [value]": {
-        description: "Notes column index",
+        description: "Notes column index (.csv format only)",
       },
       "-t, --tags [value]": {
-        description: "Tags column index",
+        description: "Tags column index (.csv format only)",
       },
       "-s, --status [value]": {
-        description: "Status column index",
+        description: "Status column index (.csv format only)",
       },
       "-c, --component-id [value]": {
-        description: "Component ID column index",
+        description: "Component ID column index (.csv format only)",
       },
     },
   },

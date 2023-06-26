@@ -43,13 +43,20 @@ const getFormatDataIsValid = {
   "ios-stringsdict": (data: string) => data.includes("<key>"),
 };
 
-const getFormat = (formatFromSource: string | undefined): SupportedFormat => {
-  const f = formatFromSource as SupportedFormat | undefined;
-  if (f && SUPPORTED_FORMATS.includes(f)) {
-    return f;
+const getFormat = (
+  formatFromSource: string | string[] | undefined
+): SupportedFormat[] => {
+  const formats = (
+    Array.isArray(formatFromSource) ? formatFromSource : [formatFromSource]
+  ).filter((format) =>
+    SUPPORTED_FORMATS.includes(format as SupportedFormat)
+  ) as SupportedFormat[];
+
+  if (formats.length) {
+    return formats;
   }
 
-  return "flat";
+  return ["flat"];
 };
 
 const getFormatExtension = (format: SupportedFormat) => {
@@ -218,7 +225,6 @@ async function downloadAndSave(
 ) {
   const api = createApiClient();
   const {
-    mode,
     validProjects,
     format: formatFromSource,
     shouldFetchComponentLibrary,
@@ -227,7 +233,7 @@ async function downloadAndSave(
     componentFolders,
   } = source;
 
-  const format = getFormat(formatFromSource);
+  const formats = getFormat(formatFromSource);
 
   let msg = "";
   const spinner = ora(msg);
@@ -292,10 +298,7 @@ async function downloadAndSave(
     }
 
     if (shouldFetchComponentLibrary) {
-      if (mode === "ios") {
-        await fetchComponentLibrary("ios-strings");
-        await fetchComponentLibrary("ios-stringsdict");
-      } else {
+      for (const format of formats) {
         await fetchComponentLibrary(format);
       }
     }
@@ -323,10 +326,7 @@ async function downloadAndSave(
     }
 
     if (validProjects.length) {
-      if (mode === "ios") {
-        await fetchProjects("ios-strings");
-        await fetchProjects("ios-stringsdict");
-      } else {
+      for (const format of formats) {
         await fetchProjects(format);
       }
     }
@@ -340,7 +340,7 @@ async function downloadAndSave(
       });
     }
 
-    if (JSON_FORMATS.includes(format) && mode !== "ios")
+    if (formats.some((f) => JSON_FORMATS.includes(f)))
       msg += generateJsDriver(sources);
 
     msg += `\n${output.success("Done")}!`;

@@ -188,7 +188,6 @@ function dedupeProjectName(projectNames: Set<string>, projectName: string) {
  */
 function parseSourceInformation(file?: string) {
   const {
-    mode,
     sources,
     variants,
     format,
@@ -226,7 +225,6 @@ function parseSourceInformation(file?: string) {
   const hasSourceData = !!validProjects.length || shouldFetchComponentLibrary;
 
   return {
-    mode,
     hasSourceData,
     validProjects,
     shouldFetchComponentLibrary,

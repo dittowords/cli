@@ -218,6 +218,7 @@ async function downloadAndSave(
 ) {
   const api = createApiClient();
   const {
+    mode,
     validProjects,
     format: formatFromSource,
     shouldFetchComponentLibrary,
@@ -243,7 +244,7 @@ async function downloadAndSave(
 
     const meta = options ? options.meta : {};
 
-    if (shouldFetchComponentLibrary) {
+    async function fetchComponentLibrary(format: SupportedFormat) {
       // Always include a variant with an apiID of undefined to ensure that we
       // fetch the base text for the component library.
       const componentVariants = [{ apiID: undefined }, ...(variants || [])];
@@ -290,7 +291,16 @@ async function downloadAndSave(
       msg += messages.join("");
     }
 
-    if (validProjects.length) {
+    if (shouldFetchComponentLibrary) {
+      if (mode === "ios") {
+        await fetchComponentLibrary("ios-strings");
+        await fetchComponentLibrary("ios-stringsdict");
+      } else {
+        await fetchComponentLibrary(format);
+      }
+    }
+
+    async function fetchProjects(format: SupportedFormat) {
       msg += variants
         ? await downloadAndSaveVariants(
             variants,
@@ -312,6 +322,15 @@ async function downloadAndSave(
           );
     }
 
+    if (validProjects.length) {
+      if (mode === "ios") {
+        await fetchProjects("ios-strings");
+        await fetchProjects("ios-stringsdict");
+      } else {
+        await fetchProjects(format);
+      }
+    }
+
     const sources = [...validProjects];
     if (shouldFetchComponentLibrary) {
       sources.push({
@@ -321,7 +340,8 @@ async function downloadAndSave(
       });
     }
 
-    if (JSON_FORMATS.includes(format)) msg += generateJsDriver(sources);
+    if (JSON_FORMATS.includes(format) && mode !== "ios")
+      msg += generateJsDriver(sources);
 
     msg += `\n${output.success("Done")}!`;
 

@@ -21,6 +21,7 @@ export type SupportedFormat =
   | "icu";
 
 export interface ConfigYAML {
+  mode?: "ios";
   sources?: {
     components?: {
       enabled?: boolean;
@@ -41,6 +42,7 @@ export interface ConfigYAML {
 }
 
 export interface SourceInformation {
+  mode?: "ios";
   hasSourceData: boolean;
   validProjects: Project[];
   shouldFetchComponentLibrary: boolean;

@@ -45,7 +45,7 @@ export interface SourceInformation {
   validProjects: Project[];
   shouldFetchComponentLibrary: boolean;
   variants: boolean;
-  format: string | undefined;
+  format: string | string[] | undefined;
   status: string | undefined;
   richText: boolean | undefined;
   componentFolders: ComponentFolder[] | null;

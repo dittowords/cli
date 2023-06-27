@@ -43,13 +43,20 @@ const getFormatDataIsValid = {
   "ios-stringsdict": (data: string) => data.includes("<key>"),
 };
 
-const getFormat = (formatFromSource: string | undefined): SupportedFormat => {
-  const f = formatFromSource as SupportedFormat | undefined;
-  if (f && SUPPORTED_FORMATS.includes(f)) {
-    return f;
+const getFormat = (
+  formatFromSource: string | string[] | undefined
+): SupportedFormat[] => {
+  const formats = (
+    Array.isArray(formatFromSource) ? formatFromSource : [formatFromSource]
+  ).filter((format) =>
+    SUPPORTED_FORMATS.includes(format as SupportedFormat)
+  ) as SupportedFormat[];
+
+  if (formats.length) {
+    return formats;
   }
 
-  return "flat";
+  return ["flat"];
 };
 
 const getFormatExtension = (format: SupportedFormat) => {
@@ -226,7 +233,7 @@ async function downloadAndSave(
     componentFolders,
   } = source;
 
-  const format = getFormat(formatFromSource);
+  const formats = getFormat(formatFromSource);
 
   let msg = "";
   const spinner = ora(msg);
@@ -243,7 +250,7 @@ async function downloadAndSave(
 
     const meta = options ? options.meta : {};
 
-    if (shouldFetchComponentLibrary) {
+    async function fetchComponentLibrary(format: SupportedFormat) {
       // Always include a variant with an apiID of undefined to ensure that we
       // fetch the base text for the component library.
       const componentVariants = [{ apiID: undefined }, ...(variants || [])];
@@ -290,7 +297,13 @@ async function downloadAndSave(
       msg += messages.join("");
     }
 
-    if (validProjects.length) {
+    if (shouldFetchComponentLibrary) {
+      for (const format of formats) {
+        await fetchComponentLibrary(format);
+      }
+    }
+
+    async function fetchProjects(format: SupportedFormat) {
       msg += variants
         ? await downloadAndSaveVariants(
             variants,
@@ -312,6 +325,12 @@ async function downloadAndSave(
           );
     }
 
+    if (validProjects.length) {
+      for (const format of formats) {
+        await fetchProjects(format);
+      }
+    }
+
     const sources = [...validProjects];
     if (shouldFetchComponentLibrary) {
       sources.push({
@@ -321,7 +340,8 @@ async function downloadAndSave(
       });
     }
 
-    if (JSON_FORMATS.includes(format)) msg += generateJsDriver(sources);
+    if (formats.some((f) => JSON_FORMATS.includes(f)))
+      msg += generateJsDriver(sources);
 
     msg += `\n${output.success("Done")}!`;
 

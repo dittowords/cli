@@ -2,6 +2,7 @@
   "name": "@dittowords/cli",
   "version": "3.10.0",
   "description": "Command Line Interface for Ditto (dittowords.com).",
+  "license": "MIT",
   "main": "bin/index.js",
   "scripts": {
     "prepublish": "tsc",

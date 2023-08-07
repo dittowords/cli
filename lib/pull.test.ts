@@ -1,8 +1,12 @@
 import fs from "fs";
 import path from "path";
+
+jest.mock("./api", () => ({
+  createApiClient: jest.fn(), // this needs to be mocked in each test that requires it
+}));
 import { createApiClient } from "./api";
 
-const testProjects = [
+const testProjects: Project[] = [
   {
     id: "1",
     name: "Project 1",
@@ -10,8 +14,6 @@ const testProjects = [
   },
   { id: "2", name: "Project 2", fileName: "Project 2" },
 ];
-
-jest.mock("./api");
 
 // TODO: all tests in this file currently failing because we're re-instantiating the api client
 // everywhere and are unable to mock the return type separately for each instance of usage.
@@ -30,6 +32,7 @@ jest.mock("./consts", () => ({
 
 import consts from "./consts";
 import allPull, { getFormatDataIsValid } from "./pull";
+import { Project } from "./types";
 
 const {
   _testing: { cleanOutputFiles, downloadAndSaveVariant, downloadAndSaveBase },
@@ -67,49 +70,6 @@ describe("cleanOutputFiles", () => {
   });
 });
 
-// describe("downloadAndSaveVariant", () => {
-//   beforeAll(() => {
-//     if (!fs.existsSync(consts.TEXT_DIR)) {
-//       fs.mkdirSync(consts.TEXT_DIR);
-//     }
-//   });
-
-//   it("writes a single file for default format", async () => {
-//     cleanOutputDir();
-
-//     const output = await downloadAndSaveVariant(variant, testProjects, "");
-//     expect(/saved to.*english\.json/.test(output)).toEqual(true);
-//     expect(output.match(/saved to/g)?.length).toEqual(1);
-//     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(1);
-//   });
-
-//   it("writes multiple files for flat format", async () => {
-//     cleanOutputDir();
-
-//     const output = await downloadAndSaveVariant(variant, testProjects, "flat");
-
-//     expect(/saved to.*Project 1__english\.json/.test(output)).toEqual(true);
-//     expect(/saved to.*Project 2__english\.json/.test(output)).toEqual(true);
-//     expect(output.match(/saved to/g)?.length).toEqual(2);
-//     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
-//   });
-
-//   it("writes multiple files for structured format", async () => {
-//     cleanOutputDir();
-
-//     const output = await downloadAndSaveVariant(
-//       variant,
-//       testProjects,
-//       "structured"
-//     );
-
-//     expect(/saved to.*Project 1__english\.json/.test(output)).toEqual(true);
-//     expect(/saved to.*Project 2__english\.json/.test(output)).toEqual(true);
-//     expect(output.match(/saved to/g)?.length).toEqual(2);
-//     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
-//   });
-// });
-
 describe("downloadAndSaveBase", () => {
   beforeAll(() => {
     if (!fs.existsSync(consts.TEXT_DIR)) {
@@ -117,94 +77,179 @@ describe("downloadAndSaveBase", () => {
     }
   });
 
-  it("writes to text.json for default format", async () => {
+  beforeEach(() => {
     cleanOutputDir();
-
-    mockApi.get.mockResolvedValueOnce({ data: [] });
-    const output = await downloadAndSaveBase(
-      testProjects,
-      "" as any,
-      undefined
-    );
-
-    expect(/saved to.*text\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g)?.length).toEqual(1);
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(1);
   });
 
-  it("writes multiple files for flat format", async () => {
-    cleanOutputDir();
-
-    mockApi.get.mockResolvedValue({ data: [] });
+  it("writes the flat format to disk", async () => {
+    const mockData = {
+      hello: "world",
+    };
+    (createApiClient as any).mockImplementation(() => ({
+      get: () => ({ data: mockData }),
+    }));
     const output = await downloadAndSaveBase(testProjects, "flat", undefined);
-    expect(/saved to.*Project 1\.json/.test(output)).toEqual(true);
-    expect(/saved to.*Project 2\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g)?.length).toEqual(2);
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
+    expect(/successfully saved/i.test(output)).toEqual(true);
+    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
+    expect(directoryContents.length).toEqual(testProjects.length);
+    expect(directoryContents.every((f) => f.endsWith(".json"))).toBe(true);
+    expect(
+      JSON.parse(
+        fs.readFileSync(
+          path.resolve(consts.TEXT_DIR, directoryContents[0]),
+          "utf8"
+        )
+      )
+    ).toEqual(mockData);
   });
 
-  it("writes multiple files for structured format", async () => {
-    cleanOutputDir();
-
-    mockApi.get.mockResolvedValue({ data: [] });
+  it("writes the structured format to disk", async () => {
+    const mockData = {
+      hello: { text: "world" },
+    };
+    (createApiClient as any).mockImplementation(() => ({
+      get: () => ({ data: mockData }),
+    }));
     const output = await downloadAndSaveBase(
       testProjects,
       "structured",
       undefined
     );
-
-    expect(/saved to.*Project 1\.json/.test(output)).toEqual(true);
-    expect(/saved to.*Project 2\.json/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g)?.length).toEqual(2);
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
+    expect(/successfully saved/i.test(output)).toEqual(true);
+    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
+    expect(directoryContents.length).toEqual(testProjects.length);
+    expect(directoryContents.every((f) => f.endsWith(".json"))).toBe(true);
+    expect(
+      JSON.parse(
+        fs.readFileSync(
+          path.resolve(consts.TEXT_DIR, directoryContents[0]),
+          "utf8"
+        )
+      )
+    ).toEqual(mockData);
   });
 
-  it("writes .xml files for android", async () => {
-    cleanOutputDir();
+  it("writes the icu format to disk", async () => {
+    const mockData = {
+      hello: "world",
+    };
+    (createApiClient as any).mockImplementation(() => ({
+      get: () => ({ data: mockData }),
+    }));
+    const output = await downloadAndSaveBase(testProjects, "icu", undefined);
+    expect(/successfully saved/i.test(output)).toEqual(true);
+    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
+    expect(directoryContents.length).toEqual(testProjects.length);
+    expect(directoryContents.every((f) => f.endsWith(".json"))).toBe(true);
+    expect(
+      JSON.parse(
+        fs.readFileSync(
+          path.resolve(consts.TEXT_DIR, directoryContents[0]),
+          "utf8"
+        )
+      )
+    ).toEqual(mockData);
+  });
 
-    mockApi.get.mockResolvedValue({ data: "hello" });
+  it("writes the android format to disk", async () => {
+    const mockData = `
+      <?xml version="1.0" encoding="utf-8"?>
+      <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+          <string name="hello-world" ditto_api_id="hello-world">Hello World</string>
+      </resources>
+    `;
+    (createApiClient as any).mockImplementation(() => ({
+      get: () => ({ data: mockData }),
+    }));
     const output = await downloadAndSaveBase(
       testProjects,
       "android",
       undefined
     );
-
-    expect(/saved to.*Project 1\.xml/.test(output)).toEqual(true);
-    expect(/saved to.*Project 2\.xml/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g)?.length).toEqual(2);
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
+    expect(/successfully saved/i.test(output)).toEqual(true);
+    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
+    expect(directoryContents.length).toEqual(testProjects.length);
+    expect(directoryContents.every((f) => f.endsWith(".xml"))).toBe(true);
+    expect(
+      fs
+        .readFileSync(
+          path.resolve(consts.TEXT_DIR, directoryContents[0]),
+          "utf8"
+        )
+        .replace(/\s/g, "")
+    ).toEqual(mockData.replace(/\s/g, ""));
   });
 
-  it("writes .strings files for ios-strings", async () => {
-    cleanOutputDir();
-
-    mockApi.get.mockResolvedValue({ data: "hello" });
+  it("writes the ios-strings format to disk", async () => {
+    const mockData = `
+      "hello" = "world"; 
+    `;
+    (createApiClient as any).mockImplementation(() => ({
+      get: () => ({ data: mockData }),
+    }));
     const output = await downloadAndSaveBase(
       testProjects,
       "ios-strings",
       undefined
     );
-
-    expect(/saved to.*Project 1\.strings/.test(output)).toEqual(true);
-    expect(/saved to.*Project 2\.strings/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g)?.length).toEqual(2);
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
+    expect(/successfully saved/i.test(output)).toEqual(true);
+    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
+    expect(directoryContents.length).toEqual(testProjects.length);
+    expect(directoryContents.every((f) => f.endsWith(".strings"))).toBe(true);
+    expect(
+      fs
+        .readFileSync(
+          path.resolve(consts.TEXT_DIR, directoryContents[0]),
+          "utf8"
+        )
+        .replace(/\s/g, "")
+    ).toEqual(mockData.replace(/\s/g, ""));
   });
 
-  it("writes .stringsdict files for ios-stringsdict", async () => {
-    cleanOutputDir();
-
-    mockApi.get.mockResolvedValue({ data: "hello" });
+  it("writes the ios-stringsdict format to disk", async () => {
+    const mockData = `
+      <?xml version="1.0" encoding="utf-8"?>
+      <plist version="1.0">
+          <dict>
+              <key>hello-world</key>
+              <dict>
+                  <key>NSStringLocalizedFormatKey</key>
+                  <string>%1$#@count@</string>
+                  <key>count</key>
+                  <dict>
+                      <key>NSStringFormatSpecTypeKey</key>
+                      <string>NSStringPluralRuleType</string>
+                      <key>NSStringFormatValueTypeKey</key>
+                      <string>d</string>
+                      <key>other</key>
+                      <string>espanol</string>
+                  </dict>
+              </dict>
+          </dict>
+      </plist>
+    `;
+    (createApiClient as any).mockImplementation(() => ({
+      get: () => ({ data: mockData }),
+    }));
     const output = await downloadAndSaveBase(
       testProjects,
       "ios-stringsdict",
       undefined
     );
-
-    expect(/saved to.*Project 1\.stringsdict/.test(output)).toEqual(true);
-    expect(/saved to.*Project 2\.stringsdict/.test(output)).toEqual(true);
-    expect(output.match(/saved to/g)?.length).toEqual(2);
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
+    expect(/successfully saved/i.test(output)).toEqual(true);
+    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
+    expect(directoryContents.length).toEqual(testProjects.length);
+    expect(directoryContents.every((f) => f.endsWith(".stringsdict"))).toBe(
+      true
+    );
+    expect(
+      fs
+        .readFileSync(
+          path.resolve(consts.TEXT_DIR, directoryContents[0]),
+          "utf8"
+        )
+        .replace(/\s/g, "")
+    ).toEqual(mockData.replace(/\s/g, ""));
   });
 });
 

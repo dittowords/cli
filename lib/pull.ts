@@ -37,9 +37,8 @@ const FORMAT_EXTENSIONS = {
 
 const getJsonFormatIsValid = (data: string) => {
   try {
-    return (
-      Object.keys(JSON.parse(data)).filter((k) => !k.startsWith("__variant"))
-        .length > 0
+    return Object.keys(JSON.parse(data)).some(
+      (k) => !k.startsWith("__variant")
     );
   } catch {
     return false;

@@ -13,6 +13,7 @@ import { generateJsDriver } from "./utils/generateJsDriver";
 import { cleanFileName } from "./utils/cleanFileName";
 import { SourceInformation, Token, Project, SupportedFormat } from "./types";
 import { fetchVariants } from "./http/fetchVariants";
+import { kMaxLength } from "buffer";
 
 const SUPPORTED_FORMATS: SupportedFormat[] = [
   "flat",
@@ -34,12 +35,24 @@ const FORMAT_EXTENSIONS = {
   icu: ".json",
 };
 
-const getFormatDataIsValid = {
-  flat: (data: string) => data !== "{}",
-  structured: (data: string) => data !== "{}",
-  icu: (data: string) => data !== "{}",
+const getJsonFormatIsValid = (data: string) => {
+  try {
+    return (
+      Object.keys(JSON.parse(data)).filter((k) => !k.startsWith("__variant"))
+        .length > 0
+    );
+  } catch {
+    return false;
+  }
+};
+
+// exported for test usage only
+export const getFormatDataIsValid = {
+  flat: getJsonFormatIsValid,
+  structured: getJsonFormatIsValid,
+  icu: getJsonFormatIsValid,
   android: (data: string) => data.includes("<string"),
-  "ios-strings": (data: string) => !!data,
+  "ios-strings": (data: string) => data.includes(`" = "`),
   "ios-stringsdict": (data: string) => data.includes("<key>"),
 };
 

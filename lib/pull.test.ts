@@ -29,7 +29,7 @@ jest.mock("./consts", () => ({
 }));
 
 import consts from "./consts";
-import allPull from "./pull";
+import allPull, { getFormatDataIsValid } from "./pull";
 
 const {
   _testing: { cleanOutputFiles, downloadAndSaveVariant, downloadAndSaveBase },
@@ -117,7 +117,7 @@ describe("downloadAndSaveBase", () => {
     }
   });
 
-  it.only("writes to text.json for default format", async () => {
+  it("writes to text.json for default format", async () => {
     cleanOutputDir();
 
     mockApi.get.mockResolvedValueOnce({ data: [] });
@@ -205,5 +205,148 @@ describe("downloadAndSaveBase", () => {
     expect(/saved to.*Project 2\.stringsdict/.test(output)).toEqual(true);
     expect(output.match(/saved to/g)?.length).toEqual(2);
     expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(2);
+  });
+});
+
+describe("getFormatDataIsValid", () => {
+  it("handles flat format appropriately", () => {
+    expect(getFormatDataIsValid.flat("{}")).toBe(false);
+    expect(getFormatDataIsValid.flat(`{ "hello": "world" }`)).toBe(true);
+    expect(
+      getFormatDataIsValid.flat(`{
+      "__variant-name": "English",
+      "__variant-description": ""
+    }`)
+    ).toBe(false);
+    expect(
+      getFormatDataIsValid.flat(`{
+      "__variant-name": "English",
+      "__variant-description": "",
+      "hello": "world"
+    }`)
+    ).toBe(true);
+  });
+  it("handles structured format appropriately", () => {
+    expect(getFormatDataIsValid.structured("{}")).toBe(false);
+    expect(
+      getFormatDataIsValid.structured(`{ "hello": { "text": "world" } }`)
+    ).toBe(true);
+    expect(
+      getFormatDataIsValid.structured(`{
+      "__variant-name": "English",
+      "__variant-description": ""
+    }`)
+    ).toBe(false);
+    expect(
+      getFormatDataIsValid.structured(`{
+      "__variant-name": "English",
+      "__variant-description": "",
+      "hello": { "text": "world" }
+    }`)
+    ).toBe(true);
+  });
+  it("handles icu format appropriately", () => {
+    expect(getFormatDataIsValid.icu("{}")).toBe(false);
+    expect(getFormatDataIsValid.icu(`{ "hello": "world" }`)).toBe(true);
+    expect(
+      getFormatDataIsValid.icu(`{
+      "__variant-name": "English",
+      "__variant-description": ""
+    }`)
+    ).toBe(false);
+    expect(
+      getFormatDataIsValid.icu(`{
+      "__variant-name": "English",
+      "__variant-description": "",
+      "hello": "world"
+    }`)
+    ).toBe(true);
+  });
+  it("handles android format appropriately", () => {
+    expect(
+      getFormatDataIsValid.android(`
+      <?xml version="1.0" encoding="utf-8"?>
+      <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2"/>
+    `)
+    ).toBe(false);
+    expect(
+      getFormatDataIsValid.android(`
+      <?xml version="1.0" encoding="utf-8"?>
+      <!--Variant Name: English-->
+      <!--Variant Description: -->
+      <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2"/>
+    `)
+    ).toBe(false);
+    expect(
+      getFormatDataIsValid.android(`
+      <?xml version="1.0" encoding="utf-8"?>
+      <!--Variant Name: English-->
+      <!--Variant Description: -->
+      <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+          <string name="hello-world" ditto_api_id="hello-world">Hello World</string>
+      </resources>
+    `)
+    ).toBe(true);
+  });
+  it("handles ios-strings format appropriately", () => {
+    expect(getFormatDataIsValid["ios-strings"]("")).toBe(false);
+    expect(
+      getFormatDataIsValid["ios-strings"](`
+        /* Variant Name: English */
+        /* Variant Description: */
+      `)
+    ).toBe(false);
+    expect(
+      getFormatDataIsValid["ios-strings"](`
+        /* Variant Name: English */
+        /* Variant Description: */
+        "Hello" = "World";
+      `)
+    ).toBe(true);
+  });
+  it("handles ios-stringsdict format appropriately", () => {
+    expect(
+      getFormatDataIsValid["ios-stringsdict"](`
+        <?xml version="1.0" encoding="utf-8"?>
+        <plist version="1.0">
+            <dict/>
+        </plist>
+      `)
+    ).toBe(false);
+    expect(
+      getFormatDataIsValid["ios-stringsdict"](`
+        <?xml version="1.0" encoding="utf-8"?>
+        <!--Variant Name: English-->
+        <!--Variant Description: -->
+        <plist version="1.0">
+            <dict/>
+        </plist>
+      `)
+    ).toBe(false);
+    expect(
+      getFormatDataIsValid["ios-stringsdict"](`
+        <?xml version="1.0" encoding="utf-8"?>
+        <!--Variant Name: English-->
+        <!--Variant Description: -->
+        <plist version="1.0">
+            <dict>
+              <key>Hello World</key>
+              <dict>
+                  <key>NSStringLocalizedFormatKey</key>
+                  <string>%1$#@count@</string>
+                  <key>count</key>
+                  <dict>
+                      <key>NSStringFormatSpecTypeKey</key>
+                      <string>NSStringPluralRuleType</string>
+                      <key>NSStringFormatValueTypeKey</key>
+                      <string>d</string>
+                      <key>other</key>
+                      <string>espanol</string>
+                  </dict>
+              </dict>
+            </dict>
+        </plist>
+      `)
+    ).toBe(true);
   });
 });

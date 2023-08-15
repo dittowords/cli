@@ -9,5 +9,5 @@
     "sourceMap": true,
     "strict": true
   },
-  "include": ["lib/ditto.ts"]
+  "include": ["lib/**/*.ts"]
 }

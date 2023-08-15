@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 
 import ora from "ora";
+import * as Sentry from "@sentry/node";
 
 import { createApiClient } from "./api";
 import config from "./config";
@@ -14,6 +15,8 @@ import { cleanFileName } from "./utils/cleanFileName";
 import { SourceInformation, Token, Project, SupportedFormat } from "./types";
 import { fetchVariants } from "./http/fetchVariants";
 import { kMaxLength } from "buffer";
+import { quit } from "./utils/quit";
+import { AxiosError } from "axios";
 
 const SUPPORTED_FORMATS: SupportedFormat[] = [
   "flat",
@@ -402,12 +405,27 @@ export interface PullOptions {
   meta?: Record<string, string>;
 }
 
-export const pull = (options?: PullOptions) => {
+export const pull = async (options?: PullOptions) => {
   const meta = options ? options.meta : {};
   const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
   const sourceInformation = config.parseSourceInformation();
 
-  return downloadAndSave(sourceInformation, token, { meta });
+  try {
+    return await downloadAndSave(sourceInformation, token, { meta });
+  } catch (e) {
+    Sentry.captureException(e);
+    if (e instanceof AxiosError) {
+      return quit(
+        output.errorText(
+          "Something went wrong connecting to Ditto servers. Please contact support or try again later."
+        )
+      );
+    }
+
+    return quit(
+      output.errorText("Something went wrong. Please try again later.")
+    );
+  }
 };
 
 export default {

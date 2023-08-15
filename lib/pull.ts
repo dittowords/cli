@@ -273,36 +273,47 @@ async function downloadAndSave(
       if (format) params.append("format", format);
       if (status) params.append("status", status);
       if (richText) params.append("includeRichText", richText.toString());
-      if (componentFolders) {
-        componentFolders.forEach(({ id }) => params.append("folder_id[]", id));
-      }
 
       const messages = await Promise.all(
-        componentVariants.map(async ({ apiID: variantApiId }) => {
-          const p = new URLSearchParams(params);
-          if (variantApiId) p.append("variant", variantApiId);
+        componentVariants.flatMap(async ({ apiID: variantApiId }) => {
+          return Promise.all(
+            (componentFolders || [{ id: "__root__", name: "Root" }]).map(
+              async (componentFolder) => {
+                const p = new URLSearchParams(params);
+                if (variantApiId) p.append("variant", variantApiId);
 
-          const { data } = await api.get(`/components`, { params: p });
+                const url =
+                  componentFolder.id === "__root__"
+                    ? "/components"
+                    : `/component-folders/${componentFolder.id}/components`;
 
-          const nameExt = getFormatExtension(format);
-          const nameBase = "ditto-component-library";
-          const namePostfix = `__${variantApiId || "base"}`;
+                const { data } = await api.get(url, { params: p });
 
-          const fileName = cleanFileName(`${nameBase}${namePostfix}${nameExt}`);
-          const filePath = path.join(consts.TEXT_DIR, fileName);
+                const nameExt = getFormatExtension(format);
+                const nameBase = "components";
+                const nameFolder = `__${componentFolder.name}`;
+                const namePostfix = `__${variantApiId || "base"}`;
 
-          let dataString = data;
-          if (nameExt === ".json") {
-            dataString = JSON.stringify(data, null, 2);
-          }
+                const fileName = cleanFileName(
+                  `${nameBase}${nameFolder}${namePostfix}${nameExt}`
+                );
+                const filePath = path.join(consts.TEXT_DIR, fileName);
 
-          const dataIsValid = getFormatDataIsValid[format];
-          if (!dataIsValid(dataString)) {
-            return "";
-          }
+                let dataString = data;
+                if (nameExt === ".json") {
+                  dataString = JSON.stringify(data, null, 2);
+                }
 
-          await new Promise((r) => fs.writeFile(filePath, dataString, r));
-          return getSavedMessage(fileName);
+                const dataIsValid = getFormatDataIsValid[format];
+                if (!dataIsValid(dataString)) {
+                  return "";
+                }
+
+                await new Promise((r) => fs.writeFile(filePath, dataString, r));
+                return getSavedMessage(fileName);
+              }
+            )
+          );
         })
       );
 

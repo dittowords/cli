@@ -111,13 +111,21 @@ async function downloadAndSaveVariant(
   const api = createApiClient();
   const params: Record<string, string | null> = { variant: variantApiId };
   if (format) params.format = format;
-  if (status) params.status = status;
   if (richText) params.includeRichText = richText.toString();
 
+  // Root-level status gets set as the default if specified
+  if (status) params.status = status;
+
   const savedMessages = await Promise.all(
-    projects.map(async ({ id, fileName }: Project) => {
-      const { data } = await api.get(`/projects/${id}`, {
-        params,
+    projects.map(async (project) => {
+      const projectParams = { ...params };
+      // If project-level status is specified, overrides root-level status
+      if (project.status) projectParams.status = project.status;
+      if (project.exclude_components)
+        projectParams.exclude_components = String(project.exclude_components);
+
+      const { data } = await api.get(`/projects/${project.id}`, {
+        params: projectParams,
         headers: { Authorization: `token ${token}` },
       });
 
@@ -128,7 +136,7 @@ async function downloadAndSaveVariant(
       const extension = getFormatExtension(format);
 
       const filename = cleanFileName(
-        fileName + ("__" + (variantApiId || "base")) + extension
+        project.fileName + ("__" + (variantApiId || "base")) + extension
       );
       const filepath = path.join(consts.TEXT_DIR, filename);
 
@@ -179,18 +187,26 @@ async function downloadAndSaveBase(
   const api = createApiClient();
   const params = { ...options?.meta };
   if (format) params.format = format;
-  if (status) params.status = status;
   if (richText) params.includeRichText = richText.toString();
 
+  // Root-level status gets set as the default if specified
+  if (status) params.status = status;
+
   const savedMessages = await Promise.all(
-    projects.map(async ({ id, fileName }: Project) => {
-      const { data } = await api.get(`/projects/${id}`, {
-        params,
+    projects.map(async (project) => {
+      const projectParams = { ...params };
+      // If project-level status is specified, overrides root-level status
+      if (project.status) projectParams.status = project.status;
+      if (project.exclude_components)
+        projectParams.exclude_components = String(project.exclude_components);
+
+      const { data } = await api.get(`/projects/${project.id}`, {
+        params: projectParams,
         headers: { Authorization: `token ${token}` },
       });
 
       const extension = getFormatExtension(format);
-      const filename = cleanFileName(`${fileName}__base${extension}`);
+      const filename = cleanFileName(`${project.fileName}__base${extension}`);
       const filepath = path.join(consts.TEXT_DIR, filename);
 
       let dataString = data;
@@ -271,23 +287,34 @@ async function downloadAndSave(
       if (options?.meta)
         Object.entries(options.meta).forEach(([k, v]) => params.append(k, v));
       if (format) params.append("format", format);
-      if (status) params.append("status", status);
       if (richText) params.append("includeRichText", richText.toString());
+
+      // Root-level status gets set as the default if specified
+      if (status) params.append("status", status);
 
       const messages = await Promise.all(
         componentVariants.flatMap(async ({ apiID: variantApiId }) => {
           return Promise.all(
             (componentFolders || [{ id: "__root__", name: "Root" }]).map(
               async (componentFolder) => {
-                const p = new URLSearchParams(params);
-                if (variantApiId) p.append("variant", variantApiId);
+                const componentFolderParams = new URLSearchParams(params);
+                if (variantApiId)
+                  componentFolderParams.append("variant", variantApiId);
+                // If folder-level status is specified, overrides root-level status
+                if (componentFolder.status)
+                  componentFolderParams.append(
+                    "status",
+                    componentFolder.status
+                  );
 
                 const url =
                   componentFolder.id === "__root__"
                     ? "/components"
                     : `/component-folders/${componentFolder.id}/components`;
 
-                const { data } = await api.get(url, { params: p });
+                const { data } = await api.get(url, {
+                  params: componentFolderParams,
+                });
 
                 const nameExt = getFormatExtension(format);
                 const nameBase = "components";

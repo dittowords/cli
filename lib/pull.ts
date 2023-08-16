@@ -13,7 +13,12 @@ import { generateJsDriver } from "./utils/generateJsDriver";
 import { cleanFileName } from "./utils/cleanFileName";
 import { SourceInformation, Token, Project, SupportedFormat } from "./types";
 import { fetchVariants } from "./http/fetchVariants";
-import { kMaxLength } from "buffer";
+
+const ensureEndsWithNewLine = (str: string) =>
+  str + (/[\r\n]$/.test(str) ? "" : "\n");
+
+const writeFile = (path: string, data: string) =>
+  new Promise((r) => fs.writeFile(path, ensureEndsWithNewLine(data), r));
 
 const SUPPORTED_FORMATS: SupportedFormat[] = [
   "flat",
@@ -142,7 +147,7 @@ async function downloadAndSaveVariant(
         return "";
       }
 
-      fs.writeFileSync(filepath, dataString);
+      await writeFile(filepath, dataString);
       return getSavedMessage(filename);
     })
   );
@@ -203,7 +208,7 @@ async function downloadAndSaveBase(
         return "";
       }
 
-      fs.writeFileSync(filepath, dataString);
+      await writeFile(filepath, dataString);
       return getSavedMessage(filename);
     })
   );
@@ -301,7 +306,8 @@ async function downloadAndSave(
             return "";
           }
 
-          await new Promise((r) => fs.writeFile(filePath, dataString, r));
+          await writeFile(filePath, dataString);
+
           return getSavedMessage(fileName);
         })
       );

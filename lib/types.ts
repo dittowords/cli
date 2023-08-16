@@ -3,6 +3,8 @@ export interface Project {
   id: string;
   url?: string;
   fileName?: string;
+  status?: string;
+  exclude_components?: boolean;
 }
 
 export type Source = Project;
@@ -10,6 +12,7 @@ export type Source = Project;
 interface ComponentFolder {
   id: string;
   name: string;
+  status?: string;
 }
 
 export type SupportedFormat =

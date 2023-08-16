@@ -5,7 +5,7 @@ import yaml from "js-yaml";
 
 import output from "./output";
 import consts from "./consts";
-import { Project, ConfigYAML } from "./types";
+import { Project, ConfigYAML, SourceInformation } from "./types";
 
 export const DEFAULT_CONFIG_JSON: ConfigYAML = {
   sources: {
@@ -186,7 +186,7 @@ function dedupeProjectName(projectNames: Set<string>, projectName: string) {
  * - an array of valid, deduped projects
  * - the `variants` and `format` config options
  */
-function parseSourceInformation(file?: string) {
+function parseSourceInformation(file?: string): SourceInformation {
   const {
     sources,
     variants,
@@ -235,6 +235,7 @@ function parseSourceInformation(file?: string) {
     hasTopLevelProjectsField: !!projectsRoot,
     hasTopLevelComponentsField: !!componentsRoot,
     hasComponentLibraryInProjects,
+    componentRoot: sources?.components?.root || false,
     componentFolders: sources?.components?.folders || null,
   };
 }

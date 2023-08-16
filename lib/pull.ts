@@ -11,8 +11,15 @@ import { collectAndSaveToken } from "./init/token";
 import sourcesToText from "./utils/sourcesToText";
 import { generateJsDriver } from "./utils/generateJsDriver";
 import { cleanFileName } from "./utils/cleanFileName";
-import { SourceInformation, Token, Project, SupportedFormat } from "./types";
+import {
+  SourceInformation,
+  Token,
+  Project,
+  SupportedFormat,
+  ComponentFolder,
+} from "./types";
 import { fetchVariants } from "./http/fetchVariants";
+import { fetchComponentFolders } from "./http/fetchComponentFolders";
 
 const ensureEndsWithNewLine = (str: string) =>
   str + (/[\r\n]$/.test(str) ? "" : "\n");
@@ -263,7 +270,8 @@ async function downloadAndSave(
     shouldFetchComponentLibrary,
     status,
     richText,
-    componentFolders,
+    componentFolders: specifiedComponentFolders,
+    componentRoot,
   } = source;
 
   const formats = getFormat(formatFromSource);
@@ -272,7 +280,17 @@ async function downloadAndSave(
   const spinner = ora(msg);
   spinner.start();
 
-  const variants = await fetchVariants(source);
+  const [variants, allComponentFoldersResponse] = await Promise.all([
+    fetchVariants(source),
+    fetchComponentFolders(),
+  ]);
+
+  const allComponentFolders = Object.entries(
+    allComponentFoldersResponse
+  ).reduce(
+    (acc, [id, name]) => acc.concat([{ id, name }]),
+    [] as ComponentFolder[]
+  );
 
   try {
     msg += cleanOutputFiles();
@@ -297,10 +315,56 @@ async function downloadAndSave(
       // Root-level status gets set as the default if specified
       if (status) params.append("status", status);
 
+      const rootRequest = {
+        id: "__root__",
+        name: "Root",
+        // componentRoot can be a boolean or an object
+        status:
+          typeof source.componentRoot === "object"
+            ? source.componentRoot.status
+            : undefined,
+      };
+
+      let componentFolderRequests: ComponentFolder[] = [];
+
+      // if folders specified..
+      if (specifiedComponentFolders) {
+        switch (componentRoot) {
+          // .. and no root specified, you only get components in the specified folders
+          case undefined:
+          case false:
+            componentFolderRequests.push(...specifiedComponentFolders);
+            break;
+          // .. and root specified, you get components in folders and the root
+          default:
+            componentFolderRequests.push(...specifiedComponentFolders);
+            componentFolderRequests.push(rootRequest);
+            break;
+        }
+      }
+      // if no folders specified..
+      else {
+        switch (componentRoot) {
+          // .. and no root specified, you get all components including those in folders
+          case undefined:
+            componentFolderRequests.push(...allComponentFolders);
+            componentFolderRequests.push(rootRequest);
+            break;
+          // .. and root specified as false, you only get components in folders
+          case false:
+            componentFolderRequests.push(...allComponentFolders);
+            break;
+          // .. and root specified as true or config object, you only get components in the root
+          default:
+            componentFolderRequests.push(rootRequest);
+            break;
+        }
+      }
+
       const messages = await Promise.all(
         componentVariants.flatMap(async ({ apiID: variantApiId }) => {
           return Promise.all(
-            (componentFolders || [{ id: "__root__", name: "Root" }]).map(
+            (componentFolderRequests || [{ id: "__root__", name: "Root" }]).map(
               async (componentFolder) => {
                 const componentFolderParams = new URLSearchParams(params);
                 if (variantApiId)
@@ -314,7 +378,7 @@ async function downloadAndSave(
 
                 const url =
                   componentFolder.id === "__root__"
-                    ? "/components"
+                    ? "/components?root_only=true"
                     : `/component-folders/${componentFolder.id}/components`;
 
                 const { data } = await api.get(url, {
@@ -395,6 +459,8 @@ async function downloadAndSave(
       });
     }
 
+    // TODO: update this so that all of the separate component library files get spread under one
+    // key, maintaining backwards compatibility for downstream SDKs
     if (formats.some((f) => JSON_FORMATS.includes(f)))
       msg += generateJsDriver(sources);
 

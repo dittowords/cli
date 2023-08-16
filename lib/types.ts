@@ -9,7 +9,7 @@ export interface Project {
 
 export type Source = Project;
 
-interface ComponentFolder {
+export interface ComponentFolder {
   id: string;
   name: string;
   status?: string;
@@ -27,6 +27,7 @@ export interface ConfigYAML {
   sources?: {
     components?: {
       enabled?: boolean;
+      root?: boolean | { status: string };
       folders?: ComponentFolder[];
     };
     projects?: Project[];
@@ -45,12 +46,16 @@ export interface ConfigYAML {
 
 export interface SourceInformation {
   hasSourceData: boolean;
+  hasTopLevelProjectsField: boolean;
+  hasTopLevelComponentsField: boolean;
+  hasComponentLibraryInProjects: boolean;
   validProjects: Project[];
   shouldFetchComponentLibrary: boolean;
   variants: boolean;
   format: string | string[] | undefined;
   status: string | undefined;
   richText: boolean | undefined;
+  componentRoot: boolean | { status: string } | undefined;
   componentFolders: ComponentFolder[] | null;
 }
 

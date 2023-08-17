@@ -23,13 +23,16 @@ export type SupportedFormat =
   | "ios-stringsdict"
   | "icu";
 
+type ComponentsSourceBool = boolean;
+type ComponentsSourceConfig = {
+  root?: boolean | { status: string };
+  folders?: ComponentFolder[];
+};
+type ComponentsSource = ComponentsSourceBool | ComponentsSourceConfig;
+
 export interface ConfigYAML {
   sources?: {
-    components?: {
-      enabled?: boolean;
-      root?: boolean | { status: string };
-      folders?: ComponentFolder[];
-    };
+    components?: ComponentsSource;
     projects?: Project[];
   };
   format?: SupportedFormat;
@@ -56,7 +59,7 @@ export interface SourceInformation {
   status: string | undefined;
   richText: boolean | undefined;
   componentRoot: boolean | { status: string } | undefined;
-  componentFolders: ComponentFolder[] | null;
+  componentFolders: ComponentFolder[] | undefined;
 }
 
 export type Token = string | undefined;

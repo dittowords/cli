@@ -327,6 +327,10 @@ async function downloadAndSave(
 
       let componentFolderRequests: ComponentFolder[] = [];
 
+      // there's a lot of complex logic here, and it's tempting to want to
+      // simplify it. however, it's difficult to get rid of the complexity
+      // without sacrificing specificity and expressiveness.
+      //
       // if folders specified..
       if (specifiedComponentFolders) {
         switch (componentRoot) {
@@ -361,58 +365,56 @@ async function downloadAndSave(
         }
       }
 
-      const messages = await Promise.all(
-        componentVariants.flatMap(async ({ apiID: variantApiId }) => {
-          return Promise.all(
-            (componentFolderRequests || [{ id: "__root__", name: "Root" }]).map(
-              async (componentFolder) => {
-                const componentFolderParams = new URLSearchParams(params);
-                if (variantApiId)
-                  componentFolderParams.append("variant", variantApiId);
-                // If folder-level status is specified, overrides root-level status
-                if (componentFolder.status)
-                  componentFolderParams.append(
-                    "status",
-                    componentFolder.status
-                  );
+      const messagePromises: Promise<string>[] = [];
 
-                const url =
-                  componentFolder.id === "__root__"
-                    ? "/components?root_only=true"
-                    : `/component-folders/${componentFolder.id}/components`;
+      componentVariants.forEach(({ apiID: variantApiId }) => {
+        messagePromises.push(
+          ...componentFolderRequests.map(async (componentFolder) => {
+            const componentFolderParams = new URLSearchParams(params);
 
-                const { data } = await api.get(url, {
-                  params: componentFolderParams,
-                });
+            if (variantApiId)
+              componentFolderParams.append("variant", variantApiId);
 
-                const nameExt = getFormatExtension(format);
-                const nameBase = "components";
-                const nameFolder = `__${componentFolder.name}`;
-                const namePostfix = `__${variantApiId || "base"}`;
+            // If folder-level status is specified, overrides root-level status
+            if (componentFolder.status)
+              componentFolderParams.append("status", componentFolder.status);
 
-                const fileName = cleanFileName(
-                  `${nameBase}${nameFolder}${namePostfix}${nameExt}`
-                );
-                const filePath = path.join(consts.TEXT_DIR, fileName);
+            const url =
+              componentFolder.id === "__root__"
+                ? "/components?root_only=true"
+                : `/component-folders/${componentFolder.id}/components`;
 
-                let dataString = data;
-                if (nameExt === ".json") {
-                  dataString = JSON.stringify(data, null, 2);
-                }
+            const { data } = await api.get(url, {
+              params: componentFolderParams,
+            });
 
-                const dataIsValid = getFormatDataIsValid[format];
-                if (!dataIsValid(dataString)) {
-                  return "";
-                }
+            const nameExt = getFormatExtension(format);
+            const nameBase = "components";
+            const nameFolder = `__${componentFolder.name}`;
+            const namePostfix = `__${variantApiId || "base"}`;
 
-                await writeFile(filePath, dataString);
-                return getSavedMessage(fileName);
-              }
-            )
-          );
-        })
-      );
+            const fileName = cleanFileName(
+              `${nameBase}${nameFolder}${namePostfix}${nameExt}`
+            );
+            const filePath = path.join(consts.TEXT_DIR, fileName);
 
+            let dataString = data;
+            if (nameExt === ".json") {
+              dataString = JSON.stringify(data, null, 2);
+            }
+
+            const dataIsValid = getFormatDataIsValid[format];
+            if (!dataIsValid(dataString)) {
+              return "";
+            }
+
+            await writeFile(filePath, dataString);
+            return getSavedMessage(fileName);
+          })
+        );
+      });
+
+      const messages = await Promise.all(messagePromises);
       msg += messages.join("");
     }
 

@@ -3,13 +3,16 @@ export interface Project {
   id: string;
   url?: string;
   fileName?: string;
+  status?: string;
+  exclude_components?: boolean;
 }
 
 export type Source = Project;
 
-interface ComponentFolder {
+export interface ComponentFolder {
   id: string;
   name: string;
+  status?: string;
 }
 
 export type SupportedFormat =
@@ -20,12 +23,16 @@ export type SupportedFormat =
   | "ios-stringsdict"
   | "icu";
 
+type ComponentsSourceBool = boolean;
+type ComponentsSourceConfig = {
+  root?: boolean | { status: string };
+  folders?: ComponentFolder[];
+};
+type ComponentsSource = ComponentsSourceBool | ComponentsSourceConfig;
+
 export interface ConfigYAML {
   sources?: {
-    components?: {
-      enabled?: boolean;
-      folders?: ComponentFolder[];
-    };
+    components?: ComponentsSource;
     projects?: Project[];
   };
   format?: SupportedFormat;
@@ -42,13 +49,17 @@ export interface ConfigYAML {
 
 export interface SourceInformation {
   hasSourceData: boolean;
+  hasTopLevelProjectsField: boolean;
+  hasTopLevelComponentsField: boolean;
+  hasComponentLibraryInProjects: boolean;
   validProjects: Project[];
   shouldFetchComponentLibrary: boolean;
   variants: boolean;
   format: string | string[] | undefined;
   status: string | undefined;
   richText: boolean | undefined;
-  componentFolders: ComponentFolder[] | null;
+  componentRoot: boolean | { status: string } | undefined;
+  componentFolders: ComponentFolder[] | undefined;
 }
 
 export type Token = string | undefined;

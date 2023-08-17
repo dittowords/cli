@@ -167,7 +167,7 @@ sources:
   components: true
 ```
 
-You can also opass an object that supports two complementary properties: `root` and `folders`.
+You can also pass an object that supports two complementary properties: `root` and `folders`.
 
 - `root` controls behavior for components that are NOT in folders (i.e. that are at the _root_ of the component library)
 - `folders` controls behavior for components that are ARE in folders

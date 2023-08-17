@@ -17,6 +17,8 @@ import {
   Project,
   SupportedFormat,
   ComponentFolder,
+  ComponentSource,
+  Source,
 } from "./types";
 import { fetchVariants } from "./http/fetchVariants";
 import { fetchComponentFolders } from "./http/fetchComponentFolders";
@@ -301,6 +303,60 @@ async function downloadAndSave(
 
     const meta = options ? options.meta : {};
 
+    const rootRequest = {
+      id: "__root__",
+      name: "Root",
+      // componentRoot can be a boolean or an object
+      status:
+        typeof source.componentRoot === "object"
+          ? source.componentRoot.status
+          : undefined,
+    };
+
+    let componentFolderRequests: ComponentFolder[] = [];
+
+    // there's a lot of complex logic here, and it's tempting to want to
+    // simplify it. however, it's difficult to get rid of the complexity
+    // without sacrificing specificity and expressiveness.
+    //
+    // if folders specified..
+    if (specifiedComponentFolders) {
+      switch (componentRoot) {
+        // .. and no root specified, you only get components in the specified folders
+        case undefined:
+        case false:
+          componentFolderRequests.push(...specifiedComponentFolders);
+          break;
+        // .. and root specified, you get components in folders and the root
+        default:
+          componentFolderRequests.push(...specifiedComponentFolders);
+          componentFolderRequests.push(rootRequest);
+          break;
+      }
+    }
+    // if no folders specified..
+    else {
+      switch (componentRoot) {
+        // .. and no root specified, you get all components including those in folders
+        case undefined:
+          componentFolderRequests.push(...allComponentFolders);
+          componentFolderRequests.push(rootRequest);
+          break;
+        // .. and root specified as false, you only get components in folders
+        case false:
+          componentFolderRequests.push(...allComponentFolders);
+          break;
+        // .. and root specified as true or config object, you only get components in the root
+        default:
+          componentFolderRequests.push(rootRequest);
+          break;
+      }
+    }
+
+    // this array is populated while fetching from the component library and is used when
+    // generating the index.js driver file
+    const componentSources: ComponentSource[] = [];
+
     async function fetchComponentLibrary(format: SupportedFormat) {
       // Always include a variant with an apiID of undefined to ensure that we
       // fetch the base text for the component library.
@@ -314,56 +370,6 @@ async function downloadAndSave(
 
       // Root-level status gets set as the default if specified
       if (status) params.append("status", status);
-
-      const rootRequest = {
-        id: "__root__",
-        name: "Root",
-        // componentRoot can be a boolean or an object
-        status:
-          typeof source.componentRoot === "object"
-            ? source.componentRoot.status
-            : undefined,
-      };
-
-      let componentFolderRequests: ComponentFolder[] = [];
-
-      // there's a lot of complex logic here, and it's tempting to want to
-      // simplify it. however, it's difficult to get rid of the complexity
-      // without sacrificing specificity and expressiveness.
-      //
-      // if folders specified..
-      if (specifiedComponentFolders) {
-        switch (componentRoot) {
-          // .. and no root specified, you only get components in the specified folders
-          case undefined:
-          case false:
-            componentFolderRequests.push(...specifiedComponentFolders);
-            break;
-          // .. and root specified, you get components in folders and the root
-          default:
-            componentFolderRequests.push(...specifiedComponentFolders);
-            componentFolderRequests.push(rootRequest);
-            break;
-        }
-      }
-      // if no folders specified..
-      else {
-        switch (componentRoot) {
-          // .. and no root specified, you get all components including those in folders
-          case undefined:
-            componentFolderRequests.push(...allComponentFolders);
-            componentFolderRequests.push(rootRequest);
-            break;
-          // .. and root specified as false, you only get components in folders
-          case false:
-            componentFolderRequests.push(...allComponentFolders);
-            break;
-          // .. and root specified as true or config object, you only get components in the root
-          default:
-            componentFolderRequests.push(rootRequest);
-            break;
-        }
-      }
 
       const messagePromises: Promise<string>[] = [];
 
@@ -409,6 +415,15 @@ async function downloadAndSave(
             }
 
             await writeFile(filePath, dataString);
+
+            componentSources.push({
+              type: "components",
+              id: "ditto_component_library",
+              name: "ditto_component_library",
+              fileName,
+              variant: variantApiId || "base",
+            });
+
             return getSavedMessage(fileName);
           })
         );
@@ -452,17 +467,8 @@ async function downloadAndSave(
       }
     }
 
-    const sources = [...validProjects];
-    if (shouldFetchComponentLibrary) {
-      sources.push({
-        id: "ditto_component_library",
-        name: "Ditto Component Library",
-        fileName: "ditto-component-library",
-      });
-    }
+    const sources: Source[] = [...validProjects, ...componentSources];
 
-    // TODO: update this so that all of the separate component library files get spread under one
-    // key, maintaining backwards compatibility for downstream SDKs
     if (formats.some((f) => JSON_FORMATS.includes(f)))
       msg += generateJsDriver(sources);
 

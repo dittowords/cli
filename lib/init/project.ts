@@ -105,7 +105,7 @@ export const collectAndSaveSource = async (
     const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
     const project = await collectSource(token, components);
     if (!project) {
-      quit("", 0);
+      quit(null, 0);
       return;
     }
 
@@ -126,7 +126,7 @@ export const collectAndSaveSource = async (
       await askForAnotherToken();
       await collectAndSaveSource({ components });
     } else {
-      quit("", 2);
+      quit(null, 2);
     }
   }
 };

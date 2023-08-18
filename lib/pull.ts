@@ -524,19 +524,20 @@ export const pull = async (options?: PullOptions) => {
   try {
     return await downloadAndSave(sourceInformation, token, { meta });
   } catch (e) {
-    Sentry.captureException(e);
+    const eventId = Sentry.captureException(e);
+    const eventStr = `\n\nError ID: ${output.info(eventId)}`;
     if (e instanceof AxiosError) {
       return quit(
         output.errorText(
           "Something went wrong connecting to Ditto servers. Please contact support or try again later."
-        )
+        ) + eventStr
       );
     }
 
     return quit(
       output.errorText(
         "Something went wrong. Please contact support or try again later."
-      )
+      ) + eventStr
     );
   }
 };

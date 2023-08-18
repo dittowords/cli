@@ -423,7 +423,9 @@ export const pull = async (options?: PullOptions) => {
     }
 
     return quit(
-      output.errorText("Something went wrong. Please try again later.")
+      output.errorText(
+        "Something went wrong. Please contact support or try again later."
+      )
     );
   }
 };

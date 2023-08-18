@@ -2,10 +2,11 @@ import fs from "fs";
 import path from "path";
 import url from "url";
 import yaml from "js-yaml";
+import * as Sentry from "@sentry/node";
 
-import output from "./output";
 import consts from "./consts";
 import { Project, ConfigYAML } from "./types";
+import { createSentryContext } from "./utils/createSentryContext";
 
 export const DEFAULT_CONFIG_JSON: ConfigYAML = {
   sources: {
@@ -154,6 +155,7 @@ function getToken(file: string, host: string) {
   const hostEntry = data[justTheHost(host)];
   if (!hostEntry) return undefined;
   const { length } = hostEntry;
+
   return hostEntry[length - 1].token;
 }
 
@@ -224,7 +226,7 @@ function parseSourceInformation(file?: string) {
 
   const hasSourceData = !!validProjects.length || shouldFetchComponentLibrary;
 
-  return {
+  const result = {
     hasSourceData,
     validProjects,
     shouldFetchComponentLibrary,
@@ -237,6 +239,10 @@ function parseSourceInformation(file?: string) {
     hasComponentLibraryInProjects,
     componentFolders: sources?.components?.folders || null,
   };
+
+  Sentry.setContext("config", createSentryContext(result));
+
+  return result;
 }
 
 export default {

@@ -5,7 +5,7 @@
   "license": "MIT",
   "main": "bin/index.js",
   "scripts": {
-    "prepublishOnly": "etsc && sentry-cli sourcemaps inject ./bin && npx sentry-cli sourcemaps upload ./bin --release=\"$(cat package.json | jq -r '.version')\"",
+    "prepublishOnly": "ENV=production etsc && sentry-cli sourcemaps inject ./bin && npx sentry-cli sourcemaps upload ./bin --release=\"$(cat package.json | jq -r '.version')\"",
     "prepare": "husky install",
     "start": "etsc && node bin/ditto.js",
     "sync": "etsc && node bin/ditto.js pull",

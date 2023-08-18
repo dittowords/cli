@@ -7,7 +7,13 @@ export interface Project {
   exclude_components?: boolean;
 }
 
-export type Source = Project;
+export type ComponentSource = ComponentFolder & {
+  type: "components";
+  fileName: string;
+  variant: string;
+};
+
+export type Source = (Project & { type?: undefined }) | ComponentSource;
 
 export interface ComponentFolder {
   id: string;

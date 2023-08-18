@@ -5,12 +5,12 @@ import yaml from "js-yaml";
 import * as Sentry from "@sentry/node";
 
 import consts from "./consts";
-import { Project, ConfigYAML } from "./types";
 import { createSentryContext } from "./utils/createSentryContext";
+import { Project, ConfigYAML, SourceInformation } from "./types";
 
 export const DEFAULT_CONFIG_JSON: ConfigYAML = {
   sources: {
-    components: { enabled: true },
+    components: true,
   },
   variants: true,
   format: "flat",
@@ -188,7 +188,7 @@ function dedupeProjectName(projectNames: Set<string>, projectName: string) {
  * - an array of valid, deduped projects
  * - the `variants` and `format` config options
  */
-function parseSourceInformation(file?: string) {
+function parseSourceInformation(file?: string): SourceInformation {
   const {
     sources,
     variants,
@@ -222,8 +222,20 @@ function parseSourceInformation(file?: string) {
     validProjects.push(project);
   });
 
-  const shouldFetchComponentLibrary = Boolean(sources?.components?.enabled);
+  const shouldFetchComponentLibrary = Boolean(sources?.components);
+  const componentRoot =
+    typeof sources?.components === "object"
+      ? sources.components.root
+      : undefined;
+  const componentFolders =
+    typeof sources?.components === "object"
+      ? sources.components.folders
+      : undefined;
 
+  /**
+   * If it's not specified to fetch projects or the component library, then there
+   * is no source data to pull.
+   */
   const hasSourceData = !!validProjects.length || shouldFetchComponentLibrary;
 
   const result = {
@@ -237,7 +249,8 @@ function parseSourceInformation(file?: string) {
     hasTopLevelProjectsField: !!projectsRoot,
     hasTopLevelComponentsField: !!componentsRoot,
     hasComponentLibraryInProjects,
-    componentFolders: sources?.components?.folders || null,
+    componentRoot,
+    componentFolders,
   };
 
   Sentry.setContext("config", createSentryContext(result));

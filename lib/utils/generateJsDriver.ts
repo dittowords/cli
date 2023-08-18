@@ -23,6 +23,8 @@ const stringifySourceId = (projectId: string) =>
  */
 
 // TODO: support ESM
+// TODO: to avoid breaking changes with Ditto React, we need to update components part of the file
+// to ...require('folder_file) for each folder into one larger object
 export function generateJsDriver(sources: Source[]) {
   const fileNames = fs
     .readdirSync(consts.TEXT_DIR)

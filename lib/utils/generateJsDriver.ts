@@ -24,10 +24,6 @@ const stringifySourceId = (projectId: string) =>
 
 // TODO: support ESM
 export function generateJsDriver(sources: Source[]) {
-  const fileNames = fs
-    .readdirSync(consts.TEXT_DIR)
-    .filter((fileName) => /\.json$/.test(fileName));
-
   const sourceIdsByName: Record<string, string> = sources.reduce(
     (agg, source) => {
       if (source.fileName) {
@@ -39,7 +35,14 @@ export function generateJsDriver(sources: Source[]) {
     {}
   );
 
-  const data = fileNames.reduce(
+  const projectFileNames = fs
+    .readdirSync(consts.TEXT_DIR)
+    .filter(
+      (fileName) => /\.json$/.test(fileName) && !/^components__/.test(fileName)
+    );
+
+  type DriverFile = Record<string, Record<string, string | object>>;
+  const data: DriverFile = projectFileNames.reduce(
     (obj: Record<string, Record<string, string>>, fileName) => {
       const [sourceId, rest] = fileName.split("__");
       const [variantApiId] = rest.split(".");
@@ -57,9 +60,40 @@ export function generateJsDriver(sources: Source[]) {
     {}
   );
 
+  // Create arrays of stringified "...require()" statements,
+  // each of which corresponds to one of the component files
+  // (which are created on a per-component-folder basis)
+  const componentData: Record<string, string[]> = {};
+  sources
+    .filter((s) => s.type === "components")
+    .forEach((componentSource) => {
+      if (componentSource.type !== "components") return;
+      componentData[componentSource.variant] ??= [];
+      componentData[componentSource.variant].push(
+        `...require('./${componentSource.fileName}')`
+      );
+    });
+  // Convert each array of stringified "...require()" statements
+  // into a unified string, and set it on the final data object
+  // that will be written to the driver file
+  Object.keys(componentData).forEach((key) => {
+    data.ditto_component_library ??= {};
+
+    let str = "{";
+    componentData[key].forEach((k, i) => {
+      str += k;
+      if (i < componentData[key].length - 1) str += ", ";
+    });
+    str += "}";
+    data.ditto_component_library[key] = str;
+  });
+
   let dataString = `module.exports = ${JSON.stringify(data, null, 2)}`
     // remove quotes around require statements
-    .replace(/"require\((.*)\)"/g, "require($1)");
+    .replace(/"require\((.*)\)"/g, "require($1)")
+    // remove quotes around opening & closing curlies
+    .replace(/"\{/g, "{")
+    .replace(/\}"/g, "}");
 
   const filePath = path.resolve(consts.TEXT_DIR, "index.js");
   fs.writeFileSync(filePath, dataString, { encoding: "utf8" });

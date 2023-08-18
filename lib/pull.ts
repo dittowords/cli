@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 
 import ora from "ora";
+import * as Sentry from "@sentry/node";
 
 import { createApiClient } from "./api";
 import config from "./config";
@@ -11,9 +12,25 @@ import { collectAndSaveToken } from "./init/token";
 import sourcesToText from "./utils/sourcesToText";
 import { generateJsDriver } from "./utils/generateJsDriver";
 import { cleanFileName } from "./utils/cleanFileName";
-import { SourceInformation, Token, Project, SupportedFormat } from "./types";
+import {
+  SourceInformation,
+  Token,
+  Project,
+  SupportedFormat,
+  ComponentFolder,
+  ComponentSource,
+  Source,
+} from "./types";
 import { fetchVariants } from "./http/fetchVariants";
-import { kMaxLength } from "buffer";
+import { quit } from "./utils/quit";
+import { AxiosError } from "axios";
+import { fetchComponentFolders } from "./http/fetchComponentFolders";
+
+const ensureEndsWithNewLine = (str: string) =>
+  str + (/[\r\n]$/.test(str) ? "" : "\n");
+
+const writeFile = (path: string, data: string) =>
+  new Promise((r) => fs.writeFile(path, ensureEndsWithNewLine(data), r));
 
 const SUPPORTED_FORMATS: SupportedFormat[] = [
   "flat",
@@ -111,13 +128,21 @@ async function downloadAndSaveVariant(
   const api = createApiClient();
   const params: Record<string, string | null> = { variant: variantApiId };
   if (format) params.format = format;
-  if (status) params.status = status;
   if (richText) params.includeRichText = richText.toString();
 
+  // Root-level status gets set as the default if specified
+  if (status) params.status = status;
+
   const savedMessages = await Promise.all(
-    projects.map(async ({ id, fileName }: Project) => {
-      const { data } = await api.get(`/projects/${id}`, {
-        params,
+    projects.map(async (project) => {
+      const projectParams = { ...params };
+      // If project-level status is specified, overrides root-level status
+      if (project.status) projectParams.status = project.status;
+      if (project.exclude_components)
+        projectParams.exclude_components = String(project.exclude_components);
+
+      const { data } = await api.get(`/projects/${project.id}`, {
+        params: projectParams,
         headers: { Authorization: `token ${token}` },
       });
 
@@ -128,7 +153,7 @@ async function downloadAndSaveVariant(
       const extension = getFormatExtension(format);
 
       const filename = cleanFileName(
-        fileName + ("__" + (variantApiId || "base")) + extension
+        project.fileName + ("__" + (variantApiId || "base")) + extension
       );
       const filepath = path.join(consts.TEXT_DIR, filename);
 
@@ -142,7 +167,7 @@ async function downloadAndSaveVariant(
         return "";
       }
 
-      fs.writeFileSync(filepath, dataString);
+      await writeFile(filepath, dataString);
       return getSavedMessage(filename);
     })
   );
@@ -179,18 +204,26 @@ async function downloadAndSaveBase(
   const api = createApiClient();
   const params = { ...options?.meta };
   if (format) params.format = format;
-  if (status) params.status = status;
   if (richText) params.includeRichText = richText.toString();
 
+  // Root-level status gets set as the default if specified
+  if (status) params.status = status;
+
   const savedMessages = await Promise.all(
-    projects.map(async ({ id, fileName }: Project) => {
-      const { data } = await api.get(`/projects/${id}`, {
-        params,
+    projects.map(async (project) => {
+      const projectParams = { ...params };
+      // If project-level status is specified, overrides root-level status
+      if (project.status) projectParams.status = project.status;
+      if (project.exclude_components)
+        projectParams.exclude_components = String(project.exclude_components);
+
+      const { data } = await api.get(`/projects/${project.id}`, {
+        params: projectParams,
         headers: { Authorization: `token ${token}` },
       });
 
       const extension = getFormatExtension(format);
-      const filename = cleanFileName(`${fileName}__base${extension}`);
+      const filename = cleanFileName(`${project.fileName}__base${extension}`);
       const filepath = path.join(consts.TEXT_DIR, filename);
 
       let dataString = data;
@@ -203,7 +236,7 @@ async function downloadAndSaveBase(
         return "";
       }
 
-      fs.writeFileSync(filepath, dataString);
+      await writeFile(filepath, dataString);
       return getSavedMessage(filename);
     })
   );
@@ -242,7 +275,8 @@ async function downloadAndSave(
     shouldFetchComponentLibrary,
     status,
     richText,
-    componentFolders,
+    componentFolders: specifiedComponentFolders,
+    componentRoot,
   } = source;
 
   const formats = getFormat(formatFromSource);
@@ -251,7 +285,17 @@ async function downloadAndSave(
   const spinner = ora(msg);
   spinner.start();
 
-  const variants = await fetchVariants(source);
+  const [variants, allComponentFoldersResponse] = await Promise.all([
+    fetchVariants(source),
+    fetchComponentFolders(),
+  ]);
+
+  const allComponentFolders = Object.entries(
+    allComponentFoldersResponse
+  ).reduce(
+    (acc, [id, name]) => acc.concat([{ id, name }]),
+    [] as ComponentFolder[]
+  );
 
   try {
     msg += cleanOutputFiles();
@@ -262,6 +306,60 @@ async function downloadAndSave(
 
     const meta = options ? options.meta : {};
 
+    const rootRequest = {
+      id: "__root__",
+      name: "Root",
+      // componentRoot can be a boolean or an object
+      status:
+        typeof source.componentRoot === "object"
+          ? source.componentRoot.status
+          : undefined,
+    };
+
+    let componentFolderRequests: ComponentFolder[] = [];
+
+    // there's a lot of complex logic here, and it's tempting to want to
+    // simplify it. however, it's difficult to get rid of the complexity
+    // without sacrificing specificity and expressiveness.
+    //
+    // if folders specified..
+    if (specifiedComponentFolders) {
+      switch (componentRoot) {
+        // .. and no root specified, you only get components in the specified folders
+        case undefined:
+        case false:
+          componentFolderRequests.push(...specifiedComponentFolders);
+          break;
+        // .. and root specified, you get components in folders and the root
+        default:
+          componentFolderRequests.push(...specifiedComponentFolders);
+          componentFolderRequests.push(rootRequest);
+          break;
+      }
+    }
+    // if no folders specified..
+    else {
+      switch (componentRoot) {
+        // .. and no root specified, you get all components including those in folders
+        case undefined:
+          componentFolderRequests.push(...allComponentFolders);
+          componentFolderRequests.push(rootRequest);
+          break;
+        // .. and root specified as false, you only get components in folders
+        case false:
+          componentFolderRequests.push(...allComponentFolders);
+          break;
+        // .. and root specified as true or config object, you only get components in the root
+        default:
+          componentFolderRequests.push(rootRequest);
+          break;
+      }
+    }
+
+    // this array is populated while fetching from the component library and is used when
+    // generating the index.js driver file
+    const componentSources: ComponentSource[] = [];
+
     async function fetchComponentLibrary(format: SupportedFormat) {
       // Always include a variant with an apiID of undefined to ensure that we
       // fetch the base text for the component library.
@@ -271,41 +369,70 @@ async function downloadAndSave(
       if (options?.meta)
         Object.entries(options.meta).forEach(([k, v]) => params.append(k, v));
       if (format) params.append("format", format);
-      if (status) params.append("status", status);
       if (richText) params.append("includeRichText", richText.toString());
-      if (componentFolders) {
-        componentFolders.forEach(({ id }) => params.append("folder_id[]", id));
-      }
 
-      const messages = await Promise.all(
-        componentVariants.map(async ({ apiID: variantApiId }) => {
-          const p = new URLSearchParams(params);
-          if (variantApiId) p.append("variant", variantApiId);
+      // Root-level status gets set as the default if specified
+      if (status) params.append("status", status);
 
-          const { data } = await api.get(`/components`, { params: p });
+      const messagePromises: Promise<string>[] = [];
 
-          const nameExt = getFormatExtension(format);
-          const nameBase = "ditto-component-library";
-          const namePostfix = `__${variantApiId || "base"}`;
+      componentVariants.forEach(({ apiID: variantApiId }) => {
+        messagePromises.push(
+          ...componentFolderRequests.map(async (componentFolder) => {
+            const componentFolderParams = new URLSearchParams(params);
 
-          const fileName = cleanFileName(`${nameBase}${namePostfix}${nameExt}`);
-          const filePath = path.join(consts.TEXT_DIR, fileName);
+            if (variantApiId)
+              componentFolderParams.append("variant", variantApiId);
 
-          let dataString = data;
-          if (nameExt === ".json") {
-            dataString = JSON.stringify(data, null, 2);
-          }
+            // If folder-level status is specified, overrides root-level status
+            if (componentFolder.status)
+              componentFolderParams.append("status", componentFolder.status);
 
-          const dataIsValid = getFormatDataIsValid[format];
-          if (!dataIsValid(dataString)) {
-            return "";
-          }
+            const url =
+              componentFolder.id === "__root__"
+                ? "/components?root_only=true"
+                : `/component-folders/${componentFolder.id}/components`;
 
-          await new Promise((r) => fs.writeFile(filePath, dataString, r));
-          return getSavedMessage(fileName);
-        })
-      );
+            const { data } = await api.get(url, {
+              params: componentFolderParams,
+            });
 
+            const nameExt = getFormatExtension(format);
+            const nameBase = "components";
+            const nameFolder = `__${componentFolder.name}`;
+            const namePostfix = `__${variantApiId || "base"}`;
+
+            const fileName = cleanFileName(
+              `${nameBase}${nameFolder}${namePostfix}${nameExt}`
+            );
+            const filePath = path.join(consts.TEXT_DIR, fileName);
+
+            let dataString = data;
+            if (nameExt === ".json") {
+              dataString = JSON.stringify(data, null, 2);
+            }
+
+            const dataIsValid = getFormatDataIsValid[format];
+            if (!dataIsValid(dataString)) {
+              return "";
+            }
+
+            await writeFile(filePath, dataString);
+
+            componentSources.push({
+              type: "components",
+              id: "ditto_component_library",
+              name: "ditto_component_library",
+              fileName,
+              variant: variantApiId || "base",
+            });
+
+            return getSavedMessage(fileName);
+          })
+        );
+      });
+
+      const messages = await Promise.all(messagePromises);
       msg += messages.join("");
     }
 
@@ -343,14 +470,7 @@ async function downloadAndSave(
       }
     }
 
-    const sources = [...validProjects];
-    if (shouldFetchComponentLibrary) {
-      sources.push({
-        id: "ditto_component_library",
-        name: "Ditto Component Library",
-        fileName: "ditto-component-library",
-      });
-    }
+    const sources: Source[] = [...validProjects, ...componentSources];
 
     if (formats.some((f) => JSON_FORMATS.includes(f)))
       msg += generateJsDriver(sources);
@@ -402,12 +522,30 @@ export interface PullOptions {
   meta?: Record<string, string>;
 }
 
-export const pull = (options?: PullOptions) => {
+export const pull = async (options?: PullOptions) => {
   const meta = options ? options.meta : {};
   const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
   const sourceInformation = config.parseSourceInformation();
 
-  return downloadAndSave(sourceInformation, token, { meta });
+  try {
+    return await downloadAndSave(sourceInformation, token, { meta });
+  } catch (e) {
+    const eventId = Sentry.captureException(e);
+    const eventStr = `\n\nError ID: ${output.info(eventId)}`;
+    if (e instanceof AxiosError) {
+      return quit(
+        output.errorText(
+          "Something went wrong connecting to Ditto servers. Please contact support or try again later."
+        ) + eventStr
+      );
+    }
+
+    return quit(
+      output.errorText(
+        "Something went wrong. Please contact support or try again later."
+      ) + eventStr
+    );
+  }
 };
 
 export default {

@@ -1,5 +1,4 @@
-export function quit(message: string, exitCode = 2) {
-  console.log(`\n${message}\n`);
+export function quit(message: string | null, exitCode = 2) {
+  if (message) console.log(`\n${message}\n`);
   process.exitCode = exitCode;
-  process.exit();
 }

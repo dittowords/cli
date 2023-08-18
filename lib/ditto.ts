@@ -5,6 +5,8 @@ import { program } from "commander";
 import "v8-compile-cache";
 import fs from "fs";
 import path from "path";
+import * as Sentry from "@sentry/node";
+import { version as release } from "../package.json";
 
 import { init, needsTokenOrSource } from "./init/init";
 import { pull } from "./pull";
@@ -17,6 +19,9 @@ import { generateSuggestions } from "./generate-suggestions";
 import processMetaOption from "./utils/processMetaOption";
 import { importComponents } from "./importComponents";
 import { showComponentFolders } from "./component-folders";
+
+const environment = process.env.ENV || "development";
+Sentry.init({ dsn: process.env.SENTRY_DSN, environment, release });
 
 function getVersion(): string {
   const packageJsonPath = path.join(__dirname, "..", "package.json");
@@ -155,6 +160,7 @@ const setupCommands = () => {
             if (commandConfig.name === "project") {
               const command =
                 `${commandConfig.name} ${nestedCommand.name}` as Command;
+
               return executeCommand(command, options);
             }
           });

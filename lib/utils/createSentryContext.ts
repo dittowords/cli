@@ -4,7 +4,7 @@ type SentryContext = Record<
 >;
 
 /**
- * Sentry context
+ * Sentry context only supports properties one layer deep
  */
 export function createSentryContext(obj: unknown) {
   if (typeof obj !== "object") return {};

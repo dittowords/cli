@@ -236,7 +236,7 @@ variants: true
 The format that text data should be generated in. Accepted values:
 
 - `structured`
-  \*\*\*\*- `flat`
+- `flat`
 - `android`
 - `ios-strings`
 - `ios-stringsdict` (will only include text that has pluralization enabled in Ditto)
@@ -338,13 +338,22 @@ richText: false
 
 ### `ditto/` Directory
 
-This directory houses the configuration file (`ditto/config.yml`) used by the CLI and is also the default write destination for any files the CLI generates. See [Output Directory](#output-directory) for details on how to customize the location that files are written to.
+This directory houses the configuration file (`ditto/config.yml`) used by the CLI and is also the default write destination for any output files the CLI writes to disk.
 
 If you run the CLI in a directory that does not contain a `ditto/` folder, the folder and a default `config.yml` file will be automatically created.
 
 #### Output Files
 
-The CLI outputs data from Ditto by writing files to disk in your `ditto/` directory. The format and extension of such files will correspond to the `format` property of your configuration.
+The CLI outputs data from Ditto by writing files to disk. By default, these files are written to a `./ditto` folder relative to the current working directory, but the location of the output files can be customized by setting the environment variable `DITTO_TEXT_DIR`.
+
+```bash
+export DITTO_TEXT_DIR=./src/some-custom-path
+
+# writes output files to ./src/some-custom-path
+npx @dittowords/cli
+```
+
+The format and extension of such files will correspond to the `format` property of your configuration.
 
 |   **Format**    | **File Extension** |  **Common Usage**   |
 | :-------------: | :----------------: | :-----------------: |

@@ -4,7 +4,7 @@ import config from "./config";
 import consts from "./consts";
 
 export function createApiClient(token?: string) {
-  return axios.create({
+  const client = axios.create({
     baseURL: consts.API_HOST,
     headers: {
       Authorization: `token ${
@@ -12,4 +12,20 @@ export function createApiClient(token?: string) {
       }`,
     },
   });
+
+  if (process.env.DEBUG_CLI) {
+    console.debug(`Host: ${consts.API_HOST}`);
+
+    client.interceptors.request.use((request) => {
+      console.debug("Starting Request", request.url);
+      return request;
+    });
+
+    client.interceptors.response.use(response => {
+      console.debug('Response:', response);
+      return response;
+    });
+  }
+
+  return client;
 }

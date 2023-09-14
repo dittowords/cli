@@ -55,7 +55,7 @@ const FORMAT_EXTENSIONS = {
 const getJsonFormatIsValid = (data: string) => {
   try {
     return Object.keys(JSON.parse(data)).some(
-      (k) => !k.startsWith("__variant")
+      (k) => !k.startsWith("__variant"),
     );
   } catch {
     return false;
@@ -73,12 +73,12 @@ export const getFormatDataIsValid = {
 };
 
 const getFormat = (
-  formatFromSource: string | string[] | undefined
+  formatFromSource: string | string[] | undefined,
 ): SupportedFormat[] => {
   const formats = (
     Array.isArray(formatFromSource) ? formatFromSource : [formatFromSource]
   ).filter((format) =>
-    SUPPORTED_FORMATS.includes(format as SupportedFormat)
+    SUPPORTED_FORMATS.includes(format as SupportedFormat),
   ) as SupportedFormat[];
 
   if (formats.length) {
@@ -123,7 +123,7 @@ async function downloadAndSaveVariant(
   format: SupportedFormat,
   status: string | undefined,
   richText: boolean | undefined,
-  token?: Token
+  token?: Token,
 ) {
   const api = createApiClient();
   const params: Record<string, string | null> = { variant: variantApiId };
@@ -153,7 +153,7 @@ async function downloadAndSaveVariant(
       const extension = getFormatExtension(format);
 
       const filename = cleanFileName(
-        project.fileName + ("__" + (variantApiId || "base")) + extension
+        project.fileName + ("__" + (variantApiId || "base")) + extension,
       );
       const filepath = path.join(consts.TEXT_DIR, filename);
 
@@ -169,7 +169,7 @@ async function downloadAndSaveVariant(
 
       await writeFile(filepath, dataString);
       return getSavedMessage(filename);
-    })
+    }),
   );
 
   return savedMessages.join("");
@@ -181,12 +181,12 @@ async function downloadAndSaveVariants(
   format: SupportedFormat,
   status: string | undefined,
   richText: boolean | undefined,
-  token?: Token
+  token?: Token,
 ) {
   const messages = await Promise.all([
     downloadAndSaveVariant(null, projects, format, status, richText, token),
     ...variants.map(({ apiID }: { apiID: string }) =>
-      downloadAndSaveVariant(apiID, projects, format, status, richText, token)
+      downloadAndSaveVariant(apiID, projects, format, status, richText, token),
     ),
   ]);
 
@@ -199,7 +199,7 @@ async function downloadAndSaveBase(
   status: string | undefined,
   richText?: boolean | undefined,
   token?: Token,
-  options?: PullOptions
+  options?: PullOptions,
 ) {
   const api = createApiClient();
   const params = { ...options?.meta };
@@ -238,7 +238,7 @@ async function downloadAndSaveBase(
 
       await writeFile(filepath, dataString);
       return getSavedMessage(filename);
-    })
+    }),
   );
 
   return savedMessages.join("");
@@ -266,9 +266,19 @@ function cleanOutputFiles() {
 async function downloadAndSave(
   source: SourceInformation,
   token?: Token,
-  options?: PullOptions
+  options?: PullOptions,
 ) {
   const api = createApiClient();
+
+  if (process.env.DEBUG_CLI) {
+    try {
+      await api.get("/health");
+      console.debug("Can connect to api.dittowords.com");
+    } catch {
+      console.debug("CANNOT connect to api.dittowords.com");
+    }
+  }
+
   const {
     validProjects,
     format: formatFromSource,
@@ -291,17 +301,17 @@ async function downloadAndSave(
   ]);
 
   const allComponentFolders = Object.entries(
-    allComponentFoldersResponse
+    allComponentFoldersResponse,
   ).reduce(
     (acc, [id, name]) => acc.concat([{ id, name }]),
-    [] as ComponentFolder[]
+    [] as ComponentFolder[],
   );
 
   try {
     msg += cleanOutputFiles();
     msg += `\nFetching the latest text from ${sourcesToText(
       validProjects,
-      shouldFetchComponentLibrary
+      shouldFetchComponentLibrary,
     )}\n`;
 
     const meta = options ? options.meta : {};
@@ -403,7 +413,7 @@ async function downloadAndSave(
             const namePostfix = `__${variantApiId || "base"}`;
 
             const fileName = cleanFileName(
-              `${nameBase}${nameFolder}${namePostfix}${nameExt}`
+              `${nameBase}${nameFolder}${namePostfix}${nameExt}`,
             );
             const filePath = path.join(consts.TEXT_DIR, fileName);
 
@@ -428,7 +438,7 @@ async function downloadAndSave(
             });
 
             return getSavedMessage(fileName);
-          })
+          }),
         );
       });
 
@@ -450,7 +460,7 @@ async function downloadAndSave(
             format,
             status,
             richText,
-            token
+            token,
           )
         : await downloadAndSaveBase(
             validProjects,
@@ -460,7 +470,7 @@ async function downloadAndSave(
             token,
             {
               meta,
-            }
+            },
           );
     }
 
@@ -492,7 +502,7 @@ async function downloadAndSave(
     if (e.response && e.response.status === 401) {
       error = "You don't have access to the selected projects";
       msg = `${output.errorText(error)}.\nChoose others using the ${output.info(
-        "project"
+        "project",
       )} command, or update your API key.`;
       return console.log(msg);
     }
@@ -500,11 +510,11 @@ async function downloadAndSave(
       error =
         "One or more of the requested projects don't have Developer Mode enabled";
       msg = `${output.errorText(
-        error
+        error,
       )}.\nPlease choose different projects using the ${output.info(
-        "project"
+        "project",
       )} command, or turn on Developer Mode for all selected projects. Learn more here: ${output.subtle(
-        "https://www.dittowords.com/docs/ditto-developer-mode"
+        "https://www.dittowords.com/docs/ditto-developer-mode",
       )}.`;
       return console.log(msg);
     }
@@ -512,7 +522,7 @@ async function downloadAndSave(
       error = "projects not found";
     }
     msg = `We hit an error fetching text from the projects: ${output.errorText(
-      error
+      error,
     )}.\nChoose others using the ${output.info("project")} command.`;
     return console.log(msg);
   }
@@ -527,6 +537,10 @@ export const pull = async (options?: PullOptions) => {
   const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
   const sourceInformation = config.parseSourceInformation();
 
+  if (process.env.DEBUG_CLI === "true") {
+    console.debug(`Token: ${token}`);
+  }
+
   try {
     return await downloadAndSave(sourceInformation, token, { meta });
   } catch (e) {
@@ -535,15 +549,15 @@ export const pull = async (options?: PullOptions) => {
     if (e instanceof AxiosError) {
       return quit(
         output.errorText(
-          "Something went wrong connecting to Ditto servers. Please contact support or try again later."
-        ) + eventStr
+          "Something went wrong connecting to Ditto servers. Please contact support or try again later.",
+        ) + eventStr,
       );
     }
 
     return quit(
       output.errorText(
-        "Something went wrong. Please contact support or try again later."
-      ) + eventStr
+        "Something went wrong. Please contact support or try again later.",
+      ) + eventStr,
     );
   }
 };

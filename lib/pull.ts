@@ -25,11 +25,12 @@ import { fetchVariants } from "./http/fetchVariants";
 import { quit } from "./utils/quit";
 import { AxiosError } from "axios";
 import { fetchComponentFolders } from "./http/fetchComponentFolders";
+import { generateSwiftDriver } from "./utils/generateSwiftDriver";
 
 const ensureEndsWithNewLine = (str: string) =>
   str + (/[\r\n]$/.test(str) ? "" : "\n");
 
-const writeFile = (path: string, data: string) =>
+export const writeFile = (path: string, data: string) =>
   new Promise((r) => fs.writeFile(path, ensureEndsWithNewLine(data), r));
 
 const SUPPORTED_FORMATS: SupportedFormat[] = [
@@ -40,6 +41,8 @@ const SUPPORTED_FORMATS: SupportedFormat[] = [
   "ios-stringsdict",
   "icu",
 ];
+
+const IOS_FORMATS: SupportedFormat[] = ["ios-strings", "ios-stringsdict"];
 
 const JSON_FORMATS: SupportedFormat[] = ["flat", "structured", "icu"];
 
@@ -255,7 +258,7 @@ function cleanOutputFiles() {
 
   const fileNames = fs.readdirSync(consts.TEXT_DIR);
   fileNames.forEach((fileName) => {
-    if (/\.js(on)?|\.xml|\.strings(dict)?$/.test(fileName)) {
+    if (/\.js(on)?|\.xml|\.strings(dict)?$|\.swift$/.test(fileName)) {
       fs.unlinkSync(path.resolve(consts.TEXT_DIR, fileName));
     }
   });
@@ -474,6 +477,9 @@ async function downloadAndSave(
 
     if (formats.some((f) => JSON_FORMATS.includes(f)))
       msg += generateJsDriver(sources);
+
+    if (formats.some((f) => IOS_FORMATS.includes(f)))
+      msg += await generateSwiftDriver(source);
 
     msg += `\n${output.success("Done")}!`;
 

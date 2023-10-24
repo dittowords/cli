@@ -455,8 +455,8 @@ async function downloadAndSave(
         );
       });
 
+      const messages = await Promise.all(messagePromises);
       if (shouldLogOutputFiles) {
-        const messages = await Promise.all(messagePromises);
         msg += messages.join("");
       }
     }

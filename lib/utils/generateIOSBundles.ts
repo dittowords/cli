@@ -3,18 +3,6 @@ import fs from "fs";
 import consts from "../consts";
 import output from "../output";
 
-interface IArg {
-  variants: boolean;
-  components?:
-    | boolean
-    | {
-        root?: boolean | { status?: string };
-        folders?: string[] | { id: string | null; status?: string }[];
-      };
-  projects?: string[] | { id: string; status?: string }[];
-  localeByVariantId?: Record<string, string>;
-}
-
 const IOS_FILE_EXTENSION_PATTERN = /\.(strings|stringsdict)$/;
 
 export async function generateIOSBundles(

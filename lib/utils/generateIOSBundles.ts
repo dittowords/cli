@@ -97,7 +97,8 @@ function handleBundleGeneration(
 function appendStringsFile(sourcePath: string, destPath: string) {
   const sourceContents = fs.readFileSync(sourcePath, "utf-8");
   const newFileContents = fs.readFileSync(destPath, "utf-8");
-  fs.writeFileSync(sourcePath, newFileContents + "\n" + sourceContents);
+  const newContents = newFileContents + "\n" + sourceContents;
+  fs.writeFileSync(destPath, newContents);
   fs.unlinkSync(sourcePath);
 }
 

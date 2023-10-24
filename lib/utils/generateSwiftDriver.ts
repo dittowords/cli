@@ -6,23 +6,24 @@ import consts from "../consts";
 import output from "../output";
 
 interface IArg {
+  variants: boolean;
   components?:
     | boolean
     | {
-        root?: boolean | { status?: string } | undefined;
-        folders?:
-          | string[]
-          | { id: string | null; status?: string }[]
-          | undefined;
-      }
-    | undefined;
-  projects?: string[] | { id: string; status?: string }[] | undefined;
+        root?: boolean | { status?: string };
+        folders?: string[] | { id: string | null; status?: string }[];
+      };
+  projects?: string[] | { id: string; status?: string }[];
+  localeByVariantId?: Record<string, string>;
 }
 
 export async function generateSwiftDriver(source: SourceInformation) {
   const client = createApiClient();
 
-  const body: IArg = {};
+  const body: IArg = {
+    variants: source.variants,
+    localeByVariantId: source.localeByVariantApiId,
+  };
 
   if (source.componentFolders || source.componentRoot) {
     body.components = {};
@@ -38,7 +39,14 @@ export async function generateSwiftDriver(source: SourceInformation) {
 
   if (source.validProjects) body.projects = source.validProjects;
 
-  const { data } = await client.post<string>("/v1/export/swift-driver", body);
+  const [{ data }] = await Promise.all([
+    client.post<string>("/v1/ios/swift-driver", body),
+    client.post<Record<string, Record<string, string>>>(
+      "/v1/ios/localizable-info",
+      body
+    ),
+  ]);
+
   const filePath = path.join(consts.TEXT_DIR, "Ditto.swift");
   await writeFile(filePath, data);
 

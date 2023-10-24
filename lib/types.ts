@@ -46,6 +46,9 @@ export interface ConfigYAML {
   variants?: boolean;
   richText?: boolean;
 
+  // TODO: might want to rename this at some point
+  ios_locales?: Record<string, string>[];
+
   // these are legacy fields - if they exist, we should output
   // a deprecation error, and suggest that they nest them under
   // a top-level `sources` property
@@ -66,6 +69,7 @@ export interface SourceInformation {
   richText: boolean | undefined;
   componentRoot: boolean | { status: string } | undefined;
   componentFolders: ComponentFolder[] | undefined;
+  localeByVariantApiId: Record<string, string> | undefined;
 }
 
 export type Token = string | undefined;

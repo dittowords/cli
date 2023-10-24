@@ -39,13 +39,7 @@ export async function generateSwiftDriver(source: SourceInformation) {
 
   if (source.validProjects) body.projects = source.validProjects;
 
-  const [{ data }] = await Promise.all([
-    client.post<string>("/v1/ios/swift-driver", body),
-    client.post<Record<string, Record<string, string>>>(
-      "/v1/ios/localizable-info",
-      body
-    ),
-  ]);
+  const { data } = await client.post<string>("/v1/ios/swift-driver", body);
 
   const filePath = path.join(consts.TEXT_DIR, "Ditto.swift");
   await writeFile(filePath, data);

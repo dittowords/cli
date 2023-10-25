@@ -47,7 +47,7 @@ export interface ConfigYAML {
   richText?: boolean;
 
   // TODO: might want to rename this at some point
-  ios_locales?: Record<string, string>[];
+  iosLocales?: Record<string, string>[];
 
   // these are legacy fields - if they exist, we should output
   // a deprecation error, and suggest that they nest them under

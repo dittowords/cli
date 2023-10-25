@@ -25,11 +25,26 @@ import { fetchVariants } from "./http/fetchVariants";
 import { quit } from "./utils/quit";
 import { AxiosError } from "axios";
 import { fetchComponentFolders } from "./http/fetchComponentFolders";
+import { generateSwiftDriver } from "./utils/generateSwiftDriver";
+import { generateIOSBundles } from "./utils/generateIOSBundles";
+
+interface IRequestOptions {
+  projects: Project[];
+  format: SupportedFormat;
+  status: string | undefined;
+  richText?: boolean | undefined;
+  token?: Token;
+  options?: PullOptions;
+}
+
+interface IRequestOptionsWithVariants extends IRequestOptions {
+  variants: { apiID: string }[];
+}
 
 const ensureEndsWithNewLine = (str: string) =>
   str + (/[\r\n]$/.test(str) ? "" : "\n");
 
-const writeFile = (path: string, data: string) =>
+export const writeFile = (path: string, data: string) =>
   new Promise((r) => fs.writeFile(path, ensureEndsWithNewLine(data), r));
 
 const SUPPORTED_FORMATS: SupportedFormat[] = [
@@ -41,6 +56,7 @@ const SUPPORTED_FORMATS: SupportedFormat[] = [
   "icu",
 ];
 
+const IOS_FORMATS: SupportedFormat[] = ["ios-strings", "ios-stringsdict"];
 const JSON_FORMATS: SupportedFormat[] = ["flat", "structured", "icu"];
 
 const FORMAT_EXTENSIONS = {
@@ -119,12 +135,9 @@ async function askForAnotherToken() {
  */
 async function downloadAndSaveVariant(
   variantApiId: string | null,
-  projects: Project[],
-  format: SupportedFormat,
-  status: string | undefined,
-  richText: boolean | undefined,
-  token?: Token
+  requestOptions: IRequestOptions
 ) {
+  const { projects, format, status, richText, token } = requestOptions;
   const api = createApiClient();
   const params: Record<string, string | null> = { variant: variantApiId };
   if (format) params.format = format;
@@ -176,31 +189,21 @@ async function downloadAndSaveVariant(
 }
 
 async function downloadAndSaveVariants(
-  variants: { apiID: string }[],
-  projects: Project[],
-  format: SupportedFormat,
-  status: string | undefined,
-  richText: boolean | undefined,
-  token?: Token
+  requestOptions: IRequestOptionsWithVariants
 ) {
   const messages = await Promise.all([
-    downloadAndSaveVariant(null, projects, format, status, richText, token),
-    ...variants.map(({ apiID }: { apiID: string }) =>
-      downloadAndSaveVariant(apiID, projects, format, status, richText, token)
+    downloadAndSaveVariant(null, requestOptions),
+    ...requestOptions.variants.map(({ apiID }: { apiID: string }) =>
+      downloadAndSaveVariant(apiID, requestOptions)
     ),
   ]);
 
   return messages.join("");
 }
 
-async function downloadAndSaveBase(
-  projects: Project[],
-  format: SupportedFormat,
-  status: string | undefined,
-  richText?: boolean | undefined,
-  token?: Token,
-  options?: PullOptions
-) {
+async function downloadAndSaveBase(requestOptions: IRequestOptions) {
+  const { projects, format, status, richText, token, options } = requestOptions;
+
   const api = createApiClient();
   const params = { ...options?.meta };
   if (format) params.format = format;
@@ -253,10 +256,23 @@ function cleanOutputFiles() {
     fs.mkdirSync(consts.TEXT_DIR);
   }
 
-  const fileNames = fs.readdirSync(consts.TEXT_DIR);
-  fileNames.forEach((fileName) => {
-    if (/\.js(on)?|\.xml|\.strings(dict)?$/.test(fileName)) {
-      fs.unlinkSync(path.resolve(consts.TEXT_DIR, fileName));
+  const directoryContents = fs.readdirSync(consts.TEXT_DIR, {
+    withFileTypes: true,
+  });
+
+  directoryContents.forEach((item) => {
+    if (item.isDirectory() && /\.lproj$/.test(item.name)) {
+      return fs.rmSync(path.resolve(consts.TEXT_DIR, item.name), {
+        recursive: true,
+        force: true,
+      });
+    }
+
+    if (
+      item.isFile() &&
+      /\.js(on)?|\.xml|\.strings(dict)?$|\.swift$/.test(item.name)
+    ) {
+      return fs.unlinkSync(path.resolve(consts.TEXT_DIR, item.name));
     }
   });
 
@@ -277,9 +293,16 @@ async function downloadAndSave(
     richText,
     componentFolders: specifiedComponentFolders,
     componentRoot,
+    localeByVariantApiId,
   } = source;
 
   const formats = getFormat(formatFromSource);
+
+  const hasJSONFormat = formats.some((f) => JSON_FORMATS.includes(f));
+  const hasIOSFormat = formats.some((f) => IOS_FORMATS.includes(f));
+  const shouldGenerateIOSBundles = hasIOSFormat && localeByVariantApiId;
+
+  const shouldLogOutputFiles = !shouldGenerateIOSBundles;
 
   let msg = "";
   const spinner = ora(msg);
@@ -433,7 +456,9 @@ async function downloadAndSave(
       });
 
       const messages = await Promise.all(messagePromises);
-      msg += messages.join("");
+      if (shouldLogOutputFiles) {
+        msg += messages.join("");
+      }
     }
 
     if (shouldFetchComponentLibrary) {
@@ -443,25 +468,32 @@ async function downloadAndSave(
     }
 
     async function fetchProjects(format: SupportedFormat) {
-      msg += variants
-        ? await downloadAndSaveVariants(
-            variants,
-            validProjects,
-            format,
-            status,
-            richText,
-            token
-          )
-        : await downloadAndSaveBase(
-            validProjects,
-            format,
-            status,
-            richText,
-            token,
-            {
-              meta,
-            }
-          );
+      let result = "";
+      if (variants) {
+        result = await downloadAndSaveVariants({
+          variants,
+          projects: validProjects,
+          format,
+          status,
+          richText,
+          token,
+        });
+      } else {
+        result = await downloadAndSaveBase({
+          projects: validProjects,
+          format,
+          status,
+          richText,
+          token,
+          options: {
+            meta,
+          },
+        });
+      }
+
+      if (shouldLogOutputFiles) {
+        msg += result;
+      }
     }
 
     if (validProjects.length) {
@@ -472,10 +504,15 @@ async function downloadAndSave(
 
     const sources: Source[] = [...validProjects, ...componentSources];
 
-    if (formats.some((f) => JSON_FORMATS.includes(f)))
-      msg += generateJsDriver(sources);
+    if (hasJSONFormat) msg += generateJsDriver(sources);
 
-    msg += `\n${output.success("Done")}!`;
+    if (shouldGenerateIOSBundles) {
+      msg += "iOS locale information detected, generating bundles..\n\n";
+      msg += await generateIOSBundles(localeByVariantApiId);
+      msg += await generateSwiftDriver(source);
+    }
+
+    msg += `\n\n${output.success("Done")}!`;
 
     spinner.stop();
     return console.log(msg);

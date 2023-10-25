@@ -88,7 +88,10 @@ describe("downloadAndSaveBase", () => {
     (createApiClient as any).mockImplementation(() => ({
       get: () => ({ data: mockData }),
     }));
-    const output = await downloadAndSaveBase(testProjects, "flat", undefined);
+    const output = await downloadAndSaveBase({
+      projects: testProjects,
+      format: "flat",
+    } as any);
     expect(/successfully saved/i.test(output)).toEqual(true);
     const directoryContents = fs.readdirSync(consts.TEXT_DIR);
     expect(directoryContents.length).toEqual(testProjects.length);
@@ -110,11 +113,10 @@ describe("downloadAndSaveBase", () => {
     (createApiClient as any).mockImplementation(() => ({
       get: () => ({ data: mockData }),
     }));
-    const output = await downloadAndSaveBase(
-      testProjects,
-      "structured",
-      undefined
-    );
+    const output = await downloadAndSaveBase({
+      projects: testProjects,
+      format: "structured",
+    } as any);
     expect(/successfully saved/i.test(output)).toEqual(true);
     const directoryContents = fs.readdirSync(consts.TEXT_DIR);
     expect(directoryContents.length).toEqual(testProjects.length);
@@ -136,7 +138,10 @@ describe("downloadAndSaveBase", () => {
     (createApiClient as any).mockImplementation(() => ({
       get: () => ({ data: mockData }),
     }));
-    const output = await downloadAndSaveBase(testProjects, "icu", undefined);
+    const output = await downloadAndSaveBase({
+      projects: testProjects,
+      format: "icu",
+    } as any);
     expect(/successfully saved/i.test(output)).toEqual(true);
     const directoryContents = fs.readdirSync(consts.TEXT_DIR);
     expect(directoryContents.length).toEqual(testProjects.length);
@@ -161,11 +166,10 @@ describe("downloadAndSaveBase", () => {
     (createApiClient as any).mockImplementation(() => ({
       get: () => ({ data: mockData }),
     }));
-    const output = await downloadAndSaveBase(
-      testProjects,
-      "android",
-      undefined
-    );
+    const output = await downloadAndSaveBase({
+      projects: testProjects,
+      format: "android",
+    } as any);
     expect(/successfully saved/i.test(output)).toEqual(true);
     const directoryContents = fs.readdirSync(consts.TEXT_DIR);
     expect(directoryContents.length).toEqual(testProjects.length);
@@ -187,11 +191,10 @@ describe("downloadAndSaveBase", () => {
     (createApiClient as any).mockImplementation(() => ({
       get: () => ({ data: mockData }),
     }));
-    const output = await downloadAndSaveBase(
-      testProjects,
-      "ios-strings",
-      undefined
-    );
+    const output = await downloadAndSaveBase({
+      projects: testProjects,
+      format: "ios-strings",
+    } as any);
     expect(/successfully saved/i.test(output)).toEqual(true);
     const directoryContents = fs.readdirSync(consts.TEXT_DIR);
     expect(directoryContents.length).toEqual(testProjects.length);
@@ -231,11 +234,10 @@ describe("downloadAndSaveBase", () => {
     (createApiClient as any).mockImplementation(() => ({
       get: () => ({ data: mockData }),
     }));
-    const output = await downloadAndSaveBase(
-      testProjects,
-      "ios-stringsdict",
-      undefined
-    );
+    const output = await downloadAndSaveBase({
+      projects: testProjects,
+      format: "ios-stringsdict",
+    } as any);
     expect(/successfully saved/i.test(output)).toEqual(true);
     const directoryContents = fs.readdirSync(consts.TEXT_DIR);
     expect(directoryContents.length).toEqual(testProjects.length);

@@ -195,7 +195,7 @@ function parseSourceInformation(file?: string): SourceInformation {
     format,
     status,
     richText,
-    ios_locales,
+    iosLocales,
     projects: projectsRoot,
     components: componentsRoot,
   } = readProjectConfigData(file);
@@ -252,8 +252,8 @@ function parseSourceInformation(file?: string): SourceInformation {
     hasComponentLibraryInProjects,
     componentRoot,
     componentFolders,
-    localeByVariantApiId: ios_locales
-      ? ios_locales.reduce((acc, e) => ({ ...acc, ...e }), {} as any)
+    localeByVariantApiId: iosLocales
+      ? iosLocales.reduce((acc, e) => ({ ...acc, ...e }), {} as any)
       : undefined,
   };
 

@@ -1,12 +1,12 @@
 # Ditto CLI
 
-The Ditto CLI allows developer to access the Ditto API directly from the command line. Teams can also build workflows with the CLI, including utilizing it in CI/CD.
+The Ditto CLI enables developers to access the Ditto API directly from the command line.
 
 [![NPM version](https://badge.fury.io/js/@dittowords%2Fcli.svg)](https://badge.fury.io/js/@dittowords%2Fcli)
 
 ## Documentation
 
-The official documentation can be found at [developer.dittowords.com/cli-reference](http://developer.dittowords.com:5555/cli-reference/authentication).
+The official documentation can be found [here](http://developer.dittowords.com:5555/cli-reference/authentication).
 
 ## Support
 
@@ -17,14 +17,10 @@ The official documentation can be found at [developer.dittowords.com/cli-referen
 ## Installation
 
 ```sh
-# npm
 npm install --save-dev @dittowords/cli
-
-# yarn
-yarn add --dev @dittowords/cli
 ```
 
-It's recommended to install the CLI as a development dependency to ensure that your entire team is using the same version.
+It's recommended to install the CLI as a development dependency to ensure your whole team is on the same version.
 
 ## Authentication
 
@@ -55,9 +51,9 @@ For more information on configuring the CLI, see [http://developer.dittowords.co
 npx @dittowords/cli
 ```
 
-Run the CLI with no commands to pull string data from Ditto and write it to disk.
+Run the CLI to pull string data from Ditto and write it to disk.
 
-String files are written to the `ditto` folder in a format that corresponds to your configuration. After integrating these files into development, you can execute the CLI at anytime to fetch the latest strings from Ditto and update them in your application.
+String files are written to the `ditto` folder in a format that corresponds to your configuration. After integrating these files into development, you can execute the CLI at any time to fetch the latest strings from Ditto and update them in your application.
 
 For more information on how files written to disk, see [http://developer.dittowords.com/cli-reference/files](http://developer.dittowords.com/cli-reference/files).
 

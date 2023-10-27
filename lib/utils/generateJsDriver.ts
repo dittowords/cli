@@ -32,8 +32,8 @@ export function generateJsDriver(sources: Source[]) {
   const variableNameGenerator = createVariableNameGenerator();
   const importStatements: string[] = [];
 
+  const data: DriverFile = {};
   const dataComponents: Record<string, string[]> = {};
-  const dataProjects: DriverFile = {};
 
   fullyQualifiedSources.forEach((source) => {
     let variableName: string;
@@ -55,8 +55,8 @@ export function generateJsDriver(sources: Source[]) {
     if (source.type === "project") {
       const { variantApiId } = source;
       const projectId = stringifySourceId(source.projectId);
-      dataProjects[projectId] ??= {};
-      dataProjects[projectId][variantApiId] = `{...${variableName}}`;
+      data[projectId] ??= {};
+      data[projectId][variantApiId] = `{...${variableName}}`;
     } else {
       dataComponents[source.variantApiId] ??= [];
       dataComponents[source.variantApiId].push(`...${variableName}`);
@@ -67,7 +67,7 @@ export function generateJsDriver(sources: Source[]) {
   // into a unified string, and set it on the final data object
   // that will be written to the driver file
   Object.keys(dataComponents).forEach((key) => {
-    dataProjects.ditto_component_library ??= {};
+    data.ditto_component_library ??= {};
 
     let str = "{";
     dataComponents[key].forEach((k: any, i: any) => {
@@ -75,13 +75,13 @@ export function generateJsDriver(sources: Source[]) {
       if (i < dataComponents[key].length - 1) str += ", ";
     });
     str += "}";
-    dataProjects.ditto_component_library[key] = str;
+    data.ditto_component_library[key] = str;
   });
 
   let dataString = "";
   dataString += importStatements.join("\n") + "\n\n";
   dataString += `${getExportPrefix(moduleType)}`;
-  dataString += `${JSON.stringify(dataProjects, null, 2)}`
+  dataString += `${JSON.stringify(data, null, 2)}`
     // remove quotes around opening & closing curlies
     .replace(/"\{/g, "{")
     .replace(/\}"/g, "}");

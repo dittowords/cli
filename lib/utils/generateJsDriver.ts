@@ -21,137 +21,67 @@ const stringifySourceId = (projectId: string) =>
  * The generated file will have a unified format
  * independent of the CLI configuration used to fetch
  * data from Ditto.
+ *
  */
-
+type DriverFile = Record<string, Record<string, string | object>>;
 export function generateJsDriver(sources: Source[]) {
   const moduleType = determineModuleType();
 
-  let filePath: string;
-  if (moduleType === "commonjs") {
-    filePath = generateJsDriverCommonJS(sources, moduleType);
-  } else if (moduleType === "module") {
-    filePath = generateJsDriverESM(sources);
-  } else {
-    throw new Error(`Unknown module type: ${moduleType}`);
-  }
+  const fullyQualifiedSources = getFullyQualifiedJSONSources(sources);
 
-  return `Generated .js SDK driver at ${output.info(filePath)}`;
-}
-
-function generateJsDriverCommonJS(
-  sources: Source[],
-  moduleType: "commonjs" | "esm"
-) {
   const variableNameGenerator = createVariableNameGenerator();
   const importStatements: string[] = [];
 
-  const sourceInfoByName: Record<
-    string,
-    {
-      projectId: string;
-      variableName: string;
-      importStatement: string;
-      requireStatement: string;
+  const dataComponents: Record<string, string[]> = {};
+  const dataProjects: DriverFile = {};
+
+  fullyQualifiedSources.forEach((source) => {
+    let variableName: string;
+    if (source.type === "components") {
+      variableName = variableNameGenerator.generate(
+        source.fileName.split(".")[0]
+      );
+    } else {
+      const fileNameWithoutExtension = source.fileName.split(".")[0];
+      variableName = variableNameGenerator.generate(
+        fileNameWithoutExtension.split("__")[0]
+      );
     }
-  > = {};
 
-  const data2: DriverFile = {};
-
-  sources.forEach((source) => {
-    if (!source.fileName) {
-      return;
-    }
-
-    const fileName = cleanFileName(source.fileName);
-    console.log("source.fileName", source.fileName);
-    const variableName = variableNameGenerator.generate(fileName.split(".")[0]);
-
-    const importStatement = `import ${variableName} from './${source.fileName}';`;
-    const requireStatement = `const ${variableName} = require('./${source.fileName}');`;
-
-    sourceInfoByName[fileName] = {
-      projectId: source.id,
-      variableName,
-      importStatement,
-      requireStatement,
-    };
-  });
-
-  const projectFileNames = fs
-    .readdirSync(consts.TEXT_DIR)
-    .filter(
-      (fileName) => /\.json$/.test(fileName) && !/^components__/.test(fileName)
+    importStatements.push(
+      getImportStatement(source.fileName, variableName, moduleType)
     );
 
-  type DriverFile = Record<string, Record<string, string | object>>;
-  const data: DriverFile = projectFileNames.reduce(
-    (obj: Record<string, Record<string, string>>, fileName) => {
-      const [sourceId, rest] = fileName.split("__");
-      const [variantApiId] = rest.split(".");
+    if (source.type === "project") {
+      const { variantApiId } = source;
+      const projectId = stringifySourceId(source.projectId);
+      dataProjects[projectId] ??= {};
+      dataProjects[projectId][variantApiId] = `{...${variableName}}`;
+    } else {
+      dataComponents[source.variantApiId] ??= [];
+      dataComponents[source.variantApiId].push(`...${variableName}`);
+    }
+  });
 
-      const sourceInfo = sourceInfoByName[sourceId];
-      const projectIdStr = stringifySourceId(sourceInfo.projectId);
-
-      if (!obj[projectIdStr]) {
-        obj[projectIdStr] = {};
-      }
-
-      obj[projectIdStr][variantApiId] = `require('./${fileName}')`;
-      return obj;
-    },
-    {}
-  );
-
-  console.log("data", data);
-
-  // Create arrays of stringified "...require()" statements,
-  // each of which corresponds to one of the component files
-  // (which are created on a per-component-folder basis)
-  const componentData: Record<string, string[]> = {};
-  sources
-    .filter((s) => s.type === "components")
-    .forEach((componentSource) => {
-      if (componentSource.type !== "components") return;
-      componentData[componentSource.variant] ??= [];
-      componentData[componentSource.variant].push(
-        `...require('./${componentSource.fileName}')`
-      );
-    });
   // Convert each array of stringified "...require()" statements
   // into a unified string, and set it on the final data object
   // that will be written to the driver file
-  Object.keys(componentData).forEach((key) => {
-    data.ditto_component_library ??= {};
+  Object.keys(dataComponents).forEach((key) => {
+    dataProjects.ditto_component_library ??= {};
 
     let str = "{";
-    componentData[key].forEach((k, i) => {
+    dataComponents[key].forEach((k: any, i: any) => {
       str += k;
-      if (i < componentData[key].length - 1) str += ", ";
+      if (i < dataComponents[key].length - 1) str += ", ";
     });
     str += "}";
-    data.ditto_component_library[key] = str;
+    dataProjects.ditto_component_library[key] = str;
   });
 
   let dataString = "";
-
-  Object.values(sourceInfoByName).forEach((sourceInfo) => {
-    if (moduleType === "commonjs") {
-      dataString += `${sourceInfo.requireStatement}\n`;
-      return;
-    }
-    if (moduleType === "esm") {
-      dataString += `${sourceInfo.importStatement}\n`;
-      return;
-    }
-    throw new Error("Unknown module type: " + moduleType);
-  });
-
-  dataString += "\n";
-  dataString += `${getExportPrefix(moduleType)}
-
-  dataString += ${JSON.stringify(data, null, 2)}`
-    // remove quotes around require statements
-    .replace(/"require\((.*)\)"/g, "require($1)")
+  dataString += importStatements.join("\n") + "\n\n";
+  dataString += `${getExportPrefix(moduleType)}`;
+  dataString += `${JSON.stringify(dataProjects, null, 2)}`
     // remove quotes around opening & closing curlies
     .replace(/"\{/g, "{")
     .replace(/\}"/g, "}");
@@ -159,7 +89,68 @@ function generateJsDriverCommonJS(
   const filePath = path.resolve(consts.TEXT_DIR, "index.js");
   fs.writeFileSync(filePath, dataString, { encoding: "utf8" });
 
-  return filePath;
+  return `Generated .js SDK driver at ${output.info(filePath)}`;
+}
+
+type IFullyQualifiedJSONSource =
+  | {
+      type: "components";
+      variantApiId: string;
+      folderApiId: string;
+      fileName: string;
+    }
+  | {
+      type: "project";
+      projectId: string;
+      projectName: string;
+      variantApiId: string;
+      fileName: string;
+    };
+
+function getFullyQualifiedJSONSources(
+  sources: Source[]
+): IFullyQualifiedJSONSource[] {
+  const projectIdsByCleanedFileName = new Map<string, string>();
+  sources.forEach((source) => {
+    if (!source.fileName || source.type === "components") {
+      return;
+    }
+    projectIdsByCleanedFileName.set(cleanFileName(source.fileName), source.id);
+  });
+
+  const fileNames = fs.readdirSync(consts.TEXT_DIR);
+  return fileNames
+    .filter((f) => path.extname(f) === ".json")
+    .map((fileName) => {
+      const parts = fileName.split("__");
+
+      if (parts.length === 3) {
+        const [, folderApiId, rest] = parts;
+        const [variantApiId] = rest.split(".");
+        return {
+          type: "components",
+          variantApiId,
+          folderApiId,
+          fileName,
+        };
+      }
+
+      if (parts.length === 2) {
+        const [projectName, rest] = parts;
+        const [variantApiId] = rest.split(".");
+        const key = cleanFileName(fileName.split("__")[0]);
+        const projectId = projectIdsByCleanedFileName.get(key) || "";
+        return {
+          type: "project",
+          projectId,
+          projectName,
+          variantApiId,
+          fileName,
+        };
+      }
+
+      throw new Error("Invalid JSON file generated: " + fileName);
+    });
 }
 
 function createVariableNameGenerator() {
@@ -167,7 +158,7 @@ function createVariableNameGenerator() {
 
   return {
     generate: (str: string) => {
-      const baseName = str.replace(/\W/g, "_");
+      const baseName = str.replace(/(\W|-)/g, "_");
       let name = baseName;
       let i = 1;
       while (variableNames.has(name)) {
@@ -180,16 +171,26 @@ function createVariableNameGenerator() {
   };
 }
 
-function generateJsDriverESM(sources: Source[]) {
-  return "";
-}
-
-function getExportPrefix(moduleType: "commonjs" | "esm") {
+function getExportPrefix(moduleType: "commonjs" | "module") {
   if (moduleType === "commonjs") {
     return "module.exports = ";
   }
-  if (moduleType === "esm") {
+  if (moduleType === "module") {
     return "export default ";
+  }
+  throw new Error("Unknown module type: " + moduleType);
+}
+
+function getImportStatement(
+  fileName: string,
+  variableName: string,
+  moduleType: "commonjs" | "module"
+) {
+  if (moduleType === "commonjs") {
+    return `const ${variableName} = require('./${fileName}');`;
+  }
+  if (moduleType === "module") {
+    return `import ${variableName} from './${fileName}';`;
   }
   throw new Error("Unknown module type: " + moduleType);
 }

@@ -3,7 +3,6 @@
   "version": "4.0.0",
   "description": "Command Line Interface for Ditto (dittowords.com).",
   "license": "MIT",
-  "type": "commonjs",
   "main": "bin/index.js",
   "scripts": {
     "prepublishOnly": "ENV=production etsc && sentry-cli sourcemaps inject ./bin && npx sentry-cli sourcemaps upload ./bin --release=\"$(cat package.json | jq -r '.version')\"",

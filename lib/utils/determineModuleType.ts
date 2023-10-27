@@ -51,5 +51,5 @@ function getTypeOrDefault(value: string | null): "commonjs" | "module" {
     return valueLower;
   }
 
-  return "module";
+  return "commonjs";
 }

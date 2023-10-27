@@ -107,6 +107,10 @@ type IFullyQualifiedJSONSource =
       fileName: string;
     };
 
+/**
+ * Upstream source data is a mess - this function is an attempt at cleaning it up
+ * so that it can be used in a more straightforward way to generate the driver file.
+ */
 function getFullyQualifiedJSONSources(
   sources: Source[]
 ): IFullyQualifiedJSONSource[] {

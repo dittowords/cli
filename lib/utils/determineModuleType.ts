@@ -1,6 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 
+export type ModuleType = "commonjs" | "module";
+
 /**
  * Looks for a `package.json` file starting in the current working directory and traversing upwards
  * until it finds one or reaches root.
@@ -45,7 +47,7 @@ function getRawTypeFromPackageJson() {
   return null;
 }
 
-function getTypeOrDefault(value: string | null): "commonjs" | "module" {
+function getTypeOrDefault(value: string | null): ModuleType {
   const valueLower = value?.toLowerCase() || "";
   if (valueLower === "commonjs" || valueLower === "module") {
     return valueLower;

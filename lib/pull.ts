@@ -27,6 +27,7 @@ import { AxiosError } from "axios";
 import { fetchComponentFolders } from "./http/fetchComponentFolders";
 import { generateSwiftDriver } from "./utils/generateSwiftDriver";
 import { generateIOSBundles } from "./utils/generateIOSBundles";
+import { JSONFormat } from "./utils/generateJsDriverTypeFile";
 
 interface IRequestOptions {
   projects: Project[];
@@ -56,8 +57,20 @@ const SUPPORTED_FORMATS: SupportedFormat[] = [
   "icu",
 ];
 
+export type JSONFormat = "flat" | "nested" | "structured" | "icu";
+
 const IOS_FORMATS: SupportedFormat[] = ["ios-strings", "ios-stringsdict"];
-const JSON_FORMATS: SupportedFormat[] = ["flat", "structured", "icu"];
+const JSON_FORMATS: JSONFormat[] = ["flat", "structured", "icu"];
+
+const getJsonFormat = (formats: string[]): JSONFormat => {
+  // edge case: multiple json formats specified
+  // we should grab the last one
+  const jsonFormats = formats.filter((f) =>
+    JSON_FORMATS.includes(f as JSONFormat)
+  );
+
+  return jsonFormats[jsonFormats.length - 1] || "flat";
+};
 
 const FORMAT_EXTENSIONS = {
   flat: ".json",
@@ -504,7 +517,7 @@ async function downloadAndSave(
 
     const sources: Source[] = [...validProjects, ...componentSources];
 
-    if (hasJSONFormat) msg += generateJsDriver(sources);
+    if (hasJSONFormat) msg += generateJsDriver(sources, getJsonFormat(formats));
 
     if (shouldGenerateIOSBundles) {
       msg += "iOS locale information detected, generating bundles..\n\n";

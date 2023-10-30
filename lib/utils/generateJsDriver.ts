@@ -4,7 +4,9 @@ import consts from "../consts";
 import output from "../output";
 import { Source } from "../types";
 import { cleanFileName } from "./cleanFileName";
-import { determineModuleType } from "./determineModuleType";
+import { ModuleType, determineModuleType } from "./determineModuleType";
+import { generateJsDriverTypeFile } from "./generateJsDriverTypeFile";
+import { JSONFormat } from "../pull";
 
 // compatability with legacy method of specifying project ids
 // that is still used by the default format
@@ -24,7 +26,7 @@ const stringifySourceId = (projectId: string) =>
  *
  */
 type DriverFile = Record<string, Record<string, string | object>>;
-export function generateJsDriver(sources: Source[]) {
+export function generateJsDriver(sources: Source[], format: JSONFormat) {
   const moduleType = determineModuleType();
 
   const fullyQualifiedSources = getFullyQualifiedJSONSources(sources);
@@ -88,6 +90,11 @@ export function generateJsDriver(sources: Source[]) {
 
   const filePath = path.resolve(consts.TEXT_DIR, "index.js");
   fs.writeFileSync(filePath, dataString, { encoding: "utf8" });
+
+  generateJsDriverTypeFile({
+    format,
+    moduleType,
+  });
 
   return `Generated .js SDK driver at ${output.info(filePath)}`;
 }
@@ -175,7 +182,7 @@ function createVariableNameGenerator() {
   };
 }
 
-function getExportPrefix(moduleType: "commonjs" | "module") {
+function getExportPrefix(moduleType: ModuleType) {
   if (moduleType === "commonjs") {
     return "module.exports = ";
   }
@@ -188,7 +195,7 @@ function getExportPrefix(moduleType: "commonjs" | "module") {
 function getImportStatement(
   fileName: string,
   variableName: string,
-  moduleType: "commonjs" | "module"
+  moduleType: ModuleType
 ) {
   if (moduleType === "commonjs") {
     return `const ${variableName} = require('./${fileName}');`;

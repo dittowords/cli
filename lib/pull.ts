@@ -154,7 +154,7 @@ async function downloadAndSaveVariant(
       if (project.exclude_components)
         projectParams.exclude_components = String(project.exclude_components);
 
-      const { data } = await api.get(`/projects/${project.id}`, {
+      const { data } = await api.get(`/v1/projects/${project.id}`, {
         params: projectParams,
         headers: { Authorization: `token ${token}` },
       });
@@ -220,7 +220,7 @@ async function downloadAndSaveBase(requestOptions: IRequestOptions) {
       if (project.exclude_components)
         projectParams.exclude_components = String(project.exclude_components);
 
-      const { data } = await api.get(`/projects/${project.id}`, {
+      const { data } = await api.get(`/v1/projects/${project.id}`, {
         params: projectParams,
         headers: { Authorization: `token ${token}` },
       });
@@ -413,8 +413,8 @@ async function downloadAndSave(
 
             const url =
               componentFolder.id === "__root__"
-                ? "/components?root_only=true"
-                : `/component-folders/${componentFolder.id}/components`;
+                ? "/v1/components?root_only=true"
+                : `/v1/component-folders/${componentFolder.id}/components`;
 
             const { data } = await api.get(url, {
               params: componentFolderParams,

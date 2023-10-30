@@ -8,7 +8,7 @@ export async function fetchComponentFolders(): Promise<FetchComponentFoldersResp
   const api = createApiClient();
 
   const { data } = await api.get<FetchComponentFoldersResponse>(
-    "/component-folders",
+    "/v1/component-folders",
     {}
   );
 

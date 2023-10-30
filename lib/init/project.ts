@@ -44,7 +44,7 @@ async function listProjects(token: Token, projectsAlreadySelected: Project[]) {
 
   let response: AxiosResponse<{ id: string; name: string }[]>;
   try {
-    response = await api.get("/project-names");
+    response = await api.get("/v1/projects");
   } catch (e) {
     spinner.stop();
     throw e;

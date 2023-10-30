@@ -27,7 +27,6 @@ import { AxiosError } from "axios";
 import { fetchComponentFolders } from "./http/fetchComponentFolders";
 import { generateSwiftDriver } from "./utils/generateSwiftDriver";
 import { generateIOSBundles } from "./utils/generateIOSBundles";
-import { JSONFormat } from "./utils/generateJsDriverTypeFile";
 
 interface IRequestOptions {
   projects: Project[];
@@ -67,7 +66,7 @@ const getJsonFormat = (formats: string[]): JSONFormat => {
   // we should grab the last one
   const jsonFormats = formats.filter((f) =>
     JSON_FORMATS.includes(f as JSONFormat)
-  );
+  ) as JSONFormat[];
 
   return jsonFormats[jsonFormats.length - 1] || "flat";
 };
@@ -311,7 +310,9 @@ async function downloadAndSave(
 
   const formats = getFormat(formatFromSource);
 
-  const hasJSONFormat = formats.some((f) => JSON_FORMATS.includes(f));
+  const hasJSONFormat = formats.some((f) =>
+    JSON_FORMATS.includes(f as JSONFormat)
+  );
   const hasIOSFormat = formats.some((f) => IOS_FORMATS.includes(f));
   const shouldGenerateIOSBundles = hasIOSFormat && localeByVariantApiId;
 

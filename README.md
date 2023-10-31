@@ -6,7 +6,7 @@ The Ditto CLI enables developers to access the Ditto API directly from the comma
 
 ## Documentation
 
-The official documentation can be found [here](http://developer.dittowords.com:5555/cli-reference/authentication).
+The official documentation can be found [here](http://developer.dittowords.com/cli-reference/authentication).
 
 ## Support
 

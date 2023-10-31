@@ -25,7 +25,7 @@ export async function fetchVariants(
     config.params.projectIds = validProjects.map(({ id }) => id);
   }
 
-  const { data } = await api.get<{ apiID: string }[]>("/variants", config);
+  const { data } = await api.get<{ apiID: string }[]>("/v1/variants", config);
 
   return data;
 }

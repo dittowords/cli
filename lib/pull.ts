@@ -56,8 +56,20 @@ const SUPPORTED_FORMATS: SupportedFormat[] = [
   "icu",
 ];
 
+export type JSONFormat = "flat" | "nested" | "structured" | "icu";
+
 const IOS_FORMATS: SupportedFormat[] = ["ios-strings", "ios-stringsdict"];
-const JSON_FORMATS: SupportedFormat[] = ["flat", "structured", "icu"];
+const JSON_FORMATS: JSONFormat[] = ["flat", "structured", "icu"];
+
+const getJsonFormat = (formats: string[]): JSONFormat => {
+  // edge case: multiple json formats specified
+  // we should grab the last one
+  const jsonFormats = formats.filter((f) =>
+    JSON_FORMATS.includes(f as JSONFormat)
+  ) as JSONFormat[];
+
+  return jsonFormats[jsonFormats.length - 1] || "flat";
+};
 
 const FORMAT_EXTENSIONS = {
   flat: ".json",
@@ -154,7 +166,7 @@ async function downloadAndSaveVariant(
       if (project.exclude_components)
         projectParams.exclude_components = String(project.exclude_components);
 
-      const { data } = await api.get(`/projects/${project.id}`, {
+      const { data } = await api.get(`/v1/projects/${project.id}`, {
         params: projectParams,
         headers: { Authorization: `token ${token}` },
       });
@@ -220,7 +232,7 @@ async function downloadAndSaveBase(requestOptions: IRequestOptions) {
       if (project.exclude_components)
         projectParams.exclude_components = String(project.exclude_components);
 
-      const { data } = await api.get(`/projects/${project.id}`, {
+      const { data } = await api.get(`/v1/projects/${project.id}`, {
         params: projectParams,
         headers: { Authorization: `token ${token}` },
       });
@@ -298,7 +310,9 @@ async function downloadAndSave(
 
   const formats = getFormat(formatFromSource);
 
-  const hasJSONFormat = formats.some((f) => JSON_FORMATS.includes(f));
+  const hasJSONFormat = formats.some((f) =>
+    JSON_FORMATS.includes(f as JSONFormat)
+  );
   const hasIOSFormat = formats.some((f) => IOS_FORMATS.includes(f));
   const shouldGenerateIOSBundles = hasIOSFormat && localeByVariantApiId;
 
@@ -413,8 +427,8 @@ async function downloadAndSave(
 
             const url =
               componentFolder.id === "__root__"
-                ? "/components?root_only=true"
-                : `/component-folders/${componentFolder.id}/components`;
+                ? "/v1/components?root_only=true"
+                : `/v1/component-folders/${componentFolder.id}/components`;
 
             const { data } = await api.get(url, {
               params: componentFolderParams,
@@ -504,7 +518,7 @@ async function downloadAndSave(
 
     const sources: Source[] = [...validProjects, ...componentSources];
 
-    if (hasJSONFormat) msg += generateJsDriver(sources);
+    if (hasJSONFormat) msg += generateJsDriver(sources, getJsonFormat(formats));
 
     if (shouldGenerateIOSBundles) {
       msg += "iOS locale information detected, generating bundles..\n\n";

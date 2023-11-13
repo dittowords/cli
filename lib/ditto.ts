@@ -215,7 +215,6 @@ const executeCommand = async (
       return removeProject();
     }
     case "component-folders": {
-      console.log(options.showSampleData);
       return showComponentFolders({
         showSampleData: options.showSampleData,
       });

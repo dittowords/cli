@@ -9,7 +9,7 @@ describe("needsToken()", () => {
   });
 
   describe("with a config file", () => {
-    let configFile;
+    let configFile = "";
 
     beforeEach(() => {
       configFile = tempy.writeSync("");

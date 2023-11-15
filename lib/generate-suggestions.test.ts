@@ -3,13 +3,13 @@ import path from "path";
 import { findComponentsInJSXFiles } from "./generate-suggestions";
 
 describe("findTextInJSXFiles", () => {
-  async function createTempFile(filename, content) {
+  async function createTempFile(filename: string, content: string) {
     const filePath = path.join(".", filename);
     await fs.writeFile(filePath, content);
     return filePath;
   }
 
-  async function deleteTempFile(filename) {
+  async function deleteTempFile(filename: string) {
     const filePath = path.join(".", filename);
     await fs.unlink(filePath);
   }

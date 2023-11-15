@@ -66,6 +66,7 @@ async function replaceJSXTextInFile(
   /* @ts-ignore */
   const { code: transformedCode } = transformFromAst(ast, code, {
     // Don't let this codebase's Babel config affect the code we're transforming.
+    /* @ts-ignore */
     configFile: false,
   });
   fs.writeFile(filePath, transformedCode);

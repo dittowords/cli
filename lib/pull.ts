@@ -324,7 +324,7 @@ async function downloadAndSave(
 
   const [variants, allComponentFoldersResponse] = await Promise.all([
     fetchVariants(source),
-    fetchComponentFolders(),
+    fetchComponentFolders({}),
   ]);
 
   const allComponentFolders = Object.entries(

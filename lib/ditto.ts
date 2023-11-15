@@ -216,7 +216,7 @@ const executeCommand = async (
     }
     case "component-folders": {
       return showComponentFolders({
-        showSampleData: options.showSampleData,
+        showSampleData: options.sampleData,
       });
     }
     case "generate-suggestions": {

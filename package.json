@@ -7,9 +7,9 @@
   "scripts": {
     "prepublishOnly": "ENV=production etsc && sentry-cli sourcemaps inject ./bin && npx sentry-cli sourcemaps upload ./bin --release=\"$(cat package.json | jq -r '.version')\"",
     "prepare": "husky install",
-    "start": "etsc && node bin/ditto.js",
-    "sync": "etsc && node bin/ditto.js pull",
-    "dev": "etsc --watch"
+    "start": "tsc --noEmit --excludeFiles './**/*.test.ts' && etsc && node bin/ditto.js",
+    "sync": "tsc --noEmit --excludeFiles './**/*.test.ts' && etsc && node bin/ditto.js pull",
+    "dev": "tsc --noEmit --excludeFiles './**/*.test.ts' && etsc --watch"
   },
   "repository": {
     "type": "git",

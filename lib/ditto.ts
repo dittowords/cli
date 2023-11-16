@@ -74,6 +74,11 @@ const COMMANDS: CommandConfig<Command>[] = [
     name: "component-folders",
     description:
       "List component folders in your workspace. More information about component folders can be found here: https://www.dittowords.com/docs/component-folders.",
+    flags: {
+      "-s, --sample-data": {
+        description: "Includes the sample components folder in the output",
+      },
+    },
   },
   {
     name: "generate-suggestions",
@@ -210,7 +215,9 @@ const executeCommand = async (
       return removeProject();
     }
     case "component-folders": {
-      return showComponentFolders();
+      return showComponentFolders({
+        showSampleData: options.sampleData,
+      });
     }
     case "generate-suggestions": {
       return generateSuggestions({

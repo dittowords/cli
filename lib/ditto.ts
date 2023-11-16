@@ -194,7 +194,7 @@ const executeCommand = async (
     "project remove",
   ];
   const needsInitialization =
-    needsTokenOrSource() && configFileReliantCommands.includes(command);
+    configFileReliantCommands.includes(command) && needsTokenOrSource();
 
   if (needsInitialization) {
     try {

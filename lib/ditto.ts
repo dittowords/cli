@@ -152,7 +152,7 @@ const setupCommands = () => {
           } else {
             cmd.option(flags, description);
           }
-        }
+        },
       );
     }
 
@@ -177,16 +177,25 @@ const setupCommands = () => {
 const setupOptions = () => {
   program.option(
     "-m, --meta <data...>",
-    "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual"
+    "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual",
   );
   program.version(VERSION, "-v, --version", "Output the current version");
 };
 
 const executeCommand = async (
   command: Command | "none",
-  options: any
+  options: any,
 ): Promise<void> => {
-  const needsInitialization = needsTokenOrSource();
+  const configFileReliantCommands = [
+    "pull",
+    "none",
+    "project",
+    "project add",
+    "project remove",
+  ];
+  const needsInitialization =
+    needsTokenOrSource() && configFileReliantCommands.includes(command);
+
   if (needsInitialization) {
     try {
       await init();

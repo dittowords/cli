@@ -32,6 +32,14 @@ function getVersion(): string {
 
 const VERSION = getVersion();
 
+const CONFIG_FILE_RELIANT_COMMANDS = [
+  "pull",
+  "none",
+  "project",
+  "project add",
+  "project remove",
+];
+
 type Command =
   | "pull"
   | "project"
@@ -186,15 +194,8 @@ const executeCommand = async (
   command: Command | "none",
   options: any,
 ): Promise<void> => {
-  const configFileReliantCommands = [
-    "pull",
-    "none",
-    "project",
-    "project add",
-    "project remove",
-  ];
   const needsInitialization =
-    configFileReliantCommands.includes(command) && needsTokenOrSource();
+    CONFIG_FILE_RELIANT_COMMANDS.includes(command) && needsTokenOrSource();
 
   if (needsInitialization) {
     try {

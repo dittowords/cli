@@ -32,6 +32,14 @@ function getVersion(): string {
 
 const VERSION = getVersion();
 
+const CONFIG_FILE_RELIANT_COMMANDS = [
+  "pull",
+  "none",
+  "project",
+  "project add",
+  "project remove",
+];
+
 type Command =
   | "pull"
   | "project"
@@ -152,7 +160,7 @@ const setupCommands = () => {
           } else {
             cmd.option(flags, description);
           }
-        }
+        },
       );
     }
 
@@ -177,16 +185,18 @@ const setupCommands = () => {
 const setupOptions = () => {
   program.option(
     "-m, --meta <data...>",
-    "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual"
+    "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual",
   );
   program.version(VERSION, "-v, --version", "Output the current version");
 };
 
 const executeCommand = async (
   command: Command | "none",
-  options: any
+  options: any,
 ): Promise<void> => {
-  const needsInitialization = needsTokenOrSource();
+  const needsInitialization =
+    CONFIG_FILE_RELIANT_COMMANDS.includes(command) && needsTokenOrSource();
+
   if (needsInitialization) {
     try {
       await init();

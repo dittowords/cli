@@ -32,7 +32,7 @@ export async function fetchComponents(options: {
     }
   } else {
     const { data } = await api.get<FetchComponentResponse>(
-      "/v1/components",
+      "/v1/components?format=structured",
       {}
     );
 

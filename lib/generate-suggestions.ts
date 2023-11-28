@@ -27,7 +27,9 @@ async function generateSuggestions(flags: {
   componentFolder?: string;
 }) {
   const components = await fetchComponents({
-     ...(flags.componentFolder ? { componentFolder: flags.componentFolder} : {})
+    ...(flags.componentFolder
+      ? { componentFolder: flags.componentFolder }
+      : {}),
   });
   const directory = flags.directory || ".";
 
@@ -66,7 +68,7 @@ async function findComponentsInJSXFiles(params: {
         traverse(ast, {
           JSXText(path) {
             for (const [compApiId, component] of Object.entries(
-              params.components
+              params.components,
             )) {
               // If we haven't seen this component before, add it to the result
               if (!result[compApiId]) {
@@ -77,11 +79,16 @@ async function findComponentsInJSXFiles(params: {
                 };
               }
 
-              if (path.node.value.includes(component.text)) {
+              if (
+                // Skip white space lines
+                !/^\s*$/.test(path.node.value) &&
+                !/^\s*$/.test(component.text) &&
+                path.node.value.includes(component.text)
+              ) {
                 // Escape all special characters from the text so we can use it in a regex
                 const escapedText = component.text.replace(
                   /[.*+?^${}()|[\]\\]/g,
-                  "\\$&"
+                  "\\$&",
                 );
                 const regex = new RegExp(escapedText, "g");
                 let match;
@@ -103,7 +110,7 @@ async function findComponentsInJSXFiles(params: {
                     line,
                     match.index,
                     component.text,
-                    `${component.text}`
+                    `${component.text}`,
                   );
 
                   // Initialize the occurrences array if it doesn't exist
@@ -125,7 +132,7 @@ async function findComponentsInJSXFiles(params: {
             }
           },
         });
-      })
+      }),
     );
   }
 
@@ -138,7 +145,7 @@ function replaceAt(
   str: string,
   index: number,
   searchString: string,
-  replacement: string
+  replacement: string,
 ) {
   return (
     str.substring(0, index) +

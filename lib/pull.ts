@@ -436,7 +436,10 @@ async function downloadAndSave(
 
             const nameExt = getFormatExtension(format);
             const nameBase = "components";
-            const nameFolder = `__${componentFolder.name}`;
+
+            // we need to clean the folder name by itself first, otherwise we can
+            // end up with "empty" words and weird hyphenation.
+            const nameFolder = `__${cleanFileName(componentFolder.name)}`;
             const namePostfix = `__${variantApiId || "base"}`;
 
             const fileName = cleanFileName(

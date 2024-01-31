@@ -32,7 +32,7 @@ jest.mock("./consts", () => ({
 
 import consts from "./consts";
 import allPull, { getFormatDataIsValid } from "./pull";
-import { Project } from "./types";
+import { Project, SupportedExtension, SupportedFormat } from "./types";
 
 const {
   _testing: { cleanOutputFiles, downloadAndSaveVariant, downloadAndSaveBase },
@@ -81,136 +81,20 @@ describe("downloadAndSaveBase", () => {
     cleanOutputDir();
   });
 
-  it("writes the flat format to disk", async () => {
-    const mockData = {
-      hello: "world",
-    };
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
-    }));
-    const output = await downloadAndSaveBase({
-      projects: testProjects,
-      format: "flat",
-    } as any);
-    expect(/successfully saved/i.test(output)).toEqual(true);
-    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
-    expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".json"))).toBe(true);
-    expect(
-      JSON.parse(
-        fs.readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-      )
-    ).toEqual(mockData);
-  });
-
-  it("writes the structured format to disk", async () => {
-    const mockData = {
-      hello: { text: "world" },
-    };
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
-    }));
-    const output = await downloadAndSaveBase({
-      projects: testProjects,
-      format: "structured",
-    } as any);
-    expect(/successfully saved/i.test(output)).toEqual(true);
-    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
-    expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".json"))).toBe(true);
-    expect(
-      JSON.parse(
-        fs.readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-      )
-    ).toEqual(mockData);
-  });
-
-  it("writes the icu format to disk", async () => {
-    const mockData = {
-      hello: "world",
-    };
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
-    }));
-    const output = await downloadAndSaveBase({
-      projects: testProjects,
-      format: "icu",
-    } as any);
-    expect(/successfully saved/i.test(output)).toEqual(true);
-    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
-    expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".json"))).toBe(true);
-    expect(
-      JSON.parse(
-        fs.readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-      )
-    ).toEqual(mockData);
-  });
-
-  it("writes the android format to disk", async () => {
-    const mockData = `
+  const mockDataFlat = { hello: "world" };
+  const mockDataNested = { hello: { text: "world" } };
+  const mockDataStructured = { hello: { text: "world" } };
+  const mockDataIcu = { hello: "world" };
+  const mockDataAndroid = `
       <?xml version="1.0" encoding="utf-8"?>
       <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
           <string name="hello-world" ditto_api_id="hello-world">Hello World</string>
       </resources>
     `;
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
-    }));
-    const output = await downloadAndSaveBase({
-      projects: testProjects,
-      format: "android",
-    } as any);
-    expect(/successfully saved/i.test(output)).toEqual(true);
-    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
-    expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".xml"))).toBe(true);
-    expect(
-      fs
-        .readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-        .replace(/\s/g, "")
-    ).toEqual(mockData.replace(/\s/g, ""));
-  });
-
-  it("writes the ios-strings format to disk", async () => {
-    const mockData = `
+  const mockDataIosStrings = `
       "hello" = "world"; 
     `;
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
-    }));
-    const output = await downloadAndSaveBase({
-      projects: testProjects,
-      format: "ios-strings",
-    } as any);
-    expect(/successfully saved/i.test(output)).toEqual(true);
-    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
-    expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".strings"))).toBe(true);
-    expect(
-      fs
-        .readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-        .replace(/\s/g, "")
-    ).toEqual(mockData.replace(/\s/g, ""));
-  });
-
-  it("writes the ios-stringsdict format to disk", async () => {
-    const mockData = `
+  const mockDataIosStringsDict = `
       <?xml version="1.0" encoding="utf-8"?>
       <plist version="1.0">
           <dict>
@@ -231,27 +115,74 @@ describe("downloadAndSaveBase", () => {
           </dict>
       </plist>
     `;
+
+  const formats: Array<{
+    format: SupportedFormat;
+    data: Object;
+    ext: SupportedExtension;
+  }> = [
+    { format: "flat", data: mockDataFlat, ext: ".json" },
+    { format: "nested", data: mockDataNested, ext: ".json" },
+    { format: "structured", data: mockDataStructured, ext: ".json" },
+    { format: "icu", data: mockDataIcu, ext: ".json" },
+    { format: "android", data: mockDataAndroid, ext: ".xml" },
+    { format: "ios-strings", data: mockDataIosStrings, ext: ".strings" },
+    {
+      format: "ios-stringsdict",
+      data: mockDataIosStringsDict,
+      ext: ".stringsdict",
+    },
+  ];
+
+  const mockApiCall = (data: unknown) => {
     (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
+      get: () => ({ data }),
     }));
+  };
+
+  const verifySavedData = async (
+    format: SupportedFormat,
+    data: unknown,
+    ext: SupportedExtension
+  ) => {
     const output = await downloadAndSaveBase({
       projects: testProjects,
-      format: "ios-stringsdict",
+      format: format,
     } as any);
     expect(/successfully saved/i.test(output)).toEqual(true);
     const directoryContents = fs.readdirSync(consts.TEXT_DIR);
     expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".stringsdict"))).toBe(
-      true
+    expect(directoryContents.every((f) => f.endsWith(ext))).toBe(true);
+    const fileDataString = fs.readFileSync(
+      path.resolve(consts.TEXT_DIR, directoryContents[0]),
+      "utf8"
     );
-    expect(
-      fs
-        .readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-        .replace(/\s/g, "")
-    ).toEqual(mockData.replace(/\s/g, ""));
+
+    switch (format) {
+      case "android":
+      case "ios-strings":
+      case "ios-stringsdict":
+        expect(typeof data).toBe("string");
+        expect(fileDataString.replace(/\s/g, "")).toEqual(
+          (data as string).replace(/\s/g, "")
+        );
+        break;
+
+      case "flat":
+      case "nested":
+      case "structured":
+      case "icu":
+      default:
+        expect(JSON.parse(fileDataString)).toEqual(data);
+        break;
+    }
+  };
+
+  formats.forEach(({ format, data, ext }) => {
+    it(`writes the ${format} format to disk`, async () => {
+      mockApiCall(data);
+      await verifySavedData(format, data, ext);
+    });
   });
 });
 

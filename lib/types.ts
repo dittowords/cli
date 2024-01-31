@@ -23,11 +23,14 @@ export interface ComponentFolder {
 
 export type SupportedFormat =
   | "flat"
+  | "nested"
   | "structured"
   | "android"
   | "ios-strings"
   | "ios-stringsdict"
   | "icu";
+
+export type SupportedExtension = ".json" | ".xml" | ".strings" | ".stringsdict";
 
 type ComponentsSourceBool = boolean;
 type ComponentsSourceConfig = {

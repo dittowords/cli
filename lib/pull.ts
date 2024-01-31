@@ -17,6 +17,7 @@ import {
   Token,
   Project,
   SupportedFormat,
+  SupportedExtension,
   ComponentFolder,
   ComponentSource,
   Source,
@@ -49,6 +50,7 @@ export const writeFile = (path: string, data: string) =>
 
 const SUPPORTED_FORMATS: SupportedFormat[] = [
   "flat",
+  "nested",
   "structured",
   "android",
   "ios-strings",
@@ -59,7 +61,7 @@ const SUPPORTED_FORMATS: SupportedFormat[] = [
 export type JSONFormat = "flat" | "nested" | "structured" | "icu";
 
 const IOS_FORMATS: SupportedFormat[] = ["ios-strings", "ios-stringsdict"];
-const JSON_FORMATS: JSONFormat[] = ["flat", "structured", "icu"];
+const JSON_FORMATS: JSONFormat[] = ["flat", "nested", "structured", "icu"];
 
 const getJsonFormat = (formats: string[]): JSONFormat => {
   // edge case: multiple json formats specified
@@ -71,8 +73,9 @@ const getJsonFormat = (formats: string[]): JSONFormat => {
   return jsonFormats[jsonFormats.length - 1] || "flat";
 };
 
-const FORMAT_EXTENSIONS = {
+const FORMAT_EXTENSIONS: Record<SupportedFormat, SupportedExtension> = {
   flat: ".json",
+  nested: ".json",
   structured: ".json",
   android: ".xml",
   "ios-strings": ".strings",
@@ -93,6 +96,7 @@ const getJsonFormatIsValid = (data: string) => {
 // exported for test usage only
 export const getFormatDataIsValid = {
   flat: getJsonFormatIsValid,
+  nested: getJsonFormatIsValid,
   structured: getJsonFormatIsValid,
   icu: getJsonFormatIsValid,
   android: (data: string) => data.includes("<string"),

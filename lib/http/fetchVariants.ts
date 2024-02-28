@@ -15,7 +15,7 @@ export async function fetchVariants(
   const { shouldFetchComponentLibrary, validProjects } = source;
 
   const config: AxiosRequestConfig = {
-    params: { ...options?.meta },
+    params: { ...options?.meta, showSampleData: options.includeSampleData },
   };
 
   // if we're not syncing from the component library, then we pass the project ids

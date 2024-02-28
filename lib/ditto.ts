@@ -63,6 +63,11 @@ const COMMANDS: CommandConfig<Command>[] = [
   {
     name: "pull",
     description: "Sync copy from Ditto into the current working directory",
+    flags: {
+      "--sample-data": {
+        description: "Include sample data. Currently only supports variants.",
+      },
+    },
   },
   {
     name: "project",
@@ -210,7 +215,10 @@ const executeCommand = async (
   switch (command) {
     case "none":
     case "pull": {
-      return pull({ meta: processMetaOption(meta) });
+      return pull({
+        meta: processMetaOption(meta),
+        includeSampleData: options.sampleData || false,
+      });
     }
     case "project":
     case "project add": {

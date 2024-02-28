@@ -327,7 +327,7 @@ async function downloadAndSave(
   spinner.start();
 
   const [variants, allComponentFoldersResponse] = await Promise.all([
-    fetchVariants(source),
+    fetchVariants(source, options),
     fetchComponentFolders({}),
   ]);
 
@@ -578,15 +578,20 @@ async function downloadAndSave(
 
 export interface PullOptions {
   meta?: Record<string, string>;
+  includeSampleData?: boolean;
 }
 
 export const pull = async (options?: PullOptions) => {
   const meta = options ? options.meta : {};
+  const includeSampleData = options ? options.includeSampleData : false;
   const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
   const sourceInformation = config.parseSourceInformation();
 
   try {
-    return await downloadAndSave(sourceInformation, token, { meta });
+    return await downloadAndSave(sourceInformation, token, {
+      meta,
+      includeSampleData,
+    });
   } catch (e) {
     const eventId = Sentry.captureException(e);
     const eventStr = `\n\nError ID: ${output.info(eventId)}`;

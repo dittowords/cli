@@ -583,7 +583,7 @@ export interface PullOptions {
 
 export const pull = async (options?: PullOptions) => {
   const meta = options ? options.meta : {};
-  const includeSampleData = options ? options.includeSampleData : false;
+  const includeSampleData = options?.includeSampleData || false
   const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
   const sourceInformation = config.parseSourceInformation();
 

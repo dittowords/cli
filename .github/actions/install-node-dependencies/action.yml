@@ -4,7 +4,7 @@ description: "Attempts to install Node.js dependencing leveraging yarn and cachi
 inputs:
   working-directory:
     required: false
-    type: string
+    description: "The directory to run the install command in"
     default: ./
 
 runs:

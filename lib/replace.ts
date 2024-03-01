@@ -11,12 +11,12 @@ async function replaceJSXTextInFile(
     lineNumbers?: number[];
   }
 ) {
-  const code = await new Promise<string>((r) =>
+  const code = await new Promise<string>((resolve, reject) =>
     fs.readFile(filePath, "utf-8", (err, data) => {
       if (err) {
-        throw err;
+        reject(err);
       } else {
-        r(data);
+        resolve(data);
       }
     })
   );

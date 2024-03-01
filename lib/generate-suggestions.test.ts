@@ -1,23 +1,31 @@
-import fsPromise from "fs/promises";
 import fs from "fs";
 import path from "path";
 import { findComponentsInJSXFiles } from "./generate-suggestions";
 
+jest.mock("fs");
+
 describe("findTextInJSXFiles", () => {
   async function createTempFile(filename: string, content: string) {
-    const testingDirExists = fs.existsSync("../.testing");
-    if (!testingDirExists) {
-      fs.mkdirSync("../.testing");
-    }
-
-    const filePath = path.join("../.testing/", filename);
-    await fsPromise.writeFile(filePath, content);
+    const filePath = path.join("/", filename);
+    await new Promise((resolve, reject) => {
+      try {
+        fs.writeFile(filePath, content, () => resolve(null));
+      } catch (e) {
+        reject(e);
+      }
+    });
     return filePath;
   }
 
   async function deleteTempFile(filename: string) {
-    const filePath = path.join("../.testing/", filename);
-    await fsPromise.unlink(filePath);
+    const filePath = path.join("/", filename);
+    await new Promise((resolve, reject) => {
+      try {
+        fs.unlink(filePath, resolve);
+      } catch (e) {
+        reject(e);
+      }
+    });
   }
 
   it("should return an empty obj when no files are found", async () => {
@@ -80,7 +88,7 @@ describe("findTextInJSXFiles", () => {
     };
 
     const result = await findComponentsInJSXFiles({
-      directory: "../.testing",
+      directory: "/",
       components: {
         "search-string": {
           name: "Search String",
@@ -125,7 +133,7 @@ describe("findTextInJSXFiles", () => {
     };
 
     const result = await findComponentsInJSXFiles({
-      files: ["../.testing/file1.jsx"],
+      files: ["/file1.jsx"],
       components: {
         "search-string": {
           name: "Search String",
@@ -140,7 +148,7 @@ describe("findTextInJSXFiles", () => {
 
     try {
       await findComponentsInJSXFiles({
-        files: ["../.testing/file2.jsx"],
+        files: ["/file2.jsx"],
         components: {
           "search-string": {
             name: "Search String",

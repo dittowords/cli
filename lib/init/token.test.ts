@@ -1,22 +1,32 @@
-import tempy from "tempy";
-
+import fs from "fs";
 import config from "../config";
+import { randomUUID } from "crypto";
 import { needsToken } from "./token";
+
+jest.mock("fs");
 
 describe("needsToken()", () => {
   it("is true if there is no config file", () => {
-    expect(needsToken(tempy.file())).toBeTruthy();
+    expect(needsToken(randomUUID())).toBeTruthy();
   });
 
   describe("with a config file", () => {
     let configFile = "";
 
-    beforeEach(() => {
-      configFile = tempy.writeSync("");
+    beforeEach(async () => {
+      configFile = `/${randomUUID()}`;
+      await new Promise((resolve, reject) =>
+        fs.writeFile(configFile, "", (err) => {
+          if (err) reject(err);
+          else {
+            resolve(null);
+          }
+        })
+      );
     });
 
     it("returns true if empty", () => {
-      expect(needsToken(configFile, "testing.dittowrods.com")).toBeTruthy();
+      expect(needsToken(configFile, "testing.dittowords.com")).toBeTruthy();
     });
 
     describe("with some data", () => {

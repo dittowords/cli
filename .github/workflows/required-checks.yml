@@ -2,7 +2,8 @@ name: "Required Checks"
 
 on:
   pull_request:
-    branches: [master]
+    branches:
+      - master
 
 jobs:
   jest-tests:

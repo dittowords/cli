@@ -1,9 +1,8 @@
 name: "Required Checks"
 
 on:
-  push:
-    branches:
-      - jordin/dit-6185-cli-run-tests-in-required-checks-against-prs
+  pull_request:
+    branches: [master]
 
 jobs:
   jest-tests:

@@ -69,7 +69,8 @@ async function replaceJSXTextInFile(
     /* @ts-ignore */
     configFile: false,
   });
-  fs.writeFile(filePath, transformedCode);
+
+  await fs.writeFile(filePath, transformedCode);
 }
 
 function splitByCaseInsensitive(str: string, delimiter: string) {

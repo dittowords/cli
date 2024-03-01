@@ -3,7 +3,7 @@ import { parseOptions, replaceJSXTextInFile } from "./replace"; // Assuming the 
 
 // Helper function to create a temporary file
 async function createTempJSXFile(content: string): Promise<string> {
-  const tempFile = "tempFile.jsx";
+  const tempFile = "../.testing/tempFile.jsx";
   await fs.writeFile(tempFile, content);
   return tempFile;
 }
@@ -57,10 +57,9 @@ describe("parseOptions", () => {
   });
 });
 
-// TODO: this is flaky
 describe("replaceJSXTextInFile", () => {
   afterEach(async () => {
-    await deleteTempFile("tempFile.jsx");
+    await deleteTempFile("../.testing/tempFile.jsx");
   });
 
   test("should replace JSX text with a DittoComponent", async () => {

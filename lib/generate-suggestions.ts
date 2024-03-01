@@ -43,11 +43,14 @@ async function generateSuggestions(flags: {
   console.log(JSON.stringify(results, null, 2));
 }
 
-async function findComponentsInJSXFiles(params: {
-  directory: string;
-  files?: string[];
-  components: FetchComponentResponse;
-}): Promise<{ [apiId: string]: Result }> {
+async function findComponentsInJSXFiles(
+  params: (
+    | { directory: string; files?: string[] }
+    | { files: string[]; directory?: string }
+  ) & {
+    components: FetchComponentResponse;
+  }
+): Promise<{ [apiId: string]: Result }> {
   const result: { [apiId: string]: Result } = {};
   const files =
     params.files ||
@@ -68,7 +71,7 @@ async function findComponentsInJSXFiles(params: {
         traverse(ast, {
           JSXText(path) {
             for (const [compApiId, component] of Object.entries(
-              params.components,
+              params.components
             )) {
               // If we haven't seen this component before, add it to the result
               if (!result[compApiId]) {
@@ -88,7 +91,7 @@ async function findComponentsInJSXFiles(params: {
                 // Escape all special characters from the text so we can use it in a regex
                 const escapedText = component.text.replace(
                   /[.*+?^${}()|[\]\\]/g,
-                  "\\$&",
+                  "\\$&"
                 );
                 const regex = new RegExp(escapedText, "g");
                 let match;
@@ -110,7 +113,7 @@ async function findComponentsInJSXFiles(params: {
                     line,
                     match.index,
                     component.text,
-                    `${component.text}`,
+                    `${component.text}`
                   );
 
                   // Initialize the occurrences array if it doesn't exist
@@ -132,7 +135,7 @@ async function findComponentsInJSXFiles(params: {
             }
           },
         });
-      }),
+      })
     );
   }
 
@@ -145,7 +148,7 @@ function replaceAt(
   str: string,
   index: number,
   searchString: string,
-  replacement: string,
+  replacement: string
 ) {
   return (
     str.substring(0, index) +

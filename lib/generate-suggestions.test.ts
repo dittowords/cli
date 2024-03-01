@@ -1,17 +1,23 @@
-import fs from "fs/promises";
+import fsPromise from "fs/promises";
+import fs from "fs";
 import path from "path";
 import { findComponentsInJSXFiles } from "./generate-suggestions";
 
 describe("findTextInJSXFiles", () => {
   async function createTempFile(filename: string, content: string) {
-    const filePath = path.join(".", filename);
-    await fs.writeFile(filePath, content);
+    const testingDirExists = fs.existsSync("../.testing");
+    if (!testingDirExists) {
+      fs.mkdirSync("../.testing");
+    }
+
+    const filePath = path.join("../.testing/", filename);
+    await fsPromise.writeFile(filePath, content);
     return filePath;
   }
 
   async function deleteTempFile(filename: string) {
-    const filePath = path.join(".", filename);
-    await fs.unlink(filePath);
+    const filePath = path.join("../.testing/", filename);
+    await fsPromise.unlink(filePath);
   }
 
   it("should return an empty obj when no files are found", async () => {
@@ -74,7 +80,7 @@ describe("findTextInJSXFiles", () => {
     };
 
     const result = await findComponentsInJSXFiles({
-      directory: ".",
+      directory: "../.testing",
       components: {
         "search-string": {
           name: "Search String",
@@ -119,8 +125,7 @@ describe("findTextInJSXFiles", () => {
     };
 
     const result = await findComponentsInJSXFiles({
-      directory: ".",
-      files: ["file1.jsx"],
+      files: ["../.testing/file1.jsx"],
       components: {
         "search-string": {
           name: "Search String",
@@ -134,9 +139,8 @@ describe("findTextInJSXFiles", () => {
     expect(result).toEqual(expectedResult);
 
     try {
-      const result2 = await findComponentsInJSXFiles({
-        directory: ".",
-        files: ["file2.jsx"],
+      await findComponentsInJSXFiles({
+        files: ["../.testing/file2.jsx"],
         components: {
           "search-string": {
             name: "Search String",

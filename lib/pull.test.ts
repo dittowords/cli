@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { _test } from "./pull";
 
 jest.mock("./api", () => ({
   createApiClient: jest.fn(), // this needs to be mocked in each test that requires it
@@ -328,5 +329,50 @@ describe("getFormatDataIsValid", () => {
         </plist>
       `)
     ).toBe(true);
+  });
+});
+
+const { getJsonFormat } = _test;
+describe("getJsonFormat", () => {
+  it("returns 'flat' if no format specified", () => {
+    expect(getJsonFormat([])).toBe("flat");
+  });
+  it("returns 'flat' if invalid format specified", () => {
+    expect(getJsonFormat(["invalid-format"])).toBe("flat");
+  });
+  it("returns valid specified formats", () => {
+    expect(getJsonFormat(["structured"])).toBe("structured");
+    expect(getJsonFormat(["nested"])).toBe("nested");
+    expect(getJsonFormat(["icu"])).toBe("icu");
+    expect(getJsonFormat(["flat"])).toBe("flat");
+  });
+  it("returns last of formats if multiple specified", () => {
+    expect(getJsonFormat(["flat", "structured", "icu"])).toBe("icu");
+    expect(getJsonFormat(["flat", "icu", "structured"])).toBe("structured");
+  });
+});
+
+const { getJsonFormatIsValid } = _test;
+describe("getJsonFormatIsValid", () => {
+  it("returns true for valid json", () => {
+    expect(getJsonFormatIsValid(`{ "key": "value" }`)).toBe(true);
+    expect(getJsonFormatIsValid(`{ "key": { "text": "value" }}`)).toBe(true);
+    expect(getJsonFormatIsValid(`{ "nested": { "key": "value" }}`)).toBe(true);
+  });
+  it("returns false for empty json", () => {
+    expect(getJsonFormatIsValid(`{}`)).toBe(false);
+  });
+  it("returns false for invalid json", () => {
+    expect(getJsonFormatIsValid(`abcdefg`)).toBe(false);
+  });
+});
+
+const { ensureEndsWithNewLine } = _test;
+describe("ensureEndsWithNewLine", () => {
+  it("adds a newline to the end of a string if it doesn't already have one", () => {
+    expect(ensureEndsWithNewLine("hello")).toBe("hello\n");
+  });
+  it("doesn't add a newline to the end of a string if it already has one", () => {
+    expect(ensureEndsWithNewLine("hello\n")).toBe("hello\n");
   });
 });

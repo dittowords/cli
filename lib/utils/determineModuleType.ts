@@ -9,17 +9,15 @@ export type ModuleType = "commonjs" | "module";
  * @returns "commonjs" or "module", defaulting to "module" if no `package.json` is found or if the found
  * file does not include a `type` property.
  */
-export function determineModuleType() {
-  const value = getRawTypeFromPackageJson();
+export function determineModuleType(currentDir: string | null = process.cwd()) {
+  const value = getRawTypeFromPackageJson(currentDir);
   return getTypeOrDefault(value);
 }
 
-function getRawTypeFromPackageJson() {
+function getRawTypeFromPackageJson(currentDir: string | null) {
   if (process.env.DITTO_MODULE_TYPE) {
     return process.env.DITTO_MODULE_TYPE;
   }
-
-  let currentDir: string | null = process.cwd(); // Get the current working directory
 
   while (currentDir) {
     const packageJsonPath = path.join(currentDir, "package.json");
@@ -36,7 +34,7 @@ function getRawTypeFromPackageJson() {
     }
 
     if (currentDir === "/") {
-      return null;
+      break;
     }
 
     // Move up a directory and continue the search

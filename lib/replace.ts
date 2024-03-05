@@ -1,4 +1,4 @@
-import fs from "fs-extra";
+import fs from "fs";
 import { parse } from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
@@ -11,7 +11,15 @@ async function replaceJSXTextInFile(
     lineNumbers?: number[];
   }
 ) {
-  const code = await fs.readFile(filePath, "utf-8");
+  const code = await new Promise<string>((resolve, reject) =>
+    fs.readFile(filePath, "utf-8", (err, data) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(data);
+      }
+    })
+  );
   const ast = parse(code, {
     sourceType: "module",
     plugins: ["jsx", "typescript"],
@@ -69,7 +77,16 @@ async function replaceJSXTextInFile(
     /* @ts-ignore */
     configFile: false,
   });
-  fs.writeFile(filePath, transformedCode);
+
+  await new Promise((resolve, reject) =>
+    fs.writeFile(filePath, transformedCode, (err) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(null);
+      }
+    })
+  );
 }
 
 function splitByCaseInsensitive(str: string, delimiter: string) {

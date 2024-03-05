@@ -5,7 +5,9 @@ import tempy from "tempy";
 import yaml from "js-yaml";
 import config from "./config";
 
-const fakeHomedir = fs.mkdtempSync(path.join(__dirname, "../testing/tmp"));
+jest.mock("fs");
+
+const fakeHomedir = fs.mkdtempSync("/config-testing");
 
 describe("Config File", () => {
   const expectedConfigDir = path.join(fakeHomedir, ".config");

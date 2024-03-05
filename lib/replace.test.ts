@@ -1,16 +1,30 @@
-import fs from "fs/promises";
+import fs from "fs";
 import { parseOptions, replaceJSXTextInFile } from "./replace"; // Assuming the function is exported in a separate file
+
+jest.mock("fs");
 
 // Helper function to create a temporary file
 async function createTempJSXFile(content: string): Promise<string> {
-  const tempFile = "tempFile.jsx";
-  await fs.writeFile(tempFile, content);
+  const tempFile = "/tempFile.jsx";
+  await new Promise((resolve, reject) => {
+    try {
+      fs.writeFile(tempFile, content, resolve);
+    } catch (e) {
+      reject(e);
+    }
+  });
   return tempFile;
 }
 
 // Helper function to delete the temporary file
 async function deleteTempFile(filePath: string): Promise<void> {
-  await fs.unlink(filePath);
+  await new Promise((resolve, reject) => {
+    try {
+      fs.unlink(filePath, resolve);
+    } catch (e) {
+      reject(e);
+    }
+  });
 }
 
 describe("parseOptions", () => {
@@ -57,10 +71,9 @@ describe("parseOptions", () => {
   });
 });
 
-// TODO: this is flaky
 describe("replaceJSXTextInFile", () => {
   afterEach(async () => {
-    await deleteTempFile("tempFile.jsx");
+    await deleteTempFile("/tempFile.jsx");
   });
 
   test("should replace JSX text with a DittoComponent", async () => {
@@ -70,7 +83,15 @@ describe("replaceJSXTextInFile", () => {
 
     await replaceJSXTextInFile(tempFile, { searchString, replaceWith }, {});
 
-    const transformedCode = await fs.readFile(tempFile, "utf-8");
+    const transformedCode = await new Promise((resolve, reject) => {
+      fs.readFile(tempFile, "utf-8", (error, data) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(data);
+        }
+      });
+    });
     expect(transformedCode).toContain(
       `<div>Hello, <DittoComponent componentId="${replaceWith}" /></div>`
     );
@@ -89,7 +110,12 @@ describe("replaceJSXTextInFile", () => {
       { lineNumbers: [3] }
     );
 
-    const transformedCode = await fs.readFile(tempFile, "utf-8");
+    const transformedCode = await new Promise((resolve, reject) =>
+      fs.readFile(tempFile, "utf-8", (error, data) => {
+        if (error) reject(error);
+        else resolve(data);
+      })
+    );
     expect(transformedCode).toContain(
       `<>\n  <div>Hello, world</div>\n  <div>Hello, <DittoComponent componentId=\"some-id\" /></div>\n</>;`
     );
@@ -102,7 +128,12 @@ describe("replaceJSXTextInFile", () => {
 
     await replaceJSXTextInFile(tempFile, { searchString, replaceWith }, {});
 
-    const transformedCode = await fs.readFile(tempFile, "utf-8");
+    const transformedCode = await new Promise((resolve, reject) =>
+      fs.readFile(tempFile, "utf-8", (error, data) => {
+        if (error) reject(error);
+        else resolve(data);
+      })
+    );
     expect(transformedCode).toContain(
       `<div>HeLLo, <DittoComponent componentId="${replaceWith}" /></div>`
     );
@@ -115,7 +146,12 @@ describe("replaceJSXTextInFile", () => {
 
     await replaceJSXTextInFile(tempFile, { searchString, replaceWith }, {});
 
-    const transformedCode = await fs.readFile(tempFile, "utf-8");
+    const transformedCode = await new Promise((resolve, reject) =>
+      fs.readFile(tempFile, "utf-8", (error, data) => {
+        if (error) reject(error);
+        else resolve(data);
+      })
+    );
     expect(transformedCode).toContain("<div>Hello, world!</div>");
   });
 });

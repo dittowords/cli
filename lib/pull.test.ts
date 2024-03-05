@@ -4,6 +4,9 @@ import path from "path";
 jest.mock("./api", () => ({
   createApiClient: jest.fn(), // this needs to be mocked in each test that requires it
 }));
+
+jest.mock("fs");
+
 import { createApiClient } from "./api";
 
 const testProjects: Project[] = [
@@ -23,11 +26,11 @@ const mockApi = createApiClient() as any as jest.Mocked<
 >;
 
 jest.mock("./consts", () => ({
-  TEXT_DIR: ".testing",
+  TEXT_DIR: "/.testing",
   API_HOST: "https://api.dittowords.com",
-  CONFIG_FILE: ".testing/ditto",
-  PROJECT_CONFIG_FILE: ".testing/config.yml",
-  TEXT_FILE: ".testing/text.json",
+  CONFIG_FILE: "/.testing/ditto",
+  PROJECT_CONFIG_FILE: "/.testing/config.yml",
+  TEXT_FILE: "/.testing/text.json",
 }));
 
 import consts from "./consts";
@@ -35,9 +38,8 @@ import allPull, { getFormatDataIsValid } from "./pull";
 import { Project, SupportedExtension, SupportedFormat } from "./types";
 
 const {
-  _testing: { cleanOutputFiles, downloadAndSaveVariant, downloadAndSaveBase },
+  _testing: { cleanOutputFiles, downloadAndSaveBase },
 } = allPull;
-const variant = "english";
 
 const cleanOutputDir = () => {
   if (fs.existsSync(consts.TEXT_DIR))

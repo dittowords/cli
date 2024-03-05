@@ -1,0 +1,24 @@
+name: "Required Checks"
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  jest-tests:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - uses: ./.github/actions/install-node-dependencies
+      - name: Jest Tests
+        run: |
+          npx jest --ci --silent --maxWorkers=1
+        shell: bash

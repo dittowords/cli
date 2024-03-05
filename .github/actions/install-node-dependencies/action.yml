@@ -1,0 +1,24 @@
+name: "Install Node Dependencies"
+description: "Attempts to install Node.js dependencing leveraging yarn and caching"
+
+inputs:
+  working-directory:
+    required: false
+    description: "The directory to run the install command in"
+    default: ./
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/cache@v3
+      env:
+        cache-name: node_modules-cache
+      with:
+        path: ${{ inputs.working-directory }}node_modules
+        key: ${{ runner.os }}-build-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-build
+
+    - name: Install new dependencies
+      shell: bash
+      run: cd ${{ inputs.working-directory }} && yarn install --prefer-offline --frozen-lockfile

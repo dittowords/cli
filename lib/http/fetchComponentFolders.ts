@@ -1,6 +1,6 @@
 import { createApiClient } from "../api";
 
-interface FetchComponentFoldersResponse {
+export interface FetchComponentFoldersResponse {
   [id: string]: string;
 }
 

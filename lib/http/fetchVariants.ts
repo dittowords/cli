@@ -3,7 +3,7 @@ import { createApiClient } from "../api";
 import { PullOptions } from "../pull";
 import { SourceInformation } from "../types";
 
-interface IVariant {
+export interface IVariant {
   name: string;
   description: string;
   apiID: string;

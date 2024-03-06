@@ -1,14 +1,12 @@
 import fs from "fs";
 import path from "path";
-import { _test } from "./pull";
-
-jest.mock("./api", () => ({
-  createApiClient: jest.fn(), // this needs to be mocked in each test that requires it
-}));
+import { pull, _test } from "./pull";
+import { jest } from "@jest/globals";
+import axios from "axios";
+const axiosMock = jest.mocked(axios);
 
 jest.mock("fs");
-
-import { createApiClient } from "./api";
+jest.mock("./api");
 
 const testProjects: Project[] = [
   {
@@ -18,13 +16,6 @@ const testProjects: Project[] = [
   },
   { id: "2", name: "Project 2", fileName: "Project 2" },
 ];
-
-// TODO: all tests in this file currently failing because we're re-instantiating the api client
-// everywhere and are unable to mock the return type separately for each instance of usage.
-// We need to refactor to share one api client everywhere instead of always re-creating it.
-const mockApi = createApiClient() as any as jest.Mocked<
-  ReturnType<typeof createApiClient>
->;
 
 jest.mock("./consts", () => ({
   TEXT_DIR: "/.testing",
@@ -138,9 +129,7 @@ describe("downloadAndSaveBase", () => {
   ];
 
   const mockApiCall = (data: unknown) => {
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data }),
-    }));
+    axiosMock.get.mockResolvedValue({ data });
   };
 
   const verifySavedData = async (
@@ -376,3 +365,7 @@ describe("ensureEndsWithNewLine", () => {
     expect(ensureEndsWithNewLine("hello\n")).toBe("hello\n");
   });
 });
+
+// describe("pull", () => {
+//   //
+// });

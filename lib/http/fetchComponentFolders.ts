@@ -4,9 +4,11 @@ interface FetchComponentFoldersResponse {
   [id: string]: string;
 }
 
-export async function fetchComponentFolders(options: {
-  showSampleData?: boolean;
-}): Promise<FetchComponentFoldersResponse> {
+export async function fetchComponentFolders(
+  options: {
+    showSampleData?: boolean;
+  } = {}
+): Promise<FetchComponentFoldersResponse> {
   const api = createApiClient();
 
   let url = "/v1/component-folders";

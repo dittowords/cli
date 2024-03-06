@@ -11,9 +11,11 @@ export interface FetchComponentResponse {
   [compApiId: string]: FetchComponentResponseComponent;
 }
 
-export async function fetchComponents(options: {
-  componentFolder?: string;
-}): Promise<FetchComponentResponse> {
+export async function fetchComponents(
+  options: {
+    componentFolder?: string;
+  } = {}
+): Promise<FetchComponentResponse> {
   const api = createApiClient();
 
   if (options.componentFolder) {

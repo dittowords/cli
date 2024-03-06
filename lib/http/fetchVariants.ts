@@ -3,10 +3,21 @@ import { createApiClient } from "../api";
 import { PullOptions } from "../pull";
 import { SourceInformation } from "../types";
 
+interface IVariant {
+  name: string;
+  description: string;
+  apiID: string;
+}
+
+type SourceArg = Pick<
+  SourceInformation,
+  "shouldFetchComponentLibrary" | "validProjects" | "variants"
+>;
+
 export async function fetchVariants(
-  source: SourceInformation,
+  source: SourceArg,
   options: PullOptions = {}
-) {
+): Promise<IVariant[] | null> {
   const api = createApiClient();
   if (!source.variants) {
     return null;
@@ -25,7 +36,7 @@ export async function fetchVariants(
     config.params.projectIds = validProjects.map(({ id }) => id);
   }
 
-  const { data } = await api.get<{ apiID: string }[]>("/v1/variants", config);
+  const { data } = await api.get<IVariant[]>("/v1/variants", config);
 
   return data;
 }

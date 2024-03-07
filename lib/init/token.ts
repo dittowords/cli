@@ -37,7 +37,6 @@ async function verifyTokenUsingTokenCheck(
   try {
     resOrError = await axios.get(endpoint);
   } catch (e: unknown) {
-    console.log(e);
     if (!(e instanceof AxiosError)) {
       return {
         success: false,

@@ -9,6 +9,7 @@ import consts from "../consts";
 import output from "../output";
 import config from "../config";
 import { quit } from "../utils/quit";
+import { AxiosError, AxiosResponse } from "axios";
 
 export const needsToken = (configFile?: string, host = consts.API_HOST) => {
   if (config.getTokenFromEnv()) {
@@ -26,40 +27,73 @@ export const needsToken = (configFile?: string, host = consts.API_HOST) => {
   return false;
 };
 
-// Returns true if valid, otherwise an error message.
-async function checkToken(token: string): Promise<any> {
+async function verifyTokenUsingTokenCheck(
+  token: string
+): Promise<{ success: true } | { success: false; output: string[] }> {
   const axios = createApiClient(token);
   const endpoint = "/token-check";
 
-  let resOrError;
+  let resOrError: AxiosResponse<any> | undefined;
   try {
-    resOrError = await axios.get(endpoint).catch((error: any) => {
-      if (error.code === "ENOTFOUND") {
-        return output.errorText(
-          `Can't connect to API: ${output.url(error.hostname)}`
-        );
-      }
-      if (error.response.status === 401 || error.response.status === 404) {
-        return output.errorText(
-          "This API key isn't valid. Please try another."
-        );
-      }
-      return output.warnText("We're having trouble reaching the Ditto API.");
-    });
+    resOrError = await axios.get(endpoint);
   } catch (e: unknown) {
-    output.errorText(e as any);
-    output.errorText("Sorry! We're having trouble reaching the Ditto API.");
+    if (!(e instanceof AxiosError)) {
+      return {
+        success: false,
+        output: [
+          output.warnText(
+            "Sorry! We're having trouble reaching the Ditto API."
+          ),
+        ],
+      };
+    }
+
+    if (e.code === "ENOTFOUND") {
+      return {
+        success: false,
+        output: [
+          output.errorText(
+            `Can't connect to API: ${output.url(consts.API_HOST)}`
+          ),
+        ],
+      };
+    }
+
+    if (e.response?.status === 401 || e.response?.status === 404) {
+      return {
+        success: false,
+        output: [
+          output.errorText("This API key isn't valid. Please try another."),
+        ],
+      };
+    }
   }
 
   if (typeof resOrError === "string") {
-    return resOrError;
+    return {
+      success: false,
+      output: [resOrError],
+    };
   }
 
   if (resOrError?.status === 200) {
-    return true;
+    return { success: true };
   }
 
-  return output.errorText("This API key isn't valid. Please try another.");
+  return {
+    success: false,
+    output: [output.errorText("This API key isn't valid. Please try another.")],
+  };
+}
+
+// Returns true if valid, otherwise an error message.
+async function checkToken(token: string): Promise<any> {
+  const result = await verifyTokenUsingTokenCheck(token);
+  if (!result.success) {
+    return result.output.join("\n");
+  }
+
+  return true;
 }
 
 async function collectToken(message: string | null) {
@@ -105,3 +139,5 @@ export const collectAndSaveToken = async (message: string | null = null) => {
 };
 
 export default { needsToken, collectAndSaveToken };
+
+export const _test = { verifyTokenUsingTokenCheck };

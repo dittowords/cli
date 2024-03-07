@@ -3,3 +3,4 @@ testing/tmp
 ditto
 bin/
 .env
+coverage

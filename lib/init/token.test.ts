@@ -2,12 +2,31 @@ import fs from "fs";
 import config from "../config";
 import { randomUUID } from "crypto";
 import { needsToken } from "./token";
+import { _test } from "./token";
+import { vol } from "memfs";
+import { jest } from "@jest/globals";
+import axios from "axios";
 
 jest.mock("fs");
+jest.mock("../api");
 
-describe("needsToken()", () => {
+const axiosMocked = jest.mocked(axios);
+
+const defaultEnv = { ...process.env };
+
+beforeEach(() => {
+  vol.reset();
+  process.env = { ...defaultEnv };
+});
+
+describe("needsToken", () => {
   it("is true if there is no config file", () => {
     expect(needsToken(randomUUID())).toBeTruthy();
+  });
+
+  it("is false if there is a token in the environment", () => {
+    process.env.DITTO_API_KEY = "xxx-xxx-xxx";
+    expect(needsToken(randomUUID())).toBe(false);
   });
 
   describe("with a config file", () => {
@@ -57,5 +76,24 @@ describe("needsToken()", () => {
       );
       expect(needsToken(configFile, "testing.dittowords.com")).toBeFalsy();
     });
+  });
+});
+
+const { verifyTokenUsingTokenCheck } = _test;
+describe("verifyTokenUsingTokenCheck", () => {
+  it("returns success: true for api success response", async () => {
+    axiosMocked.get.mockResolvedValueOnce({ status: 200 });
+    const result = await verifyTokenUsingTokenCheck("xxx-xxx");
+    expect(result.success).toBe(true);
+  });
+  it("returns success: false for api unauthorized response", async () => {
+    axiosMocked.get.mockResolvedValueOnce({ status: 401 });
+    const result = await verifyTokenUsingTokenCheck("xxx-xxx");
+    expect(result.success).toBe(false);
+  });
+  it("returns success: false for api invalid response", async () => {
+    axiosMocked.get.mockResolvedValueOnce("error");
+    const result = await verifyTokenUsingTokenCheck("xxx-xxx");
+    expect(result.success).toBe(false);
   });
 });

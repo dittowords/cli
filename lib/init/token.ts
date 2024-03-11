@@ -98,13 +98,11 @@ async function checkToken(token: string): Promise<any> {
 
 async function collectToken(message: string | null) {
   const blue = output.info;
-  const apiUrl = output.url("https://app.dittowords.com/account/user");
-  const breadcrumbs = `${blue("User")}`;
+  const apiUrl = output.url("https://app.dittowords.com/account/devtools");
+  const breadcrumbs = `${chalk.bold(blue("API Keys"))}`;
   const tokenDescription =
     message ||
-    `To get started, you'll need your Ditto API key. You can find this at: ${apiUrl} > ${breadcrumbs} under "${chalk.bold(
-      "API Keys"
-    )}".`;
+    `To get started, you'll need your Ditto API key. You can find this at: ${apiUrl} under "${breadcrumbs}".`;
   console.log(tokenDescription);
 
   const response = await prompt<{ token: string }>({

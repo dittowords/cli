@@ -1,4 +1,5 @@
 import fs from "fs";
+import * as Sentry from "@sentry/node";
 
 import chalk from "chalk";
 
@@ -132,7 +133,21 @@ export const collectAndSaveToken = async (message: string | null = null) => {
     config.saveToken(consts.CONFIG_FILE, consts.API_HOST, token);
     return token;
   } catch (error) {
-    quit("API token was not saved");
+    // https://github.com/enquirer/enquirer/issues/225#issue-516043136
+    // Empty string corresponds to the user hitting Ctrl + C
+    if (error === "") {
+      quit("", 0);
+      return;
+    }
+
+    const eventId = Sentry.captureException(error);
+    const eventStr = `\n\nError ID: ${output.info(eventId)}`;
+
+    return quit(
+      output.errorText(
+        "Something went wrong. Please contact support or try again later."
+      ) + eventStr
+    );
   }
 };
 

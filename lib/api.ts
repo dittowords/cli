@@ -1,10 +1,11 @@
 import axios from "axios";
+import axiosRetry from "axios-retry";
 
 import config from "./config";
 import consts from "./consts";
 
 export function createApiClient(token?: string) {
-  return axios.create({
+  const client = axios.create({
     baseURL: consts.API_HOST,
     headers: {
       Authorization: `token ${
@@ -12,4 +13,9 @@ export function createApiClient(token?: string) {
       }`,
     },
   });
+  axiosRetry(client, {
+    retries: 3,
+    retryDelay: axiosRetry.exponentialDelay,
+  });
+  return client;
 }

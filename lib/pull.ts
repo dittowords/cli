@@ -17,6 +17,7 @@ import {
   Token,
   Project,
   SupportedFormat,
+  SupportedExtension,
   ComponentFolder,
   ComponentSource,
   Source,
@@ -25,15 +26,31 @@ import { fetchVariants } from "./http/fetchVariants";
 import { quit } from "./utils/quit";
 import { AxiosError } from "axios";
 import { fetchComponentFolders } from "./http/fetchComponentFolders";
+import { generateSwiftDriver } from "./utils/generateSwiftDriver";
+import { generateIOSBundles } from "./utils/generateIOSBundles";
+
+interface IRequestOptions {
+  projects: Project[];
+  format: SupportedFormat;
+  status: string | undefined;
+  richText?: boolean | undefined;
+  token?: Token;
+  options?: PullOptions;
+}
+
+interface IRequestOptionsWithVariants extends IRequestOptions {
+  variants: { apiID: string }[];
+}
 
 const ensureEndsWithNewLine = (str: string) =>
   str + (/[\r\n]$/.test(str) ? "" : "\n");
 
-const writeFile = (path: string, data: string) =>
+export const writeFile = (path: string, data: string) =>
   new Promise((r) => fs.writeFile(path, ensureEndsWithNewLine(data), r));
 
 const SUPPORTED_FORMATS: SupportedFormat[] = [
   "flat",
+  "nested",
   "structured",
   "android",
   "ios-strings",
@@ -41,10 +58,24 @@ const SUPPORTED_FORMATS: SupportedFormat[] = [
   "icu",
 ];
 
-const JSON_FORMATS: SupportedFormat[] = ["flat", "structured", "icu"];
+export type JSONFormat = "flat" | "nested" | "structured" | "icu";
 
-const FORMAT_EXTENSIONS = {
+const IOS_FORMATS: SupportedFormat[] = ["ios-strings", "ios-stringsdict"];
+const JSON_FORMATS: JSONFormat[] = ["flat", "nested", "structured", "icu"];
+
+const getJsonFormat = (formats: string[]): JSONFormat => {
+  // edge case: multiple json formats specified
+  // we should grab the last one
+  const jsonFormats = formats.filter((f) =>
+    JSON_FORMATS.includes(f as JSONFormat)
+  ) as JSONFormat[];
+
+  return jsonFormats[jsonFormats.length - 1] || "flat";
+};
+
+const FORMAT_EXTENSIONS: Record<SupportedFormat, SupportedExtension> = {
   flat: ".json",
+  nested: ".json",
   structured: ".json",
   android: ".xml",
   "ios-strings": ".strings",
@@ -65,6 +96,7 @@ const getJsonFormatIsValid = (data: string) => {
 // exported for test usage only
 export const getFormatDataIsValid = {
   flat: getJsonFormatIsValid,
+  nested: getJsonFormatIsValid,
   structured: getJsonFormatIsValid,
   icu: getJsonFormatIsValid,
   android: (data: string) => data.includes("<string"),
@@ -119,12 +151,9 @@ async function askForAnotherToken() {
  */
 async function downloadAndSaveVariant(
   variantApiId: string | null,
-  projects: Project[],
-  format: SupportedFormat,
-  status: string | undefined,
-  richText: boolean | undefined,
-  token?: Token
+  requestOptions: IRequestOptions
 ) {
+  const { projects, format, status, richText, token } = requestOptions;
   const api = createApiClient();
   const params: Record<string, string | null> = { variant: variantApiId };
   if (format) params.format = format;
@@ -141,7 +170,7 @@ async function downloadAndSaveVariant(
       if (project.exclude_components)
         projectParams.exclude_components = String(project.exclude_components);
 
-      const { data } = await api.get(`/projects/${project.id}`, {
+      const { data } = await api.get(`/v1/projects/${project.id}`, {
         params: projectParams,
         headers: { Authorization: `token ${token}` },
       });
@@ -176,31 +205,21 @@ async function downloadAndSaveVariant(
 }
 
 async function downloadAndSaveVariants(
-  variants: { apiID: string }[],
-  projects: Project[],
-  format: SupportedFormat,
-  status: string | undefined,
-  richText: boolean | undefined,
-  token?: Token
+  requestOptions: IRequestOptionsWithVariants
 ) {
   const messages = await Promise.all([
-    downloadAndSaveVariant(null, projects, format, status, richText, token),
-    ...variants.map(({ apiID }: { apiID: string }) =>
-      downloadAndSaveVariant(apiID, projects, format, status, richText, token)
+    downloadAndSaveVariant(null, requestOptions),
+    ...requestOptions.variants.map(({ apiID }: { apiID: string }) =>
+      downloadAndSaveVariant(apiID, requestOptions)
     ),
   ]);
 
   return messages.join("");
 }
 
-async function downloadAndSaveBase(
-  projects: Project[],
-  format: SupportedFormat,
-  status: string | undefined,
-  richText?: boolean | undefined,
-  token?: Token,
-  options?: PullOptions
-) {
+async function downloadAndSaveBase(requestOptions: IRequestOptions) {
+  const { projects, format, status, richText, token, options } = requestOptions;
+
   const api = createApiClient();
   const params = { ...options?.meta };
   if (format) params.format = format;
@@ -217,7 +236,7 @@ async function downloadAndSaveBase(
       if (project.exclude_components)
         projectParams.exclude_components = String(project.exclude_components);
 
-      const { data } = await api.get(`/projects/${project.id}`, {
+      const { data } = await api.get(`/v1/projects/${project.id}`, {
         params: projectParams,
         headers: { Authorization: `token ${token}` },
       });
@@ -253,10 +272,23 @@ function cleanOutputFiles() {
     fs.mkdirSync(consts.TEXT_DIR);
   }
 
-  const fileNames = fs.readdirSync(consts.TEXT_DIR);
-  fileNames.forEach((fileName) => {
-    if (/\.js(on)?|\.xml|\.strings(dict)?$/.test(fileName)) {
-      fs.unlinkSync(path.resolve(consts.TEXT_DIR, fileName));
+  const directoryContents = fs.readdirSync(consts.TEXT_DIR, {
+    withFileTypes: true,
+  });
+
+  directoryContents.forEach((item) => {
+    if (item.isDirectory() && /\.lproj$/.test(item.name)) {
+      return fs.rmSync(path.resolve(consts.TEXT_DIR, item.name), {
+        recursive: true,
+        force: true,
+      });
+    }
+
+    if (
+      item.isFile() &&
+      /\.js(on)?|\.xml|\.strings(dict)?$|\.swift$/.test(item.name)
+    ) {
+      return fs.unlinkSync(path.resolve(consts.TEXT_DIR, item.name));
     }
   });
 
@@ -277,17 +309,26 @@ async function downloadAndSave(
     richText,
     componentFolders: specifiedComponentFolders,
     componentRoot,
+    localeByVariantApiId,
   } = source;
 
   const formats = getFormat(formatFromSource);
+
+  const hasJSONFormat = formats.some((f) =>
+    JSON_FORMATS.includes(f as JSONFormat)
+  );
+  const hasIOSFormat = formats.some((f) => IOS_FORMATS.includes(f));
+  const shouldGenerateIOSBundles = hasIOSFormat && localeByVariantApiId;
+
+  const shouldLogOutputFiles = !shouldGenerateIOSBundles;
 
   let msg = "";
   const spinner = ora(msg);
   spinner.start();
 
   const [variants, allComponentFoldersResponse] = await Promise.all([
-    fetchVariants(source),
-    fetchComponentFolders(),
+    fetchVariants(source, options),
+    fetchComponentFolders({}),
   ]);
 
   const allComponentFolders = Object.entries(
@@ -390,8 +431,8 @@ async function downloadAndSave(
 
             const url =
               componentFolder.id === "__root__"
-                ? "/components?root_only=true"
-                : `/component-folders/${componentFolder.id}/components`;
+                ? "/v1/components?root_only=true"
+                : `/v1/component-folders/${componentFolder.id}/components`;
 
             const { data } = await api.get(url, {
               params: componentFolderParams,
@@ -399,7 +440,10 @@ async function downloadAndSave(
 
             const nameExt = getFormatExtension(format);
             const nameBase = "components";
-            const nameFolder = `__${componentFolder.name}`;
+
+            // we need to clean the folder name by itself first, otherwise we can
+            // end up with "empty" words and weird hyphenation.
+            const nameFolder = `__${cleanFileName(componentFolder.name)}`;
             const namePostfix = `__${variantApiId || "base"}`;
 
             const fileName = cleanFileName(
@@ -433,7 +477,9 @@ async function downloadAndSave(
       });
 
       const messages = await Promise.all(messagePromises);
-      msg += messages.join("");
+      if (shouldLogOutputFiles) {
+        msg += messages.join("");
+      }
     }
 
     if (shouldFetchComponentLibrary) {
@@ -443,25 +489,32 @@ async function downloadAndSave(
     }
 
     async function fetchProjects(format: SupportedFormat) {
-      msg += variants
-        ? await downloadAndSaveVariants(
-            variants,
-            validProjects,
-            format,
-            status,
-            richText,
-            token
-          )
-        : await downloadAndSaveBase(
-            validProjects,
-            format,
-            status,
-            richText,
-            token,
-            {
-              meta,
-            }
-          );
+      let result = "";
+      if (variants) {
+        result = await downloadAndSaveVariants({
+          variants,
+          projects: validProjects,
+          format,
+          status,
+          richText,
+          token,
+        });
+      } else {
+        result = await downloadAndSaveBase({
+          projects: validProjects,
+          format,
+          status,
+          richText,
+          token,
+          options: {
+            meta,
+          },
+        });
+      }
+
+      if (shouldLogOutputFiles) {
+        msg += result;
+      }
     }
 
     if (validProjects.length) {
@@ -472,10 +525,15 @@ async function downloadAndSave(
 
     const sources: Source[] = [...validProjects, ...componentSources];
 
-    if (formats.some((f) => JSON_FORMATS.includes(f)))
-      msg += generateJsDriver(sources);
+    if (hasJSONFormat) msg += generateJsDriver(sources, getJsonFormat(formats));
 
-    msg += `\n${output.success("Done")}!`;
+    if (shouldGenerateIOSBundles) {
+      msg += "iOS locale information detected, generating bundles..\n\n";
+      msg += await generateIOSBundles(localeByVariantApiId);
+      msg += await generateSwiftDriver(source);
+    }
+
+    msg += `\n\n${output.success("Done")}!`;
 
     spinner.stop();
     return console.log(msg);
@@ -520,15 +578,20 @@ async function downloadAndSave(
 
 export interface PullOptions {
   meta?: Record<string, string>;
+  includeSampleData?: boolean;
 }
 
 export const pull = async (options?: PullOptions) => {
   const meta = options ? options.meta : {};
+  const includeSampleData = options?.includeSampleData || false;
   const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
   const sourceInformation = config.parseSourceInformation();
 
   try {
-    return await downloadAndSave(sourceInformation, token, { meta });
+    return await downloadAndSave(sourceInformation, token, {
+      meta,
+      includeSampleData,
+    });
   } catch (e) {
     const eventId = Sentry.captureException(e);
     const eventStr = `\n\nError ID: ${output.info(eventId)}`;
@@ -556,4 +619,10 @@ export default {
     downloadAndSaveVariants,
     downloadAndSaveBase,
   },
+};
+
+export const _test = {
+  getJsonFormat,
+  getJsonFormatIsValid,
+  ensureEndsWithNewLine,
 };

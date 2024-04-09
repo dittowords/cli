@@ -5,7 +5,9 @@ import tempy from "tempy";
 import yaml from "js-yaml";
 import config from "./config";
 
-const fakeHomedir = fs.mkdtempSync(path.join(__dirname, "../testing/tmp"));
+jest.mock("fs");
+
+const fakeHomedir = fs.mkdtempSync("/config-testing");
 
 describe("Config File", () => {
   const expectedConfigDir = path.join(fakeHomedir, ".config");
@@ -55,7 +57,7 @@ describe("Tokens in config files", () => {
   describe("saveToken", () => {
     it("creates a config file with config data", () => {
       const fileContents = fs.readFileSync(configFile, "utf8");
-      const configData = yaml.load(fileContents);
+      const configData = yaml.load(fileContents) as Record<string, any>;
       if (configData && typeof configData === "object") {
         expect(configData["testing.dittowords.com"]).toBeDefined();
         expect(configData["testing.dittowords.com"][0].token).toEqual(

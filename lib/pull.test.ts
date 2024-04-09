@@ -1,397 +1,77 @@
-import fs from "fs";
-import path from "path";
-
-jest.mock("./api", () => ({
-  createApiClient: jest.fn(), // this needs to be mocked in each test that requires it
-}));
-import { createApiClient } from "./api";
-
-const testProjects: Project[] = [
-  {
-    id: "1",
-    name: "Project 1",
-    fileName: "Project 1",
-  },
-  { id: "2", name: "Project 2", fileName: "Project 2" },
-];
-
-// TODO: all tests in this file currently failing because we're re-instantiating the api client
-// everywhere and are unable to mock the return type separately for each instance of usage.
-// We need to refactor to share one api client everywhere instead of always re-creating it.
-const mockApi = createApiClient() as any as jest.Mocked<
-  ReturnType<typeof createApiClient>
->;
-
-jest.mock("./consts", () => ({
-  TEXT_DIR: ".testing",
-  API_HOST: "https://api.dittowords.com",
-  CONFIG_FILE: ".testing/ditto",
-  PROJECT_CONFIG_FILE: ".testing/config.yml",
-  TEXT_FILE: ".testing/text.json",
-}));
-
+import { pull } from "./pull";
+import { vol } from "memfs";
 import consts from "./consts";
-import allPull, { getFormatDataIsValid } from "./pull";
-import { Project } from "./types";
+import { jest } from "@jest/globals";
+import axios from "axios";
+const axiosMock = jest.mocked(axios);
+import fs from "fs";
 
-const {
-  _testing: { cleanOutputFiles, downloadAndSaveVariant, downloadAndSaveBase },
-} = allPull;
-const variant = "english";
+jest.mock("fs");
+jest.mock("./api");
 
-const cleanOutputDir = () => {
-  if (fs.existsSync(consts.TEXT_DIR))
-    fs.rmSync(consts.TEXT_DIR, { recursive: true, force: true });
+jest.mock("./http/fetchComponentFolders");
+jest.mock("./http/fetchComponents");
+jest.mock("./http/fetchVariants");
 
-  fs.mkdirSync(consts.TEXT_DIR);
-};
+const defaultEnv = { ...process.env };
 
-afterAll(() => {
-  fs.rmSync(consts.TEXT_DIR, { force: true, recursive: true });
+beforeEach(() => {
+  vol.reset();
+  process.env = { ...defaultEnv };
 });
 
-describe("cleanOutputFiles", () => {
-  it("removes .js, .json, .xml, .strings, .stringsdict files", () => {
-    cleanOutputDir();
+const mockGlobalConfigFile = `
+api.dittowords.com:
+  - token: xxx-xxx-xxx
+`;
+const mockProjectConfigFile = `
+sources:
+  components: true
+  projects:
+    - id: project-id-1
+      name: Test Project
+variants: true
+`;
 
-    fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.json"), "test");
-    fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.js"), "test");
-    fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.xml"), "test");
-    fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.strings"), "test");
-    fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.stringsdict"), "test");
-    // this file shouldn't be deleted
-    fs.writeFileSync(path.resolve(consts.TEXT_DIR, "test.txt"), "test");
+describe("pull", () => {
+  it("correctly writes files to disk per source for basic config", async () => {
+    process.env.DITTO_TEXT_DIR = "/ditto";
+    process.env.DITTO_PROJECT_CONFIG_FILE = "/ditto/config.yml";
 
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(6);
-
-    cleanOutputFiles();
-
-    expect(fs.readdirSync(consts.TEXT_DIR).length).toEqual(1);
-  });
-});
-
-describe("downloadAndSaveBase", () => {
-  beforeAll(() => {
-    if (!fs.existsSync(consts.TEXT_DIR)) {
-      fs.mkdirSync(consts.TEXT_DIR);
-    }
-  });
-
-  beforeEach(() => {
-    cleanOutputDir();
-  });
-
-  it("writes the flat format to disk", async () => {
-    const mockData = {
-      hello: "world",
-    };
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
-    }));
-    const output = await downloadAndSaveBase(testProjects, "flat", undefined);
-    expect(/successfully saved/i.test(output)).toEqual(true);
-    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
-    expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".json"))).toBe(true);
-    expect(
-      JSON.parse(
-        fs.readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-      )
-    ).toEqual(mockData);
-  });
-
-  it("writes the structured format to disk", async () => {
-    const mockData = {
-      hello: { text: "world" },
-    };
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
-    }));
-    const output = await downloadAndSaveBase(
-      testProjects,
-      "structured",
-      undefined
+    // we need to manually mock responses for the http calls that happen
+    // directly within the pull function; we don't need to mock the http
+    // calls that happen by way of http/* function calls since those have
+    // their own mocks already.
+    axiosMock.get.mockImplementation(
+      (): Promise<any> => Promise.resolve({ data: "data" })
     );
-    expect(/successfully saved/i.test(output)).toEqual(true);
-    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
-    expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".json"))).toBe(true);
-    expect(
-      JSON.parse(
-        fs.readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-      )
-    ).toEqual(mockData);
-  });
 
-  it("writes the icu format to disk", async () => {
-    const mockData = {
-      hello: "world",
-    };
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
-    }));
-    const output = await downloadAndSaveBase(testProjects, "icu", undefined);
-    expect(/successfully saved/i.test(output)).toEqual(true);
-    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
-    expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".json"))).toBe(true);
-    expect(
-      JSON.parse(
-        fs.readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-      )
-    ).toEqual(mockData);
-  });
+    vol.fromJSON({
+      [consts.CONFIG_FILE]: mockGlobalConfigFile,
+      [consts.PROJECT_CONFIG_FILE]: mockProjectConfigFile,
+    });
 
-  it("writes the android format to disk", async () => {
-    const mockData = `
-      <?xml version="1.0" encoding="utf-8"?>
-      <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-          <string name="hello-world" ditto_api_id="hello-world">Hello World</string>
-      </resources>
-    `;
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
-    }));
-    const output = await downloadAndSaveBase(
-      testProjects,
-      "android",
-      undefined
-    );
-    expect(/successfully saved/i.test(output)).toEqual(true);
-    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
-    expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".xml"))).toBe(true);
-    expect(
-      fs
-        .readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-        .replace(/\s/g, "")
-    ).toEqual(mockData.replace(/\s/g, ""));
-  });
+    await pull();
 
-  it("writes the ios-strings format to disk", async () => {
-    const mockData = `
-      "hello" = "world"; 
-    `;
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
-    }));
-    const output = await downloadAndSaveBase(
-      testProjects,
-      "ios-strings",
-      undefined
-    );
-    expect(/successfully saved/i.test(output)).toEqual(true);
-    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
-    expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".strings"))).toBe(true);
-    expect(
-      fs
-        .readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-        .replace(/\s/g, "")
-    ).toEqual(mockData.replace(/\s/g, ""));
-  });
+    const filesOnDiskExpected = new Set([
+      "components__example-folder__base.json",
+      "components__example-folder__example-variant-1.json",
+      "components__example-folder__example-variant-2.json",
+      "components__root__base.json",
+      "components__root__example-variant-1.json",
+      "components__root__example-variant-2.json",
+      "test-project__base.json",
+      "test-project__example-variant-1.json",
+      "test-project__example-variant-2.json",
+      "index.d.ts",
+      "index.js",
+    ]);
 
-  it("writes the ios-stringsdict format to disk", async () => {
-    const mockData = `
-      <?xml version="1.0" encoding="utf-8"?>
-      <plist version="1.0">
-          <dict>
-              <key>hello-world</key>
-              <dict>
-                  <key>NSStringLocalizedFormatKey</key>
-                  <string>%1$#@count@</string>
-                  <key>count</key>
-                  <dict>
-                      <key>NSStringFormatSpecTypeKey</key>
-                      <string>NSStringPluralRuleType</string>
-                      <key>NSStringFormatValueTypeKey</key>
-                      <string>d</string>
-                      <key>other</key>
-                      <string>espanol</string>
-                  </dict>
-              </dict>
-          </dict>
-      </plist>
-    `;
-    (createApiClient as any).mockImplementation(() => ({
-      get: () => ({ data: mockData }),
-    }));
-    const output = await downloadAndSaveBase(
-      testProjects,
-      "ios-stringsdict",
-      undefined
-    );
-    expect(/successfully saved/i.test(output)).toEqual(true);
-    const directoryContents = fs.readdirSync(consts.TEXT_DIR);
-    expect(directoryContents.length).toEqual(testProjects.length);
-    expect(directoryContents.every((f) => f.endsWith(".stringsdict"))).toBe(
-      true
-    );
-    expect(
-      fs
-        .readFileSync(
-          path.resolve(consts.TEXT_DIR, directoryContents[0]),
-          "utf8"
-        )
-        .replace(/\s/g, "")
-    ).toEqual(mockData.replace(/\s/g, ""));
-  });
-});
+    const filesOnDisk = fs.readdirSync("/ditto");
+    filesOnDisk.forEach((file) => {
+      filesOnDiskExpected.delete(file);
+    });
 
-describe("getFormatDataIsValid", () => {
-  it("handles flat format appropriately", () => {
-    expect(getFormatDataIsValid.flat("{}")).toBe(false);
-    expect(getFormatDataIsValid.flat(`{ "hello": "world" }`)).toBe(true);
-    expect(
-      getFormatDataIsValid.flat(`{
-      "__variant-name": "English",
-      "__variant-description": ""
-    }`)
-    ).toBe(false);
-    expect(
-      getFormatDataIsValid.flat(`{
-      "__variant-name": "English",
-      "__variant-description": "",
-      "hello": "world"
-    }`)
-    ).toBe(true);
-  });
-  it("handles structured format appropriately", () => {
-    expect(getFormatDataIsValid.structured("{}")).toBe(false);
-    expect(
-      getFormatDataIsValid.structured(`{ "hello": { "text": "world" } }`)
-    ).toBe(true);
-    expect(
-      getFormatDataIsValid.structured(`{
-      "__variant-name": "English",
-      "__variant-description": ""
-    }`)
-    ).toBe(false);
-    expect(
-      getFormatDataIsValid.structured(`{
-      "__variant-name": "English",
-      "__variant-description": "",
-      "hello": { "text": "world" }
-    }`)
-    ).toBe(true);
-  });
-  it("handles icu format appropriately", () => {
-    expect(getFormatDataIsValid.icu("{}")).toBe(false);
-    expect(getFormatDataIsValid.icu(`{ "hello": "world" }`)).toBe(true);
-    expect(
-      getFormatDataIsValid.icu(`{
-      "__variant-name": "English",
-      "__variant-description": ""
-    }`)
-    ).toBe(false);
-    expect(
-      getFormatDataIsValid.icu(`{
-      "__variant-name": "English",
-      "__variant-description": "",
-      "hello": "world"
-    }`)
-    ).toBe(true);
-  });
-  it("handles android format appropriately", () => {
-    expect(
-      getFormatDataIsValid.android(`
-      <?xml version="1.0" encoding="utf-8"?>
-      <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2"/>
-    `)
-    ).toBe(false);
-    expect(
-      getFormatDataIsValid.android(`
-      <?xml version="1.0" encoding="utf-8"?>
-      <!--Variant Name: English-->
-      <!--Variant Description: -->
-      <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2"/>
-    `)
-    ).toBe(false);
-    expect(
-      getFormatDataIsValid.android(`
-      <?xml version="1.0" encoding="utf-8"?>
-      <!--Variant Name: English-->
-      <!--Variant Description: -->
-      <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-          <string name="hello-world" ditto_api_id="hello-world">Hello World</string>
-      </resources>
-    `)
-    ).toBe(true);
-  });
-  it("handles ios-strings format appropriately", () => {
-    expect(getFormatDataIsValid["ios-strings"]("")).toBe(false);
-    expect(
-      getFormatDataIsValid["ios-strings"](`
-        /* Variant Name: English */
-        /* Variant Description: */
-      `)
-    ).toBe(false);
-    expect(
-      getFormatDataIsValid["ios-strings"](`
-        /* Variant Name: English */
-        /* Variant Description: */
-        "Hello" = "World";
-      `)
-    ).toBe(true);
-  });
-  it("handles ios-stringsdict format appropriately", () => {
-    expect(
-      getFormatDataIsValid["ios-stringsdict"](`
-        <?xml version="1.0" encoding="utf-8"?>
-        <plist version="1.0">
-            <dict/>
-        </plist>
-      `)
-    ).toBe(false);
-    expect(
-      getFormatDataIsValid["ios-stringsdict"](`
-        <?xml version="1.0" encoding="utf-8"?>
-        <!--Variant Name: English-->
-        <!--Variant Description: -->
-        <plist version="1.0">
-            <dict/>
-        </plist>
-      `)
-    ).toBe(false);
-    expect(
-      getFormatDataIsValid["ios-stringsdict"](`
-        <?xml version="1.0" encoding="utf-8"?>
-        <!--Variant Name: English-->
-        <!--Variant Description: -->
-        <plist version="1.0">
-            <dict>
-              <key>Hello World</key>
-              <dict>
-                  <key>NSStringLocalizedFormatKey</key>
-                  <string>%1$#@count@</string>
-                  <key>count</key>
-                  <dict>
-                      <key>NSStringFormatSpecTypeKey</key>
-                      <string>NSStringPluralRuleType</string>
-                      <key>NSStringFormatValueTypeKey</key>
-                      <string>d</string>
-                      <key>other</key>
-                      <string>espanol</string>
-                  </dict>
-              </dict>
-            </dict>
-        </plist>
-      `)
-    ).toBe(true);
+    expect(filesOnDiskExpected.size).toBe(0);
   });
 });

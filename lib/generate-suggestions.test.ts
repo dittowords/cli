@@ -1,17 +1,31 @@
-import fs from "fs/promises";
+import fs from "fs";
 import path from "path";
 import { findComponentsInJSXFiles } from "./generate-suggestions";
 
+jest.mock("fs");
+
 describe("findTextInJSXFiles", () => {
-  async function createTempFile(filename, content) {
-    const filePath = path.join(".", filename);
-    await fs.writeFile(filePath, content);
+  async function createTempFile(filename: string, content: string) {
+    const filePath = path.join("/", filename);
+    await new Promise((resolve, reject) => {
+      try {
+        fs.writeFile(filePath, content, () => resolve(null));
+      } catch (e) {
+        reject(e);
+      }
+    });
     return filePath;
   }
 
-  async function deleteTempFile(filename) {
-    const filePath = path.join(".", filename);
-    await fs.unlink(filePath);
+  async function deleteTempFile(filename: string) {
+    const filePath = path.join("/", filename);
+    await new Promise((resolve, reject) => {
+      try {
+        fs.unlink(filePath, resolve);
+      } catch (e) {
+        reject(e);
+      }
+    });
   }
 
   it("should return an empty obj when no files are found", async () => {
@@ -74,7 +88,7 @@ describe("findTextInJSXFiles", () => {
     };
 
     const result = await findComponentsInJSXFiles({
-      directory: ".",
+      directory: "/",
       components: {
         "search-string": {
           name: "Search String",
@@ -119,8 +133,7 @@ describe("findTextInJSXFiles", () => {
     };
 
     const result = await findComponentsInJSXFiles({
-      directory: ".",
-      files: ["file1.jsx"],
+      files: ["/file1.jsx"],
       components: {
         "search-string": {
           name: "Search String",
@@ -134,9 +147,8 @@ describe("findTextInJSXFiles", () => {
     expect(result).toEqual(expectedResult);
 
     try {
-      const result2 = await findComponentsInJSXFiles({
-        directory: ".",
-        files: ["file2.jsx"],
+      await findComponentsInJSXFiles({
+        files: ["/file2.jsx"],
         components: {
           "search-string": {
             name: "Search String",

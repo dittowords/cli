@@ -24,6 +24,14 @@ export async function importComponents(
 ): Promise<ImportComponentResponse> {
   const api = createApiClient();
 
+  if (!fs.existsSync(path)) {
+    console.error("Failed to import file: couldn't find file at path " + path);
+    return {
+      componentsInserted: 0,
+      firstImportedId: "null",
+    };
+  }
+
   const form = new FormData();
   form.append("import", fs.createReadStream(path));
 

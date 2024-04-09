@@ -32,6 +32,14 @@ function getVersion(): string {
 
 const VERSION = getVersion();
 
+const CONFIG_FILE_RELIANT_COMMANDS = [
+  "pull",
+  "none",
+  "project",
+  "project add",
+  "project remove",
+];
+
 type Command =
   | "pull"
   | "project"
@@ -55,6 +63,11 @@ const COMMANDS: CommandConfig<Command>[] = [
   {
     name: "pull",
     description: "Sync copy from Ditto into the current working directory",
+    flags: {
+      "--sample-data": {
+        description: "Include sample data. Currently only supports variants.",
+      },
+    },
   },
   {
     name: "project",
@@ -74,6 +87,11 @@ const COMMANDS: CommandConfig<Command>[] = [
     name: "component-folders",
     description:
       "List component folders in your workspace. More information about component folders can be found here: https://www.dittowords.com/docs/component-folders.",
+    flags: {
+      "-s, --sample-data": {
+        description: "Includes the sample components folder in the output",
+      },
+    },
   },
   {
     name: "generate-suggestions",
@@ -147,7 +165,7 @@ const setupCommands = () => {
           } else {
             cmd.option(flags, description);
           }
-        }
+        },
       );
     }
 
@@ -172,16 +190,18 @@ const setupCommands = () => {
 const setupOptions = () => {
   program.option(
     "-m, --meta <data...>",
-    "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual"
+    "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual",
   );
   program.version(VERSION, "-v, --version", "Output the current version");
 };
 
 const executeCommand = async (
   command: Command | "none",
-  options: any
+  options: any,
 ): Promise<void> => {
-  const needsInitialization = needsTokenOrSource();
+  const needsInitialization =
+    CONFIG_FILE_RELIANT_COMMANDS.includes(command) && needsTokenOrSource();
+
   if (needsInitialization) {
     try {
       await init();
@@ -195,7 +215,10 @@ const executeCommand = async (
   switch (command) {
     case "none":
     case "pull": {
-      return pull({ meta: processMetaOption(meta) });
+      return pull({
+        meta: processMetaOption(meta),
+        includeSampleData: options.sampleData || false,
+      });
     }
     case "project":
     case "project add": {
@@ -210,7 +233,9 @@ const executeCommand = async (
       return removeProject();
     }
     case "component-folders": {
-      return showComponentFolders();
+      return showComponentFolders({
+        showSampleData: options.sampleData,
+      });
     }
     case "generate-suggestions": {
       return generateSuggestions({

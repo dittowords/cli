@@ -195,6 +195,7 @@ function parseSourceInformation(file?: string): SourceInformation {
     format,
     status,
     richText,
+    iosLocales,
     projects: projectsRoot,
     components: componentsRoot,
   } = readProjectConfigData(file);
@@ -251,6 +252,9 @@ function parseSourceInformation(file?: string): SourceInformation {
     hasComponentLibraryInProjects,
     componentRoot,
     componentFolders,
+    localeByVariantApiId: iosLocales
+      ? iosLocales.reduce((acc, e) => ({ ...acc, ...e }), {} as any)
+      : undefined,
   };
 
   Sentry.setContext("config", createSentryContext(result));

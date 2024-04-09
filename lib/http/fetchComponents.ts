@@ -11,25 +11,32 @@ export interface FetchComponentResponse {
   [compApiId: string]: FetchComponentResponseComponent;
 }
 
-export async function fetchComponents(options: {
-  componentFolder?: string;
-}): Promise<FetchComponentResponse> {
+export async function fetchComponents(
+  options: {
+    componentFolder?: string;
+  } = {}
+): Promise<FetchComponentResponse> {
   const api = createApiClient();
 
   if (options.componentFolder) {
     try {
-      const { data } = await api.get<FetchComponentResponse>(`/component-folders/${options.componentFolder}/components`, {});
+      const { data } = await api.get<FetchComponentResponse>(
+        `/v1/component-folders/${options.componentFolder}/components`,
+        {}
+      );
 
       return data;
+    } catch (e) {
+      console.log(
+        `Failed to get components for ${options.componentFolder}. Please verify the folder's API ID.`
+      );
+      return {};
     }
-    catch (e) {
-      console.log(`Failed to get components for ${options.componentFolder}. Please verify the folder's API ID.`)
-      return {}
-    }
-
-  }
-  else {
-    const { data } = await api.get<FetchComponentResponse>("/components", {});
+  } else {
+    const { data } = await api.get<FetchComponentResponse>(
+      "/v1/components?format=structured",
+      {}
+    );
 
     return data;
   }

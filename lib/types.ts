@@ -23,11 +23,14 @@ export interface ComponentFolder {
 
 export type SupportedFormat =
   | "flat"
+  | "nested"
   | "structured"
   | "android"
   | "ios-strings"
   | "ios-stringsdict"
   | "icu";
+
+export type SupportedExtension = ".json" | ".xml" | ".strings" | ".stringsdict";
 
 type ComponentsSourceBool = boolean;
 type ComponentsSourceConfig = {
@@ -45,6 +48,9 @@ export interface ConfigYAML {
   status?: string;
   variants?: boolean;
   richText?: boolean;
+
+  // TODO: might want to rename this at some point
+  iosLocales?: Record<string, string>[];
 
   // these are legacy fields - if they exist, we should output
   // a deprecation error, and suggest that they nest them under
@@ -66,6 +72,7 @@ export interface SourceInformation {
   richText: boolean | undefined;
   componentRoot: boolean | { status: string } | undefined;
   componentFolders: ComponentFolder[] | undefined;
+  localeByVariantApiId: Record<string, string> | undefined;
 }
 
 export type Token = string | undefined;

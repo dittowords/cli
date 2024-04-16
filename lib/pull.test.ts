@@ -74,4 +74,44 @@ describe("pull", () => {
 
     expect(filesOnDiskExpected.size).toBe(0);
   });
+
+  it("correctly does not write index.js or index.d.ts when `disableJsDriver: true` is specified", async () => {
+    process.env.DITTO_TEXT_DIR = "/ditto";
+    process.env.DITTO_PROJECT_CONFIG_FILE = "/ditto/config.yml";
+
+    // we need to manually mock responses for the http calls that happen
+    // directly within the pull function; we don't need to mock the http
+    // calls that happen by way of http/* function calls since those have
+    // their own mocks already.
+    axiosMock.get.mockImplementation(
+      (): Promise<any> => Promise.resolve({ data: "data" })
+    );
+
+    vol.fromJSON({
+      [consts.CONFIG_FILE]: mockGlobalConfigFile,
+      [consts.PROJECT_CONFIG_FILE]:
+        mockProjectConfigFile + "\n" + "disableJsDriver: true",
+    });
+
+    await pull();
+
+    const filesOnDiskExpected = new Set([
+      "components__example-folder__base.json",
+      "components__example-folder__example-variant-1.json",
+      "components__example-folder__example-variant-2.json",
+      "components__root__base.json",
+      "components__root__example-variant-1.json",
+      "components__root__example-variant-2.json",
+      "test-project__base.json",
+      "test-project__example-variant-1.json",
+      "test-project__example-variant-2.json",
+    ]);
+
+    const filesOnDisk = fs.readdirSync("/ditto");
+    filesOnDisk.forEach((file) => {
+      filesOnDiskExpected.delete(file);
+    });
+
+    expect(filesOnDiskExpected.size).toBe(0);
+  });
 });

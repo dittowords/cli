@@ -286,7 +286,7 @@ function cleanOutputFiles() {
 
     if (
       item.isFile() &&
-      /\.js(on)?|\.xml|\.strings(dict)?$|\.swift$/.test(item.name)
+      /\.js(on)?|\.ts|\.xml|\.strings(dict)?$|\.swift$/.test(item.name)
     ) {
       return fs.unlinkSync(path.resolve(consts.TEXT_DIR, item.name));
     }
@@ -310,6 +310,7 @@ async function downloadAndSave(
     componentFolders: specifiedComponentFolders,
     componentRoot,
     localeByVariantApiId,
+    disableJsDriver,
   } = source;
 
   const formats = getFormat(formatFromSource);
@@ -525,7 +526,8 @@ async function downloadAndSave(
 
     const sources: Source[] = [...validProjects, ...componentSources];
 
-    if (hasJSONFormat) msg += generateJsDriver(sources, getJsonFormat(formats));
+    if (hasJSONFormat && !disableJsDriver)
+      msg += generateJsDriver(sources, getJsonFormat(formats));
 
     if (shouldGenerateIOSBundles) {
       msg += "iOS locale information detected, generating bundles..\n\n";

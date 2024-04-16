@@ -52,6 +52,10 @@ export interface ConfigYAML {
   // TODO: might want to rename this at some point
   iosLocales?: Record<string, string>[];
 
+  // prevents the generation of index.js and index.d.ts files
+  // when working with JSON formats
+  disableJsDriver?: boolean;
+
   // these are legacy fields - if they exist, we should output
   // a deprecation error, and suggest that they nest them under
   // a top-level `sources` property
@@ -73,6 +77,7 @@ export interface SourceInformation {
   componentRoot: boolean | { status: string } | undefined;
   componentFolders: ComponentFolder[] | undefined;
   localeByVariantApiId: Record<string, string> | undefined;
+  disableJsDriver?: boolean;
 }
 
 export type Token = string | undefined;

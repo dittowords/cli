@@ -6,7 +6,7 @@ import * as Sentry from "@sentry/node";
 
 import consts from "./consts";
 import { createSentryContext } from "./utils/createSentryContext";
-import { Project, ConfigYAML, SourceInformation } from "./types";
+import { Project, ConfigYAML, SourceInformation, Source } from "./types";
 
 export const DEFAULT_CONFIG_JSON: ConfigYAML = {
   sources: {
@@ -198,6 +198,7 @@ function parseSourceInformation(file?: string): SourceInformation {
     iosLocales,
     projects: projectsRoot,
     components: componentsRoot,
+    disableJsDriver,
   } = readProjectConfigData(file);
 
   const projects = sources?.projects || [];
@@ -239,7 +240,7 @@ function parseSourceInformation(file?: string): SourceInformation {
    */
   const hasSourceData = !!validProjects.length || shouldFetchComponentLibrary;
 
-  const result = {
+  const result: SourceInformation = {
     hasSourceData,
     validProjects,
     shouldFetchComponentLibrary,
@@ -255,6 +256,7 @@ function parseSourceInformation(file?: string): SourceInformation {
     localeByVariantApiId: iosLocales
       ? iosLocales.reduce((acc, e) => ({ ...acc, ...e }), {} as any)
       : undefined,
+    disableJsDriver,
   };
 
   Sentry.setContext("config", createSentryContext(result));

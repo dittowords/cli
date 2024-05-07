@@ -588,7 +588,6 @@ export const pull = async (options?: PullOptions) => {
   const includeSampleData = options?.includeSampleData || false;
   const token = config.getToken(consts.CONFIG_FILE, consts.API_HOST);
   const sourceInformation = config.parseSourceInformation();
-
   try {
     return await downloadAndSave(sourceInformation, token, {
       meta,
@@ -598,14 +597,14 @@ export const pull = async (options?: PullOptions) => {
     const eventId = Sentry.captureException(e);
     const eventStr = `\n\nError ID: ${output.info(eventId)}`;
     if (e instanceof AxiosError) {
-      return quit(
+      return await quit(
         output.errorText(
           "Something went wrong connecting to Ditto servers. Please contact support or try again later."
         ) + eventStr
       );
     }
 
-    return quit(
+    return await quit(
       output.errorText(
         "Something went wrong. Please contact support or try again later."
       ) + eventStr

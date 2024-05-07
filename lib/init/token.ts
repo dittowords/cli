@@ -136,14 +136,14 @@ export const collectAndSaveToken = async (message: string | null = null) => {
     // https://github.com/enquirer/enquirer/issues/225#issue-516043136
     // Empty string corresponds to the user hitting Ctrl + C
     if (error === "") {
-      quit("", 0);
+      await quit("", 0);
       return;
     }
 
     const eventId = Sentry.captureException(error);
     const eventStr = `\n\nError ID: ${output.info(eventId)}`;
 
-    return quit(
+    return await quit(
       output.errorText(
         "Something went wrong. Please contact support or try again later."
       ) + eventStr

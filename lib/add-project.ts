@@ -41,7 +41,7 @@ const addProject = async () => {
       `\nSorry, there was an error adding a project to your workspace: `,
       error
     );
-    quit("Project selection was not updated.");
+    await quit("Project selection was not updated.");
   }
 };
 

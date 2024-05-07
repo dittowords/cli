@@ -7,7 +7,6 @@ import fs from "fs";
 import path from "path";
 import * as Sentry from "@sentry/node";
 import { version as release } from "../package.json";
-
 import { init, needsTokenOrSource } from "./init/init";
 import { pull } from "./pull";
 import { quit } from "./utils/quit";
@@ -15,7 +14,6 @@ import addProject from "./add-project";
 import removeProject from "./remove-project";
 import { replace } from "./replace";
 import { generateSuggestions } from "./generate-suggestions";
-
 import processMetaOption from "./utils/processMetaOption";
 import { importComponents } from "./importComponents";
 import { showComponentFolders } from "./component-folders";
@@ -165,7 +163,7 @@ const setupCommands = () => {
           } else {
             cmd.option(flags, description);
           }
-        },
+        }
       );
     }
 
@@ -190,14 +188,14 @@ const setupCommands = () => {
 const setupOptions = () => {
   program.option(
     "-m, --meta <data...>",
-    "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual",
+    "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual"
   );
   program.version(VERSION, "-v, --version", "Output the current version");
 };
 
 const executeCommand = async (
   command: Command | "none",
-  options: any,
+  options: any
 ): Promise<void> => {
   const needsInitialization =
     CONFIG_FILE_RELIANT_COMMANDS.includes(command) && needsTokenOrSource();
@@ -206,7 +204,7 @@ const executeCommand = async (
     try {
       await init();
     } catch (error) {
-      quit("Exiting Ditto CLI...");
+      await quit("Exiting Ditto CLI...");
       return;
     }
   }
@@ -266,7 +264,7 @@ const executeCommand = async (
       });
     }
     default: {
-      quit("Exiting Ditto CLI...");
+      await quit("Exiting Ditto CLI...");
       return;
     }
   }

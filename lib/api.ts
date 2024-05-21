@@ -10,6 +10,7 @@ export function createApiClient(token?: string) {
       Authorization: `token ${
         token || config.getToken(consts.CONFIG_FILE, consts.API_HOST)
       }`,
+      "X-Ditto-CLI": true,
     },
   });
 }

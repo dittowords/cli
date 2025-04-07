@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // This is the main entry point for the ditto-cli command.
+import * as Sentry from "@sentry/node";
 import { program } from "commander";
 import { pull } from "./commands/pull";
 import { quit } from "./utils/quit";
 import { version } from "../../package.json";
+import output from "./output";
 
 const CONFIG_FILE_RELIANT_COMMANDS = [
   "pull",
@@ -89,15 +91,30 @@ const executeCommand = async (
   command: Command | "none",
   options: any
 ): Promise<void> => {
-  switch (command) {
-    case "none":
-    case "pull": {
-      return pull();
+  try {
+    switch (command) {
+      case "none":
+      case "pull": {
+        return await pull();
+      }
+      default: {
+        await quit("Exiting Ditto CLI...");
+        return;
+      }
     }
-    default: {
-      await quit("Exiting Ditto CLI...");
-      return;
+  } catch (error) {
+    const eventId = Sentry.captureException(error);
+    const eventStr = `\n\nError ID: ${output.info(eventId)}`;
+
+    if (process.env.IS_LOCAL === "true") {
+      console.error(output.info("Development stack trace:\n"), error);
     }
+
+    return await quit(
+      output.errorText(
+        "Something went wrong. Please contact support or try again later."
+      ) + eventStr
+    );
   }
 };
 

@@ -1,21 +1,9 @@
 #!/usr/bin/env node
 // This is the main entry point for the ditto-cli command.
 import { program } from "commander";
-// to use V8's code cache to speed up instantiation time
-import "v8-compile-cache";
-import fs from "fs";
-import path from "path";
 import { pull } from "./commands/pull";
 import { quit } from "./utils/quit";
-
-function getVersion(): string {
-  const packageJsonPath = path.join(__dirname, "../../package.json");
-  const packageJsonContent = fs.readFileSync(packageJsonPath, "utf8");
-  const packageJson = JSON.parse(packageJsonContent) as { version: string };
-  return packageJson.version;
-}
-
-const VERSION = getVersion();
+import { version } from "../../package.json";
 
 const CONFIG_FILE_RELIANT_COMMANDS = [
   "pull",
@@ -94,7 +82,7 @@ const setupCommands = () => {
 
 const setupOptions = () => {
   program.option("-l, --legacy", "Run in legacy mode");
-  program.version(VERSION, "-v, --version", "Output the current version");
+  program.version(version, "-v, --version", "Output the current version");
 };
 
 const executeCommand = async (

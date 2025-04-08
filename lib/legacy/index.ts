@@ -1,10 +1,6 @@
 #!/usr/bin/env node
 // This is the main entry point for the legacy ditto-cli command.
 import { program } from "commander";
-// to use V8's code cache to speed up instantiation time
-import "v8-compile-cache";
-import fs from "fs";
-import path from "path";
 import { init, needsTokenOrSource } from "./init/init";
 import { pull } from "./pull";
 import { quit } from "./utils/quit";
@@ -15,15 +11,7 @@ import { generateSuggestions } from "./generate-suggestions";
 import processMetaOption from "./utils/processMetaOption";
 import { importComponents } from "./importComponents";
 import { showComponentFolders } from "./component-folders";
-
-function getVersion(): string {
-  const packageJsonPath = path.join(__dirname, "../..", "package.json");
-  const packageJsonContent = fs.readFileSync(packageJsonPath, "utf8");
-  const packageJson = JSON.parse(packageJsonContent) as { version: string };
-  return packageJson.version;
-}
-
-const VERSION = getVersion();
+import { version } from "../../package.json";
 
 const CONFIG_FILE_RELIANT_COMMANDS = [
   "pull",
@@ -186,7 +174,7 @@ const setupOptions = () => {
     "-m, --meta <data...>",
     "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual"
   );
-  program.version(VERSION, "-v, --version", "Output the current version");
+  program.version(version, "-v, --version", "Output the current version");
 };
 
 const executeCommand = async (

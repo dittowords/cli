@@ -1,8 +1,5 @@
 #!/usr/bin/env node
 // This is the main entry point for the ditto-cli command.
-
-// to use V8's code cache to speed up instantiation time
-import "v8-compile-cache";
 import * as Sentry from "@sentry/node";
 import { version as release } from "../package.json";
 import legacyAppEntry from "./legacy";

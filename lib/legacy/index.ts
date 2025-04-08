@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// This is the main entry point for the ditto-cli command.
+// This is the main entry point for the legacy ditto-cli command.
 import { program } from "commander";
 // to use V8's code cache to speed up instantiation time
 import "v8-compile-cache";

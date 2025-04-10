@@ -7,23 +7,9 @@ import { quit } from "./utils/quit";
 import { version } from "../../package.json";
 import output from "./utils/output";
 import { initAPIToken } from "./services/apiToken";
-const CONFIG_FILE_RELIANT_COMMANDS = [
-  "pull",
-  "none",
-  "project",
-  "project add",
-  "project remove",
-];
+import { initProjectConfig } from "./services/projectConfig";
 
-type Command =
-  | "pull"
-  | "project"
-  | "project add"
-  | "project remove"
-  | "component-folders"
-  | "generate-suggestions"
-  | "replace"
-  | "import-components";
+type Command = "pull";
 
 interface CommandConfig<T extends Command | "add" | "remove"> {
   name: T;
@@ -64,21 +50,21 @@ const setupCommands = () => {
       );
     }
 
-    if ("commands" in commandConfig && commandConfig.commands) {
-      commandConfig.commands.forEach((nestedCommand) => {
-        cmd
-          .command(nestedCommand.name)
-          .description(nestedCommand.description)
-          .action((str, options) => {
-            if (commandConfig.name === "project") {
-              const command =
-                `${commandConfig.name} ${nestedCommand.name}` as Command;
+    // if ("commands" in commandConfig && commandConfig.commands) {
+    //   commandConfig.commands.forEach((nestedCommand) => {
+    //     cmd
+    //       .command(nestedCommand.name)
+    //       .description(nestedCommand.description)
+    //       .action((str, options) => {
+    //         if (commandConfig.name === "project") {
+    //           const command =
+    //             `${commandConfig.name} ${nestedCommand.name}` as Command;
 
-              return executeCommand(command, options);
-            }
-          });
-      });
-    }
+    //           return executeCommand(command, options);
+    //         }
+    //       });
+    //   });
+    // }
   });
 };
 
@@ -93,6 +79,7 @@ const executeCommand = async (
 ): Promise<void> => {
   try {
     await initAPIToken();
+    await initProjectConfig();
 
     switch (command) {
       case "none":

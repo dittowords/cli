@@ -1,7 +1,7 @@
 import appContext from "../utils/appContext";
 import fs from "fs";
 import URL from "url";
-import * as configService from "./config";
+import * as configService from "./globalConfig";
 import checkToken from "../http/checkToken";
 import output from "../utils/output";
 import { quit } from "../utils/quit";
@@ -73,12 +73,11 @@ export const collectAndSaveToken = async (message: string | null = null) => {
 };
 
 /**
- * Collect an API token from the user
+ * Outputs instructions to the user and collects an API token
  * @param message {string | null} The message to display to the user
- * @returns {Promise<string>} The collected token
+ * @returns The collected token
  */
 async function collectToken(message: string | null) {
-  const blue = output.info;
   const apiUrl = output.url("https://app.dittowords.com/account/devtools");
   const breadcrumbs = output.bold(output.info("API Keys"));
   const tokenDescription =
@@ -87,20 +86,30 @@ async function collectToken(message: string | null) {
 
   output.write(tokenDescription);
 
+  const response = await promptForApiToken();
+  return response.token;
+}
+
+/**
+ * Prompt the user for an API token
+ * @returns The collected token
+ */
+async function promptForApiToken() {
   const response = await prompt<{ token: string }>({
     type: "input",
     name: "token",
     message: "What is your API key?",
+    // @ts-expect-error - Enquirer types are not updated for the validate function
     validate: async (token) => {
       const result = await checkToken(token);
       if (!result.success) {
         return result.output?.join("\n") || "Invalid API key";
       }
-
-      return true as any;
+      return true;
     },
   });
-  return response.token;
+
+  return response;
 }
 
 /**
@@ -131,4 +140,5 @@ export const _test = {
   collectToken,
   validateToken,
   getURLHostname,
+  promptForApiToken,
 };

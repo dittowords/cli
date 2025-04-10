@@ -5,8 +5,8 @@ import { program } from "commander";
 import { pull } from "./commands/pull";
 import { quit } from "./utils/quit";
 import { version } from "../../package.json";
-import output from "./output";
-
+import output from "./utils/output";
+import { initAPIToken } from "./services/apiToken";
 const CONFIG_FILE_RELIANT_COMMANDS = [
   "pull",
   "none",
@@ -92,6 +92,8 @@ const executeCommand = async (
   options: any
 ): Promise<void> => {
   try {
+    await initAPIToken();
+
     switch (command) {
       case "none":
       case "pull": {

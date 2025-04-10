@@ -78,7 +78,8 @@
     "glob": "^9.3.4",
     "js-yaml": "^4.1.0",
     "memfs": "^4.7.7",
-    "ora": "^5.0.0"
+    "ora": "^5.0.0",
+    "zod": "^3.24.2"
   },
   "lint-staged": {
     "src/**/*.{js,jsx,ts,tsx,css,json}": "prettier --write"

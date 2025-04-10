@@ -4,7 +4,7 @@ import * as Sentry from "@sentry/node";
 import { version as release } from "../package.json";
 import legacyAppEntry from "./legacy";
 import appEntry from "./src";
-import output from "./src/output";
+import output from "./src/utils/output";
 
 // Initialize Sentry
 const environment = process.env.ENV || "development";

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// This is the main entry point for the ditto-cli command.
+// This is the main entry point for the legacy ditto-cli command.
 import { program } from "commander";
 import { init, needsTokenOrSource } from "./init/init";
 import { pull } from "./pull";

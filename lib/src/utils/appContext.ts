@@ -1,6 +1,10 @@
 import { homedir } from "os";
 import path from "path";
 import crypto from "crypto";
+import {
+  DEFAULT_PROJECT_CONFIG_JSON,
+  ProjectConfigYAML,
+} from "../services/projectConfig";
 
 class AppContext {
   #apiHost: string;
@@ -8,6 +12,7 @@ class AppContext {
   #configFile: string;
   #projectConfigFile: string;
   #clientId: string;
+  #projectConfig: ProjectConfigYAML;
 
   constructor() {
     this.#apiHost = process.env.DITTO_API_HOST || "https://api.dittowords.com";
@@ -18,6 +23,7 @@ class AppContext {
       process.env.DITTO_PROJECT_CONFIG_FILE ||
       path.normalize(path.join("ditto", "config.yml"));
     this.#clientId = crypto.randomUUID();
+    this.#projectConfig = DEFAULT_PROJECT_CONFIG_JSON;
   }
 
   get apiHost() {
@@ -29,6 +35,13 @@ class AppContext {
   }
 
   get apiToken() {
+    return this.#apiToken;
+  }
+
+  get apiTokenOrThrow() {
+    if (!this.#apiToken) {
+      throw new Error("No API Token found.");
+    }
     return this.#apiToken;
   }
 
@@ -46,6 +59,19 @@ class AppContext {
 
   setApiToken(value: string | undefined) {
     this.#apiToken = value;
+  }
+
+  get projectConfig() {
+    return this.#projectConfig;
+  }
+
+  setProjectConfig(value: ProjectConfigYAML) {
+    this.#projectConfig = value;
+  }
+
+  get selectedProjectConfigOutputs() {
+    // TODO: Filter out based on flags.
+    return this.#projectConfig.outputs;
   }
 }
 

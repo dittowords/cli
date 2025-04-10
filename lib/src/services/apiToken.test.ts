@@ -24,6 +24,4 @@ describe("apiToken", () => {
       expect(result).toBe("example.com");
     });
   });
-
-  // TODO: Add tests
 });

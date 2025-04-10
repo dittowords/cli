@@ -1,12 +1,15 @@
 import path from "path";
 import fs from "fs";
-
 /**
- * Creates a file with t
- * @param filename
- * @param defaultContents
+ * Creates a file with the given filename if it doesn't already exist.
+ * @param filename The path to the file to create.
+ * @param defaultContents The contents to write to the file if it doesn't already exist. Defaults to an empty string.
+ * @returns `true` if the file was created, `false` if it already exists.
  */
-export function createFileIfMissing(filename: string, defaultContents?: any) {
+export function createFileIfMissingSync(
+  filename: string,
+  defaultContents: string = ""
+) {
   const dir = path.dirname(filename);
 
   // create the directory if it doesn't already exist
@@ -15,6 +18,47 @@ export function createFileIfMissing(filename: string, defaultContents?: any) {
   // create the file if it doesn't already exist
   if (!fs.existsSync(filename)) {
     // create the file, writing the `defaultContents` if provided
-    fs.writeFileSync(filename, defaultContents || "", "utf-8");
+    writeFileSync(filename, defaultContents);
+    return true;
+  } else {
+    return false;
   }
 }
+
+/**
+ * Creates a file with the given filename if it doesn't already exist.
+ * @param filename The path to the file to create.
+ * @param defaultContents The contents to write to the file if it doesn't already exist. Defaults to an empty string.
+ * @returns `true` if the file was created, `false` if it already exists.
+ */
+export async function createFileIfMissing(
+  filename: string,
+  defaultContents: string = ""
+) {
+  const dir = path.dirname(filename);
+
+  // create the directory if it doesn't already exist
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+
+  // create the file if it doesn't already exist
+  if (!fs.existsSync(filename)) {
+    // create the file, writing the `defaultContents` if provided
+    await writeFile(filename, defaultContents);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export function writeFileSync(filename: string, content: string) {
+  fs.writeFileSync(filename, ensureEndsWithNewLine(content), "utf-8");
+}
+
+export function writeFile(filename: string, content: string) {
+  return new Promise((r) =>
+    fs.writeFile(filename, ensureEndsWithNewLine(content), "utf-8", r)
+  );
+}
+
+const ensureEndsWithNewLine = (str: string) =>
+  str + (/[\r\n]$/.test(str) ? "" : "\n");

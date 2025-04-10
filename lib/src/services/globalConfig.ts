@@ -1,9 +1,8 @@
-import path from "path";
 import appContext from "../utils/appContext";
 import fs from "fs";
 import yaml from "js-yaml";
 import { z } from "zod";
-import { createFileIfMissing } from "../utils/fileSystem";
+import { createFileIfMissingSync } from "../utils/fileSystem";
 
 const ZGlobalConfigYAML = z.record(
   z.string(),
@@ -26,7 +25,7 @@ export function readGlobalConfigData(
   file = appContext.configFile,
   defaultData = {}
 ): GlobalConfigYAML {
-  createFileIfMissing(file);
+  createFileIfMissingSync(file);
   const fileContents = fs.readFileSync(file, "utf8");
   const yamlData = yaml.load(fileContents);
   const parsedYAML = ZGlobalConfigYAML.safeParse(yamlData);
@@ -37,7 +36,7 @@ export function readGlobalConfigData(
 }
 
 function writeGlobalConfigData(file: string, data: object) {
-  createFileIfMissing(file);
+  createFileIfMissingSync(file);
   const existingData = readGlobalConfigData(file);
   const yamlStr = yaml.dump({ ...existingData, ...data });
   fs.writeFileSync(file, yamlStr, "utf8");

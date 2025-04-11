@@ -3,30 +3,12 @@ import fs from "fs";
 import { createFileIfMissingSync } from "../utils/fileSystem";
 import appContext from "../utils/appContext";
 import yaml from "js-yaml";
+import { ZBaseOutputFilters } from "../outputs/shared";
+import { ZOutput } from "../outputs";
 
-const ZProjectConfigYAML = z
-  .object({
-    projects: z
-      .array(
-        z.object({
-          id: z.string(),
-        })
-      )
-      .optional(),
-    variants: z
-      .array(
-        z.object({
-          id: z.string(),
-        })
-      )
-      .optional(),
-    outputs: z.array(
-      z.object({
-        format: z.enum(["i18next"]),
-      })
-    ),
-  })
-  .strict();
+const ZProjectConfigYAML = ZBaseOutputFilters.extend({
+  outputs: z.array(ZOutput),
+}).strict();
 
 export type ProjectConfigYAML = z.infer<typeof ZProjectConfigYAML>;
 
@@ -43,8 +25,6 @@ export const DEFAULT_PROJECT_CONFIG_JSON: ProjectConfigYAML = {
 export async function initProjectConfig() {
   const projectConfig = readProjectConfigData();
   appContext.setProjectConfig(projectConfig);
-  console.log("DEBUG", appContext.projectConfig);
-  // TODO: Handle checking for legacy project config file.
 }
 
 /**

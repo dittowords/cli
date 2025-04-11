@@ -3,7 +3,7 @@ import fs from "fs";
 import URL from "url";
 import * as configService from "./globalConfig";
 import checkToken from "../http/checkToken";
-import output from "../utils/output";
+import logger from "../utils/logger";
 import { quit } from "../utils/quit";
 import * as Sentry from "@sentry/node";
 import { prompt } from "enquirer";
@@ -45,8 +45,8 @@ export async function initAPIToken(
 export const collectAndSaveToken = async (message: string | null = null) => {
   try {
     const token = await collectToken(message);
-    output.write(
-      `Thanks for authenticating.  We'll save the key to: ${output.info(
+    logger.writeLine(
+      `Thanks for authenticating.  We'll save the key to: ${logger.info(
         appContext.configFile
       )}\n`
     );
@@ -62,10 +62,10 @@ export const collectAndSaveToken = async (message: string | null = null) => {
     }
 
     const eventId = Sentry.captureException(error);
-    const eventStr = `\n\nError ID: ${output.info(eventId)}`;
+    const eventStr = `\n\nError ID: ${logger.info(eventId)}`;
 
     return await quit(
-      output.errorText(
+      logger.errorText(
         "Something went wrong. Please contact support or try again later."
       ) + eventStr
     );
@@ -78,13 +78,13 @@ export const collectAndSaveToken = async (message: string | null = null) => {
  * @returns The collected token
  */
 async function collectToken(message: string | null) {
-  const apiUrl = output.url("https://app.dittowords.com/account/devtools");
-  const breadcrumbs = output.bold(output.info("API Keys"));
+  const apiUrl = logger.url("https://app.dittowords.com/account/devtools");
+  const breadcrumbs = logger.bold(logger.info("API Keys"));
   const tokenDescription =
     message ||
     `To get started, you'll need your Ditto API key. You can find this at: ${apiUrl} under "${breadcrumbs}".`;
 
-  output.write(tokenDescription);
+  logger.writeLine(tokenDescription);
 
   const response = await promptForApiToken();
   return response.token;

@@ -1,7 +1,5 @@
 import httpClient from "./client";
-import output from "../utils/output";
 import { AxiosError } from "axios";
-import appContext from "../utils/appContext";
 import { z } from "zod";
 
 export interface PullFilters {
@@ -24,7 +22,7 @@ const TextItemsResponse = z.array(
 
 export type TextItemsResponse = z.infer<typeof TextItemsResponse>;
 
-export default async function fetchText(token: string, filters?: PullFilters) {
+export default async function fetchText(filters?: PullFilters) {
   try {
     const response = await httpClient.get("/v2/textItems", {
       params: filters,

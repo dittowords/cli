@@ -1,5 +1,5 @@
 import httpClient from "./client";
-import output from "../utils/output";
+import logger from "../utils/logger";
 import { AxiosError } from "axios";
 import appContext from "../utils/appContext";
 
@@ -13,7 +13,7 @@ export default async function checkToken(token: string) {
     return {
       success: false,
       output: [
-        output.errorText("This API key isn't valid. Please try another."),
+        logger.errorText("This API key isn't valid. Please try another."),
       ],
     };
   } catch (e: unknown) {
@@ -21,7 +21,7 @@ export default async function checkToken(token: string) {
       return {
         success: false,
         output: [
-          output.warnText(
+          logger.warnText(
             "Sorry! We're having trouble reaching the Ditto API. Please try again later."
           ),
         ],
@@ -32,8 +32,8 @@ export default async function checkToken(token: string) {
       return {
         success: false,
         output: [
-          output.errorText(
-            `Can't connect to API: ${output.url(appContext.apiHost)}`
+          logger.errorText(
+            `Can't connect to API: ${logger.url(appContext.apiHost)}`
           ),
         ],
       };
@@ -43,7 +43,7 @@ export default async function checkToken(token: string) {
       return {
         success: false,
         output: [
-          output.errorText("This API key isn't valid. Please try another."),
+          logger.errorText("This API key isn't valid. Please try another."),
         ],
       };
     }
@@ -51,7 +51,7 @@ export default async function checkToken(token: string) {
     return {
       success: false,
       output: [
-        output.errorText(
+        logger.errorText(
           "Sorry! We're having trouble reaching the Ditto API. Please try again later."
         ),
       ],

@@ -10,6 +10,7 @@ class AppContext {
   #apiHost: string;
   #apiToken: string | undefined;
   #configFile: string;
+  #projectConfigDir: string;
   #projectConfigFile: string;
   #clientId: string;
   #projectConfig: ProjectConfigYAML;
@@ -22,6 +23,9 @@ class AppContext {
     this.#projectConfigFile =
       process.env.DITTO_PROJECT_CONFIG_FILE ||
       path.normalize(path.join("ditto", "config.yml"));
+    this.#projectConfigDir = path.normalize(
+      path.dirname(this.#projectConfigFile)
+    );
     this.#clientId = crypto.randomUUID();
     this.#projectConfig = DEFAULT_PROJECT_CONFIG_JSON;
   }
@@ -72,6 +76,10 @@ class AppContext {
   get selectedProjectConfigOutputs() {
     // TODO: Filter out based on flags.
     return this.#projectConfig.outputs;
+  }
+
+  get projectConfigDir() {
+    return this.#projectConfigDir;
   }
 }
 

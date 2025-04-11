@@ -18,5 +18,6 @@ export default {
   url,
   subtle,
   write,
+  writeLine,
   bold,
 };

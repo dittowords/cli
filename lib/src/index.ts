@@ -5,7 +5,7 @@ import { program } from "commander";
 import { pull } from "./commands/pull";
 import { quit } from "./utils/quit";
 import { version } from "../../package.json";
-import output from "./utils/output";
+import logger from "./utils/logger";
 import { initAPIToken } from "./services/apiToken";
 import { initProjectConfig } from "./services/projectConfig";
 
@@ -93,14 +93,14 @@ const executeCommand = async (
     }
   } catch (error) {
     const eventId = Sentry.captureException(error);
-    const eventStr = `\n\nError ID: ${output.info(eventId)}`;
+    const eventStr = `\n\nError ID: ${logger.info(eventId)}`;
 
     if (process.env.IS_LOCAL === "true") {
-      console.error(output.info("Development stack trace:\n"), error);
+      console.error(logger.info("Development stack trace:\n"), error);
     }
 
     return await quit(
-      output.errorText(
+      logger.errorText(
         "Something went wrong. Please contact support or try again later."
       ) + eventStr
     );

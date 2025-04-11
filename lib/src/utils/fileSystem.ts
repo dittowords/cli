@@ -1,5 +1,6 @@
 import path from "path";
 import fs from "fs";
+import fsPromises from "fs/promises";
 /**
  * Creates a file with the given filename if it doesn't already exist.
  * @param filename The path to the file to create.
@@ -51,14 +52,12 @@ export async function createFileIfMissing(
 }
 
 export function writeFileSync(filename: string, content: string) {
-  fs.writeFileSync(filename, ensureEndsWithNewLine(content), "utf-8");
+  fs.writeFileSync(filename, content, "utf-8");
 }
 
-export function writeFile(filename: string, content: string) {
-  return new Promise((r) =>
-    fs.writeFile(filename, ensureEndsWithNewLine(content), "utf-8", r)
-  );
+export async function writeFile(filename: string, content: string) {
+  await fsPromises.writeFile(filename, content, "utf-8");
 }
 
-const ensureEndsWithNewLine = (str: string) =>
+export const ensureEndsWithNewLine = (str: string) =>
   str + (/[\r\n]$/.test(str) ? "" : "\n");

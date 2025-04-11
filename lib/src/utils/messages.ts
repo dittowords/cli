@@ -1,6 +1,6 @@
 import boxen from "boxen";
 import chalk from "chalk";
-import output from "./output";
+import logger from "./logger";
 
 export function welcome() {
   const msg = chalk.white(`${chalk.bold(
@@ -9,5 +9,5 @@ export function welcome() {
   )}.
 
 We're glad to have you here.`);
-  output.write(boxen(msg, { padding: 1 }));
+  logger.writeLine(boxen(msg, { padding: 1 }));
 }

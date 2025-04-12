@@ -1,7 +1,6 @@
 import { Output } from "../outputs";
 import { ProjectConfigYAML } from "../services/projectConfig";
 import I18NextFormatter from "./i18next";
-
 export default function handleOutput(
   output: Output,
   projectConfig: ProjectConfigYAML
@@ -13,6 +12,6 @@ export default function handleOutput(
         projectConfig
       );
     default:
-      throw new Error(`Unsupported output format: ${output.format}`);
+      throw new Error(`Unsupported output format: ${output}`);
   }
 }

@@ -60,11 +60,16 @@ export default class I18NextFormatter extends applyMixins(
       }
     }
 
-    return [
+    let results: OutputFile[] = [
       ...Object.values(outputJsonFiles),
       variablesOutputFile,
-      this.generateDriverFile(outputJsonFiles),
-    ];
+    ]
+
+    if (this.output.generateDriverFile) {
+      results.push(this.generateDriverFile(outputJsonFiles));
+    }
+
+    return results;
   }
 
   private generatePullFilter() {

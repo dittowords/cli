@@ -1,4 +1,4 @@
-import { Constructor } from ".";
+import { Constructor } from "../shared";
 
 interface NamedImport {
   name: string;

@@ -1,5 +1,3 @@
-import { writeFile } from "../../utils/fileSystem";
-
 export default class OutputFile<ContentType = unknown, MetadataType = unknown> {
   filename: string;
   path: string;

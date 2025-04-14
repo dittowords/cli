@@ -1,7 +1,7 @@
-import { ensureEndsWithNewLine } from "../../utils/fileSystem";
+import { ensureEndsWithNewLine } from "../../../utils/fileSystem";
 import OutputFile from "./OutputFile";
 
-export default class JSONOutputFile<MetadataType> extends OutputFile<
+export default class JavascriptOutputFile<MetadataType> extends OutputFile<
   string,
   MetadataType
 > {

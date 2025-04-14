@@ -2,7 +2,7 @@ import { Output } from "../../outputs";
 import { writeFile } from "../../utils/fileSystem";
 import logger from "../../utils/logger";
 import { ProjectConfigYAML } from "../../services/projectConfig";
-import OutputFile from "../fileTypes/OutputFile";
+import OutputFile from "./fileTypes/OutputFile";
 
 export default class BaseFormatter<APIDataType = unknown> {
   protected output: Output;

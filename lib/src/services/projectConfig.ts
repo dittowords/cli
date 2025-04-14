@@ -17,7 +17,7 @@ export const DEFAULT_PROJECT_CONFIG_JSON: ProjectConfigYAML = {
   variants: [],
   outputs: [
     {
-      format: "i18next",
+      format: "json",
     },
   ],
 };

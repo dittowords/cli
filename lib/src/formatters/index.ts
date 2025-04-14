@@ -1,13 +1,14 @@
 import { Output } from "../outputs";
 import { ProjectConfigYAML } from "../services/projectConfig";
-import I18NextFormatter from "./i18next";
+import JSONFormatter from "./json";
+
 export default function handleOutput(
   output: Output,
   projectConfig: ProjectConfigYAML
 ) {
   switch (output.format) {
-    case "i18next":
-      return new I18NextFormatter(output, projectConfig).format(
+    case "json":
+      return new JSONFormatter(output, projectConfig).format(
         output,
         projectConfig
       );

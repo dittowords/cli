@@ -43,14 +43,17 @@ export default class JSONFormatter extends applyMixins(
 
     for (let i = 0; i < data.textItems.length; i++) {
       const textItem = data.textItems[i];
+    
+      const fileName = `${textItem.projectId}___${textItem.variantId || "base"}`;
 
-      outputJsonFiles[textItem.projectId] ??= new JSONOutputFile({
-        filename: `${textItem.projectId}___${textItem.variantId || "base"}`,
+      outputJsonFiles[fileName] ??= new JSONOutputFile({
+        filename: fileName,
         path: outputDir,
         metadata: { variantId: textItem.variantId || "base" },
       });
+      
 
-      outputJsonFiles[textItem.projectId].content[textItem.id] = textItem.text;
+      outputJsonFiles[fileName].content[textItem.id] = textItem.text;
       for (const variableId of textItem.variableIds) {
         const variable = data.variablesById[variableId];
         variablesOutputFile.content[variableId] = variable.data;

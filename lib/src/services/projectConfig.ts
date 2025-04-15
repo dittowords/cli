@@ -29,7 +29,7 @@ export async function initProjectConfig() {
 
 /**
  * Read data from a global config file
- * @param file defaults to the projectdConfigFile defined in appContext
+ * @param file defaults to the projectConfigFile defined in appContext
  * @param defaultData defaults to `{}`
  * @returns
  */

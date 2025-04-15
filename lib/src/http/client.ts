@@ -1,17 +1,18 @@
-import axios from "axios";
+import axios, { AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 import appContext from "../utils/appContext";
 
-const httpClient = axios.create({
-  headers: {
-    "x-ditto-app": "cli",
-  },
-});
+export function defaultInterceptor(token?: string) {
+  return function (config: InternalAxiosRequestConfig) {
+    config.baseURL = appContext.apiHost;
+    config.headers["x-ditto-client-id"] = appContext.clientId;
+    config.headers["x-ditto-app"] = "cli";
+    config.headers.Authorization = token || appContext.apiToken;
+    return config;
+  };
+}
 
-httpClient.interceptors.request.use((config) => {
-  config.baseURL = appContext.apiHost;
-  config.headers["x-ditto-client-id"] = appContext.clientId;
-  config.headers.Authorization = appContext.apiToken;
-  return config;
-});
+const httpClient = axios.create({});
+
+httpClient.interceptors.request.use(defaultInterceptor());
 
 export default httpClient;

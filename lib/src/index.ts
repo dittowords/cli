@@ -8,6 +8,7 @@ import { version } from "../../package.json";
 import logger from "./utils/logger";
 import { initAPIToken } from "./services/apiToken";
 import { initProjectConfig } from "./services/projectConfig";
+import appContext from "./utils/appContext";
 
 type Command = "pull";
 
@@ -62,7 +63,9 @@ const executeCommand = async (
   options: any
 ): Promise<void> => {
   try {
-    await initAPIToken();
+    const token = await initAPIToken();
+    appContext.setApiToken(token);
+
     await initProjectConfig();
 
     switch (command) {

@@ -29,60 +29,53 @@ export async function initAPIToken(
     !configData[sanitizedHost][0] ||
     configData[sanitizedHost][0].token === ""
   ) {
-    return await collectAndSaveToken();
+    return await collectAndSaveToken(sanitizedHost);
   }
-
-  appContext.setApiToken(configData[sanitizedHost][0].token);
 
   return await validateToken(configData[sanitizedHost][0].token);
 }
 
-/**
- *
- * @param {string | null} message
- * @returns
- */
-export const collectAndSaveToken = async (message: string | null = null) => {
+async function collectAndSaveToken(host: string = appContext.apiHost) {
   try {
-    const token = await collectToken(message);
+    const token = await collectToken();
     logger.writeLine(
       `Thanks for authenticating.  We'll save the key to: ${logger.info(
         appContext.configFile
       )}\n`
     );
-
-    configService.saveToken(appContext.configFile, appContext.apiHost, token);
+    const sanitizedHost = getURLHostname(host);
+    configService.saveToken(appContext.configFile, sanitizedHost, token);
+    appContext.setApiToken(token);
     return token;
   } catch (error) {
     // https://github.com/enquirer/enquirer/issues/225#issue-516043136
     // Empty string corresponds to the user hitting Ctrl + C
     if (error === "") {
       await quit("", 0);
-      return;
+      return "";
     }
 
     const eventId = Sentry.captureException(error);
     const eventStr = `\n\nError ID: ${logger.info(eventId)}`;
 
-    return await quit(
+    await quit(
       logger.errorText(
         "Something went wrong. Please contact support or try again later."
       ) + eventStr
     );
+    return "";
   }
-};
+}
 
 /**
  * Outputs instructions to the user and collects an API token
  * @param message {string | null} The message to display to the user
  * @returns The collected token
  */
-async function collectToken(message: string | null) {
+async function collectToken() {
   const apiUrl = logger.url("https://app.dittowords.com/account/devtools");
   const breadcrumbs = logger.bold(logger.info("API Keys"));
-  const tokenDescription =
-    message ||
-    `To get started, you'll need your Ditto API key. You can find this at: ${apiUrl} under "${breadcrumbs}".`;
+  const tokenDescription = `To get started, you'll need your Ditto API key. You can find this at: ${apiUrl} under "${breadcrumbs}".`;
 
   logger.writeLine(tokenDescription);
 
@@ -101,6 +94,7 @@ async function promptForApiToken() {
     message: "What is your API key?",
     // @ts-expect-error - Enquirer types are not updated for the validate function
     validate: async (token) => {
+      console.log("token", token);
       const result = await checkToken(token);
       if (!result.success) {
         return result.output?.join("\n") || "Invalid API key";

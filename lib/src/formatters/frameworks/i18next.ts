@@ -42,6 +42,11 @@ export default class I18NextFramework extends applyMixins(
     return [driverFile];
   }
 
+  /**
+   * Generates the import statements for the driver file. One import per generated json file.
+   * @param outputJsonFiles - The output json files.
+   * @returns The import statements, stringified.
+   */
   private generateImportStatements(
     outputJsonFiles: Record<string, JSONOutputFile<{ variantId: string }>>
   ) {

@@ -59,6 +59,8 @@ const ZVariable = z.discriminatedUnion("type", [
   ZVariableMap,
 ]);
 
+export type Variable = z.infer<typeof ZVariable>;
+
 const ZVariablesResponse = z.array(ZVariable);
 
 export type VariablesResponse = z.infer<typeof ZVariablesResponse>;
@@ -69,7 +71,6 @@ export default async function fetchVariables() {
 
     return ZVariablesResponse.parse(response.data);
   } catch (e: unknown) {
-    console.log(JSON.stringify(e, null, 2));
     if (!(e instanceof AxiosError)) {
       throw new Error(
         "Sorry! We're having trouble reaching the Ditto API. Please try again later."

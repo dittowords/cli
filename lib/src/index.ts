@@ -49,22 +49,6 @@ const setupCommands = () => {
         }
       );
     }
-
-    // if ("commands" in commandConfig && commandConfig.commands) {
-    //   commandConfig.commands.forEach((nestedCommand) => {
-    //     cmd
-    //       .command(nestedCommand.name)
-    //       .description(nestedCommand.description)
-    //       .action((str, options) => {
-    //         if (commandConfig.name === "project") {
-    //           const command =
-    //             `${commandConfig.name} ${nestedCommand.name}` as Command;
-
-    //           return executeCommand(command, options);
-    //         }
-    //       });
-    //   });
-    // }
   });
 };
 
@@ -87,7 +71,7 @@ const executeCommand = async (
         return await pull();
       }
       default: {
-        await quit("Exiting Ditto CLI...");
+        await quit(`Invalid command: ${command}. Exiting Ditto CLI...`);
         return;
       }
     }

@@ -5,18 +5,18 @@ export default class OutputFile<ContentType = unknown, MetadataType = unknown> {
   content: ContentType;
   metadata: MetadataType;
 
-  constructor(
-    filename: string,
-    path: string,
-    extension: string,
-    content: ContentType,
-    metadata: MetadataType = {} as MetadataType
-  ) {
-    this.filename = filename;
-    this.path = path;
-    this.extension = extension;
-    this.content = content;
-    this.metadata = metadata;
+  constructor(config: {
+    filename: string;
+    path: string;
+    extension: string;
+    content: ContentType;
+    metadata?: MetadataType;
+  }) {
+    this.filename = config.filename;
+    this.path = config.path;
+    this.extension = config.extension;
+    this.content = config.content;
+    this.metadata = config.metadata ?? ({} as MetadataType);
   }
 
   get fullPath() {

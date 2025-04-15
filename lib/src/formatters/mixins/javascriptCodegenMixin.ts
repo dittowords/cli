@@ -26,7 +26,7 @@ export default function javascriptCodegenMixin<TBase extends Constructor>(
         .sort()
         .join(", ");
 
-      return `import { ${formattedModules} } from "${moduleName}";`;
+      return `import { ${formattedModules} } from "${moduleName}";\n`;
     }
 
     protected codegenDefaultImport(module: string, moduleName: string) {

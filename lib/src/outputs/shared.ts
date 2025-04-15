@@ -5,6 +5,6 @@ import { z } from "zod";
  * They are all optional by defualt unless otherwise specified in the output config.
  */
 export const ZBaseOutputFilters = z.object({
-  projects: z.array(z.string()).optional(),
-  variants: z.array(z.string()).optional(),
+  projects: z.array(z.object({ id: z.string() })).optional(),
+  variants: z.array(z.object({ id: z.string() })).optional(),
 });

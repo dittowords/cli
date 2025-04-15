@@ -6,6 +6,10 @@ import {
   ProjectConfigYAML,
 } from "../services/projectConfig";
 
+/**
+ * This class is used to store the global CLI context. It is preserved across all methods
+ * and is used to store the running state of the CLI.
+ */
 class AppContext {
   #apiHost: string;
   #apiToken: string | undefined;

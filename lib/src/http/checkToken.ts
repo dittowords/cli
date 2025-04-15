@@ -3,7 +3,7 @@ import logger from "../utils/logger";
 import { AxiosError } from "axios";
 import appContext from "../utils/appContext";
 
-export default async function checkToken(token: string) {
+export default async function checkToken() {
   try {
     const response = await httpClient.get("/token-check");
     if (response.status === 200) {

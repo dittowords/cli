@@ -1,16 +1,15 @@
 import fetchText, { PullFilters, TextItemsResponse } from "../http/textItems";
-import fetchVariables, { VariablesResponse } from "../http/variables";
+import fetchVariables, { Variable, VariablesResponse } from "../http/variables";
 import BaseFormatter from "./shared/base";
 import OutputFile from "./shared/fileTypes/OutputFile";
 import JSONOutputFile from "./shared/fileTypes/JSONOutputFile";
 import appContext from "../utils/appContext";
 import { applyMixins } from "./shared";
-import javascriptCodegenMixin from "./mixins/javascriptCodegenMixin";
 import { getFrameworkProcessor } from "./frameworks";
 
 type JSONAPIData = {
   textItems: TextItemsResponse;
-  variablesById: Record<string, VariablesResponse[number]>;
+  variablesById: Record<string, Variable>;
 };
 
 export default class JSONFormatter extends applyMixins(
@@ -24,9 +23,9 @@ export default class JSONFormatter extends applyMixins(
     const variablesById = variables.reduce((acc, variable) => {
       acc[variable.id] = variable;
       return acc;
-    }, {} as Record<string, VariablesResponse[number]>);
+    }, {} as Record<string, Variable>);
 
-    return { textItems, variablesById};
+    return { textItems, variablesById };
   }
 
   protected async transformAPIData(data: JSONAPIData) {
@@ -37,25 +36,24 @@ export default class JSONFormatter extends applyMixins(
       JSONOutputFile<{ variantId: string }>
     > = {};
 
-    const variablesOutputFile = new JSONOutputFile(
-      "variables",
-      appContext.projectConfigDir
-    );
+    const variablesOutputFile = new JSONOutputFile({
+      filename: "variables",
+      path: appContext.projectConfigDir,
+    });
 
     for (let i = 0; i < data.textItems.length; i++) {
       const textItem = data.textItems[i];
 
-      outputJsonFiles[textItem.projectId] ??= new JSONOutputFile(
-        `${textItem.projectId}___${textItem.variantId || "base"}`,
-        outputDir,
-        {},
-        { variantId: textItem.variantId ||"base" }
-      );
+      outputJsonFiles[textItem.projectId] ??= new JSONOutputFile({
+        filename: `${textItem.projectId}___${textItem.variantId || "base"}`,
+        path: outputDir,
+        metadata: { variantId: textItem.variantId || "base" },
+      });
 
       outputJsonFiles[textItem.projectId].content[textItem.id] = textItem.text;
       for (const variableId of textItem.variableIds) {
-        const variableData = data.variablesById[variableId];
-        variablesOutputFile.content[variableId] = variableData.data;
+        const variable = data.variablesById[variableId];
+        variablesOutputFile.content[variableId] = variable.data;
       }
     }
 
@@ -76,15 +74,11 @@ export default class JSONFormatter extends applyMixins(
     let filters: PullFilters = {};
 
     if (this.projectConfig.projects && this.projectConfig.projects.length > 0) {
-      filters.projects = this.projectConfig.projects.map((project) => ({
-        id: project,
-      }));
+      filters.projects = this.projectConfig.projects;
     }
 
     if (this.projectConfig.variants && this.projectConfig.variants.length > 0) {
-      filters.variants = this.projectConfig.variants.map((variant) => ({
-        id: variant,
-      }));
+      filters.variants = this.projectConfig.variants;
     }
 
     return filters;

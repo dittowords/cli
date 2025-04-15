@@ -7,13 +7,19 @@ export default class JavascriptOutputFile<MetadataType> extends OutputFile<
 > {
   indentSpaces: number = 2;
 
-  constructor(
-    filename: string,
-    path: string,
-    content: string = "",
-    metadata: MetadataType = {} as MetadataType
-  ) {
-    super(filename, path, "js", content, metadata);
+  constructor(config: {
+    filename: string;
+    path: string;
+    content?: string;
+    metadata?: MetadataType;
+  }) {
+    super({
+      filename: config.filename,
+      path: config.path,
+      extension: "js",
+      content: config.content ?? "",
+      metadata: config.metadata ?? ({} as MetadataType),
+    });
   }
 
   get formattedContent(): string {

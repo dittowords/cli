@@ -1,6 +1,11 @@
 import { kMaxLength } from "buffer";
 import { applyMixins, Constructor } from "./index";
 
+afterEach(() => {
+  jest.clearAllMocks();
+  jest.restoreAllMocks();
+});
+
 describe("applyMixins", () => {
   // Base class
   class Base {
@@ -38,7 +43,7 @@ describe("applyMixins", () => {
     expect(typeof instance.getTimestamp()).toBe("number");
   });
 
-  it("should apply multiple mixins in order", () => {
+  it("should apply multiple mixins", () => {
     const MixedClass = applyMixins(Base, TimestampMixin, LoggingMixin);
     const instance = new MixedClass();
 

@@ -16,7 +16,10 @@ export default class I18NextFramework extends applyMixins(
     const outputDir = appContext.projectConfigDir;
     // Generate Driver file
 
-    const driverFile = new JavascriptOutputFile("index", outputDir);
+    const driverFile = new JavascriptOutputFile({
+      filename: "index",
+      path: outputDir,
+    });
 
     const filesGroupedByVariantId = Object.values(outputJsonFiles).reduce(
       (acc, file) => {
@@ -28,7 +31,7 @@ export default class I18NextFramework extends applyMixins(
       {} as Record<string, OutputFile[]>
     );
 
-    driverFile.content += this.generateImportStatments(outputJsonFiles);
+    driverFile.content += this.generateImportStatements(outputJsonFiles);
 
     driverFile.content += `\n`;
 
@@ -39,7 +42,7 @@ export default class I18NextFramework extends applyMixins(
     return [driverFile];
   }
 
-  private generateImportStatments(
+  private generateImportStatements(
     outputJsonFiles: Record<string, JSONOutputFile<{ variantId: string }>>
   ) {
     let importStatements = "";
@@ -52,6 +55,11 @@ export default class I18NextFramework extends applyMixins(
     return importStatements;
   }
 
+  /**
+   * Generates the default export for the driver file. By default this is an object with the json imports grouped by variant id.
+   * @param filesGroupedByVariantId - The files grouped by variant id.
+   * @returns The default export, stringified.
+   */
   private generateDefaultExportString(
     filesGroupedByVariantId: Record<string, OutputFile[]>
   ) {

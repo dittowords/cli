@@ -7,7 +7,8 @@ export const success = (msg: string) => chalk.green(msg);
 export const url = (msg: string) => chalk.blueBright.underline(msg);
 export const subtle = (msg: string) => chalk.grey(msg);
 export const write = (msg: string) => chalk.white(msg);
-export const nl = () => console.log("\n");
+export const bold = (msg: string) => chalk.bold(msg);
+export const writeLine = (msg: string) => console.log(msg);
 
 export default {
   errorText,
@@ -17,5 +18,6 @@ export default {
   url,
   subtle,
   write,
-  nl,
+  writeLine,
+  bold,
 };

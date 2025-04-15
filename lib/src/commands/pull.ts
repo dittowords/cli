@@ -1,3 +1,8 @@
+import appContext from "../utils/appContext";
+import formatOutput from "../formatters";
+
 export const pull = async () => {
-  console.log("pull");
+  for (const output of appContext.selectedProjectConfigOutputs) {
+    await formatOutput(output, appContext.projectConfig);
+  }
 };

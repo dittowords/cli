@@ -1,27 +1,16 @@
 #!/usr/bin/env node
 // This is the main entry point for the ditto-cli command.
+import * as Sentry from "@sentry/node";
 import { program } from "commander";
 import { pull } from "./commands/pull";
 import { quit } from "./utils/quit";
 import { version } from "../../package.json";
+import logger from "./utils/logger";
+import { initAPIToken } from "./services/apiToken";
+import { initProjectConfig } from "./services/projectConfig";
+import appContext from "./utils/appContext";
 
-const CONFIG_FILE_RELIANT_COMMANDS = [
-  "pull",
-  "none",
-  "project",
-  "project add",
-  "project remove",
-];
-
-type Command =
-  | "pull"
-  | "project"
-  | "project add"
-  | "project remove"
-  | "component-folders"
-  | "generate-suggestions"
-  | "replace"
-  | "import-components";
+type Command = "pull";
 
 interface CommandConfig<T extends Command | "add" | "remove"> {
   name: T;
@@ -61,22 +50,6 @@ const setupCommands = () => {
         }
       );
     }
-
-    if ("commands" in commandConfig && commandConfig.commands) {
-      commandConfig.commands.forEach((nestedCommand) => {
-        cmd
-          .command(nestedCommand.name)
-          .description(nestedCommand.description)
-          .action((str, options) => {
-            if (commandConfig.name === "project") {
-              const command =
-                `${commandConfig.name} ${nestedCommand.name}` as Command;
-
-              return executeCommand(command, options);
-            }
-          });
-      });
-    }
   });
 };
 
@@ -89,15 +62,35 @@ const executeCommand = async (
   command: Command | "none",
   options: any
 ): Promise<void> => {
-  switch (command) {
-    case "none":
-    case "pull": {
-      return pull();
+  try {
+    const token = await initAPIToken();
+    appContext.setApiToken(token);
+
+    await initProjectConfig();
+
+    switch (command) {
+      case "none":
+      case "pull": {
+        return await pull();
+      }
+      default: {
+        await quit(`Invalid command: ${command}. Exiting Ditto CLI...`);
+        return;
+      }
     }
-    default: {
-      await quit("Exiting Ditto CLI...");
-      return;
+  } catch (error) {
+    const eventId = Sentry.captureException(error);
+    const eventStr = `\n\nError ID: ${logger.info(eventId)}`;
+
+    if (process.env.IS_LOCAL === "true") {
+      console.error(logger.info("Development stack trace:\n"), error);
     }
+
+    return await quit(
+      logger.errorText(
+        "Something went wrong. Please contact support or try again later."
+      ) + eventStr
+    );
   }
 };
 

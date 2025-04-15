@@ -35,7 +35,7 @@ const promptForProject = async ({
   projects,
   limit = 10,
 }: ProjectPromptParams) => {
-  output.nl();
+  output.write("\n");
 
   const choices = projects.map(formatProjectChoice);
   const prompt = new AutoComplete({

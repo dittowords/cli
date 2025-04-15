@@ -18,12 +18,10 @@ type GlobalConfigYAML = z.infer<typeof ZGlobalConfigYAML>;
 /**
  * Read data from a global config file
  * @param file The path to the global config file
- * @param defaultData The default data to return if the file is not found or invalid
  * @returns
  */
 export function readGlobalConfigData(
-  file = appContext.configFile,
-  defaultData: GlobalConfigYAML = {}
+  file = appContext.configFile
 ): GlobalConfigYAML {
   createFileIfMissingSync(file);
   const fileContents = fs.readFileSync(file, "utf8");
@@ -32,7 +30,7 @@ export function readGlobalConfigData(
   if (parsedYAML.success) {
     return parsedYAML.data;
   }
-  return defaultData;
+  return {};
 }
 
 /**

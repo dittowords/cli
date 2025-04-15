@@ -29,7 +29,7 @@ export default class JSONFormatter extends applyMixins(
   }
 
   protected async transformAPIData(data: JSONAPIData) {
-    const outputDir = appContext.projectConfigDir;
+    const outputDir = this.output.outDir || appContext.outDir;
 
     let outputJsonFiles: Record<
       string,

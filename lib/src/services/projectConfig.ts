@@ -18,12 +18,13 @@ export const DEFAULT_PROJECT_CONFIG_JSON: ProjectConfigYAML = {
   outputs: [
     {
       format: "json",
+      framework: "i18next",
     },
   ],
 };
 
-export async function initProjectConfig() {
-  const projectConfig = readProjectConfigData();
+export async function initProjectConfig(options: { config?: string }) {
+  const projectConfig = readProjectConfigData(options.config);
   appContext.setProjectConfig(projectConfig);
 }
 

@@ -9,6 +9,7 @@ import logger from "./utils/logger";
 import { initAPIToken } from "./services/apiToken";
 import { initProjectConfig } from "./services/projectConfig";
 import appContext from "./utils/appContext";
+import type commander from "commander";
 
 type Command = "pull";
 
@@ -24,7 +25,13 @@ interface CommandConfig<T extends Command | "add" | "remove"> {
 const COMMANDS: CommandConfig<Command>[] = [
   {
     name: "pull",
-    description: "Sync copy from Ditto into the current working directory",
+    description: "Sync copy from Ditto",
+    flags: {
+      "-c, --config [value]": {
+        description:
+          "Relative path to the project config file. Defaults to `./ditto/config.yml`. Alternatively, you can set the DITTO_PROJECT_CONFIG_FILE environment variable.",
+      },
+    },
   },
 ];
 
@@ -59,22 +66,23 @@ const setupOptions = () => {
 };
 
 const executeCommand = async (
-  command: Command | "none",
-  options: any
+  commandName: Command | "none",
+  command: commander.Command
 ): Promise<void> => {
   try {
+    const options = command.opts();
     const token = await initAPIToken();
     appContext.setApiToken(token);
 
-    await initProjectConfig();
+    await initProjectConfig(options);
 
-    switch (command) {
+    switch (commandName) {
       case "none":
       case "pull": {
         return await pull();
       }
       default: {
-        await quit(`Invalid command: ${command}. Exiting Ditto CLI...`);
+        await quit(`Invalid command: ${commandName}. Exiting Ditto CLI...`);
         return;
       }
     }
@@ -97,11 +105,6 @@ const executeCommand = async (
 const appEntry = async () => {
   setupCommands();
   setupOptions();
-
-  if (process.argv.length <= 2 && process.argv[1].includes("ditto-cli")) {
-    await executeCommand("none", []);
-    return;
-  }
 
   program.parse(process.argv);
 };

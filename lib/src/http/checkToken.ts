@@ -1,4 +1,4 @@
- { defaultInterceptor } from "./client";
+import { defaultInterceptor } from "./client";
 import logger from "../utils/logger";
 import axios, { AxiosError } from "axios";
 import appContext from "../utils/appContext";

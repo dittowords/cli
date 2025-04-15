@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ZBaseOutputFilters } from "./shared";
+import { ZJSONFramework } from "./frameworks/json";
 
 const ZBaseJSONOutput = ZBaseOutputFilters.extend({
   format: z.literal("json"),
@@ -7,7 +8,7 @@ const ZBaseJSONOutput = ZBaseOutputFilters.extend({
 });
 
 const Zi18NextJSONOutput = ZBaseJSONOutput.extend({
-  framework: z.literal("i18next"),
+  framework: ZJSONFramework,
 });
 
 export const ZJSONOutput = z.discriminatedUnion("framework", [

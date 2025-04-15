@@ -17,13 +17,13 @@ type GlobalConfigYAML = z.infer<typeof ZGlobalConfigYAML>;
 
 /**
  * Read data from a global config file
- * @param file defaults to `CONFIG_FILE` defined in `constants.js`
- * @param defaultData defaults to `{}`
+ * @param file The path to the global config file
+ * @param defaultData The default data to return if the file is not found or invalid
  * @returns
  */
 export function readGlobalConfigData(
   file = appContext.configFile,
-  defaultData = {}
+  defaultData: GlobalConfigYAML = {}
 ): GlobalConfigYAML {
   createFileIfMissingSync(file);
   const fileContents = fs.readFileSync(file, "utf8");
@@ -35,6 +35,11 @@ export function readGlobalConfigData(
   return defaultData;
 }
 
+/**
+ * Write data to a global config file
+ * @param file The path to the global config file
+ * @param data The data to write to the file
+ */
 function writeGlobalConfigData(file: string, data: object) {
   createFileIfMissingSync(file);
   const existingData = readGlobalConfigData(file);
@@ -50,7 +55,6 @@ function writeGlobalConfigData(file: string, data: object) {
  */
 export function saveToken(file: string, hostname: string, token: string) {
   const data = readGlobalConfigData(file);
-  data[hostname] = []; // only allow one token per host
-  data[hostname][0] = { token };
+  data[hostname] = [{ token }]; // only allow one token per host
   writeGlobalConfigData(file, data);
 }

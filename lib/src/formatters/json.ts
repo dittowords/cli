@@ -71,16 +71,17 @@ export default class JSONFormatter extends applyMixins(
   }
 
   private generatePullFilter() {
-    let filters: PullFilters = {};
+    let filters: PullFilters = {
+      projects: this.projectConfig.projects,
+      variants: this.projectConfig.variants,
+    };
+    if (this.output.projects) {
+      filters.projects = this.output.projects;
+    } 
 
-    if (this.projectConfig.projects && this.projectConfig.projects.length > 0) {
-      filters.projects = this.projectConfig.projects;
+    if (this.output.variants) {
+      filters.variants = this.output.variants;
     }
-
-    if (this.projectConfig.variants && this.projectConfig.variants.length > 0) {
-      filters.variants = this.projectConfig.variants;
-    }
-
     return filters;
   }
 }

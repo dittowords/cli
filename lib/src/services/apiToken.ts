@@ -8,6 +8,13 @@ import { quit } from "../utils/quit";
 import * as Sentry from "@sentry/node";
 import { prompt } from "enquirer";
 
+/**
+ * Initializes the API token
+ * @param token The token to initialize the API token with. If not provided, the token will be fetched from the global config file.
+ * @param configFile The path to the global config file
+ * @param host The host to initialize the API token for
+ * @returns The initialized API token
+ */
 export async function initAPIToken(
   token: string | undefined = appContext.apiToken,
   configFile: string = appContext.configFile,
@@ -35,6 +42,11 @@ export async function initAPIToken(
   return await validateToken(configData[sanitizedHost][0].token);
 }
 
+/**
+ * Collects a token from the user and saves it to the global config file
+ * @param host The host to save the token for
+ * @returns The collected token
+ */
 async function collectAndSaveToken(host: string = appContext.apiHost) {
   try {
     const token = await collectToken();
@@ -69,7 +81,6 @@ async function collectAndSaveToken(host: string = appContext.apiHost) {
 
 /**
  * Outputs instructions to the user and collects an API token
- * @param message {string | null} The message to display to the user
  * @returns The collected token
  */
 async function collectToken() {
@@ -118,8 +129,8 @@ function getURLHostname(hostString: string) {
 
 /**
  * Validate a token
- * @param token {string} The token to validate
- * @returns {string} The newly validated token
+ * @param token  The token to validate
+ * @returns The newly validated token
  */
 async function validateToken(token: string) {
   const response = await checkToken(token);

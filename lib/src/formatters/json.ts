@@ -82,6 +82,7 @@ export default class JSONFormatter extends applyMixins(
     if (this.output.variants) {
       filters.variants = this.output.variants;
     }
+
     return filters;
   }
 }

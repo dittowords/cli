@@ -25,7 +25,9 @@ export type TextItemsResponse = z.infer<typeof TextItemsResponse>;
 export default async function fetchText(filters?: PullFilters) {
   try {
     const response = await httpClient.get("/v2/textItems", {
-      params: filters,
+      params: {
+        filter: JSON.stringify(filters),
+      },
     });
 
     return TextItemsResponse.parse(response.data);

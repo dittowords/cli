@@ -10,6 +10,7 @@ import initAPIToken from "./services/apiToken/initAPIToken";
 import { initProjectConfig } from "./services/projectConfig";
 import appContext from "./utils/appContext";
 import type commander from "commander";
+import { YAML_PARSE_ERROR, YAML_LOAD_ERROR } from "./utils/errors";
 
 type Command = "pull";
 
@@ -87,18 +88,62 @@ const executeCommand = async (
       }
     }
   } catch (error) {
-    const eventId = Sentry.captureException(error);
-    const eventStr = `\n\nError ID: ${logger.info(eventId)}`;
-
     if (process.env.DEBUG === "true") {
       console.error(logger.info("Development stack trace:\n"), error);
     }
 
-    return await quit(
-      logger.errorText(
-        "Something went wrong. Please contact support or try again later."
-      ) + eventStr
-    );
+    let sentryOptions = undefined;
+    let errorText =
+      "Something went wrong. Please contact support or try again later.";
+
+    if (error instanceof Error) {
+      sentryOptions = { extra: { message: error.message, cause: error.cause } };
+
+      switch (error.message) {
+        case YAML_LOAD_ERROR:
+          errorText =
+            "Could not load the project config file. Please check the file path and that it is a valid YAML file.";
+          break;
+        case YAML_PARSE_ERROR:
+          if (Array.isArray(error.cause) && error.cause.length > 0) {
+            const invalidKeys = Array.from(
+              new Set(
+                error.cause
+                  .map((issue) => issue.keys)
+                  .flat()
+                  .filter(Boolean)
+              )
+            );
+            const invalidValues = Array.from(
+              new Set(
+                error.cause
+                  .map((issue) => issue.path)
+                  .flat()
+                  .filter(Boolean)
+              )
+            );
+
+            if (invalidKeys.length) {
+              errorText = `Could not parse the project config file. Please remove or rename the following fields: ${invalidKeys.join(
+                ", "
+              )}.`;
+            } else if (invalidValues.length) {
+              errorText = `Could not parse the project config file. Please check the following fields: ${invalidValues.join(
+                ", "
+              )}.`;
+            }
+          } else {
+            errorText =
+              "Could not parse the project config file. Please check the file format.";
+          }
+          break;
+      }
+    }
+
+    const eventId = Sentry.captureException(error, sentryOptions);
+    const eventStr = `\n\nError ID: ${logger.info(eventId)}`;
+
+    return await quit(logger.errorText(errorText) + eventStr);
   }
 };
 

@@ -4,6 +4,7 @@ import * as ValidateToken from "./validateToken";
 import * as CollectAndSaveToken from "./collectAndSaveToken";
 import * as GetURLHostname from "./getURLHostname";
 import initAPIToken from "./initAPIToken";
+import appContext from "../../utils/appContext";
 
 describe("initAPIToken", () => {
   let validateTokenSpy: jest.SpiedFunction<typeof ValidateToken.default>;
@@ -15,8 +16,12 @@ describe("initAPIToken", () => {
     typeof ConfigService.readGlobalConfigData
   >;
   let getURLHostnameSpy: jest.SpiedFunction<typeof GetURLHostname.default>;
+  let priorToken: string | undefined;
 
   beforeEach(() => {
+    priorToken = appContext.apiToken;
+    appContext.setApiToken("");
+
     validateTokenSpy = jest
       .spyOn(ValidateToken, "default")
       .mockImplementation((token: string) => Promise.resolve(token));
@@ -37,11 +42,13 @@ describe("initAPIToken", () => {
   });
 
   afterEach(() => {
+    appContext.setApiToken(priorToken);
     jest.restoreAllMocks();
   });
 
   it("should validate and return the token if provided", async () => {
-    const response = await initAPIToken("validToken");
+    appContext.setApiToken("validToken");
+    const response = await initAPIToken();
     expect(response).toBe("validToken");
     expect(validateTokenSpy).toHaveBeenCalledWith("validToken");
     expect(collectAndSaveTokenSpy).not.toHaveBeenCalled();
@@ -51,11 +58,11 @@ describe("initAPIToken", () => {
 
   it("should call collectAndSaveToken if no token is provided and config file does not exist", async () => {
     existsSyncSpy.mockReturnValue(false);
-    const response = await initAPIToken("", "configFile");
+    const response = await initAPIToken();
     expect(response).toBe("newToken");
     expect(validateTokenSpy).not.toHaveBeenCalled();
     expect(collectAndSaveTokenSpy).toHaveBeenCalled();
-    expect(existsSyncSpy).toHaveBeenCalledWith("configFile");
+    expect(existsSyncSpy).toHaveBeenCalledWith(appContext.configFile);
     expect(readGlobalConfigDataSpy).not.toHaveBeenCalled();
     expect(getURLHostnameSpy).not.toHaveBeenCalled();
   });
@@ -63,9 +70,11 @@ describe("initAPIToken", () => {
   describe("should collect and save token based on config if config does not have a token", () => {
     const expectCollectsFromConfig = () => {
       expect(validateTokenSpy).not.toHaveBeenCalled();
-      expect(existsSyncSpy).toHaveBeenCalledWith("configFile");
-      expect(readGlobalConfigDataSpy).toHaveBeenCalledWith("configFile");
-      expect(getURLHostnameSpy).toHaveBeenCalledWith("host");
+      expect(existsSyncSpy).toHaveBeenCalledWith(appContext.configFile);
+      expect(readGlobalConfigDataSpy).toHaveBeenCalledWith(
+        appContext.configFile
+      );
+      expect(getURLHostnameSpy).toHaveBeenCalledWith(appContext.apiHost);
       expect(collectAndSaveTokenSpy).toHaveBeenCalledWith("urlHostname");
     };
 
@@ -73,7 +82,7 @@ describe("initAPIToken", () => {
       existsSyncSpy.mockReturnValue(true);
       const configData = {};
       readGlobalConfigDataSpy.mockReturnValue(configData);
-      const response = await initAPIToken("", "configFile", "host");
+      const response = await initAPIToken();
       expect(response).toBe("tokenWithHost");
       expectCollectsFromConfig();
     });
@@ -82,7 +91,7 @@ describe("initAPIToken", () => {
       existsSyncSpy.mockReturnValue(true);
       const configData = { urlHostname: [] };
       readGlobalConfigDataSpy.mockReturnValue(configData);
-      const response = await initAPIToken(undefined, "configFile", "host");
+      const response = await initAPIToken();
       expect(response).toBe("tokenWithHost");
       expectCollectsFromConfig();
     });
@@ -91,7 +100,7 @@ describe("initAPIToken", () => {
       existsSyncSpy.mockReturnValue(true);
       const configData = { urlHostname: [{ token: "" }] };
       readGlobalConfigDataSpy.mockReturnValue(configData);
-      const response = await initAPIToken("", "configFile", "host");
+      const response = await initAPIToken();
       expect(response).toBe("tokenWithHost");
       expectCollectsFromConfig();
     });
@@ -101,12 +110,12 @@ describe("initAPIToken", () => {
     existsSyncSpy.mockReturnValue(true);
     const configData = { urlHostname: [{ token: "myToken" }] };
     readGlobalConfigDataSpy.mockReturnValue(configData);
-    const response = await initAPIToken("", "configFile", "host");
+    const response = await initAPIToken();
     expect(response).toBe("myToken");
     expect(validateTokenSpy).toHaveBeenCalledWith("myToken");
-    expect(existsSyncSpy).toHaveBeenCalledWith("configFile");
-    expect(readGlobalConfigDataSpy).toHaveBeenCalledWith("configFile");
-    expect(getURLHostnameSpy).toHaveBeenCalledWith("host");
+    expect(existsSyncSpy).toHaveBeenCalledWith(appContext.configFile);
+    expect(readGlobalConfigDataSpy).toHaveBeenCalledWith(appContext.configFile);
+    expect(getURLHostnameSpy).toHaveBeenCalledWith(appContext.apiHost);
     expect(collectAndSaveTokenSpy).not.toHaveBeenCalled();
   });
 });

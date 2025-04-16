@@ -6,27 +6,20 @@ import validateToken from "./validateToken";
 import getURLHostname from "./getURLHostname";
 
 /**
- * Initializes the API token
- * @param token The token to initialize the API token with. If not provided, the token will be fetched from the global config file.
- * @param configFile The path to the global config file
- * @param host The host to initialize the API token for
+ * Initializes the API token based on the appContext and config file.
  * @returns The initialized API token
  */
-export default async function initAPIToken(
-  token: string | undefined = appContext.apiToken,
-  configFile: string = appContext.configFile,
-  host: string = appContext.apiHost
-) {
-  if (token) {
-    return await validateToken(token);
+export default async function initAPIToken() {
+  if (appContext.apiToken) {
+    return await validateToken(appContext.apiToken);
   }
 
-  if (!fs.existsSync(configFile)) {
+  if (!fs.existsSync(appContext.configFile)) {
     return await collectAndSaveToken();
   }
 
-  const configData = configService.readGlobalConfigData(configFile);
-  const sanitizedHost = getURLHostname(host);
+  const configData = configService.readGlobalConfigData(appContext.configFile);
+  const sanitizedHost = getURLHostname(appContext.apiHost);
 
   if (
     !configData[sanitizedHost] ||

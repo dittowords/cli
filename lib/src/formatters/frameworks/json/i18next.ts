@@ -1,4 +1,3 @@
-import appContext from "../../../utils/appContext";
 import JavascriptOutputFile from "../../shared/fileTypes/JavascriptOutputFile";
 import OutputFile from "../../shared/fileTypes/OutputFile";
 import { applyMixins } from "../../shared";

@@ -66,7 +66,7 @@ export default class JSONFormatter extends applyMixins(
 
     if (this.output.framework) {
       // process framework
-      results.push(...getFrameworkProcessor(this.output.framework).process(outputJsonFiles));
+      results.push(...getFrameworkProcessor(this.output).process(outputJsonFiles));
     }
 
     return results;

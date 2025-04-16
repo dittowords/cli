@@ -82,7 +82,7 @@ const executeCommand = async (
     const eventId = Sentry.captureException(error);
     const eventStr = `\n\nError ID: ${logger.info(eventId)}`;
 
-    if (process.env.IS_LOCAL === "true") {
+    if (process.env.DEBUG === "true") {
       console.error(logger.info("Development stack trace:\n"), error);
     }
 

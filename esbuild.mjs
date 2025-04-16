@@ -1,9 +1,16 @@
 import * as esbuild from "esbuild";
 
 let define = {};
+const KEYS_TO_DEFINE = [
+  "ENV",
+  "SENTRY_DSN",
+  "SENTRY_ORG",
+  "SENTRY_PROJECT",
+  "SENTRY_DSN",
+];
 
 if (process.env.ENV === "production") {
-  for (const k in process.env) {
+  for (const k of KEYS_TO_DEFINE) {
     define[`process.env.${k}`] = JSON.stringify(process.env[k]);
   }
 }

@@ -1,9 +1,8 @@
-import appContext from "../../utils/appContext";
-import JavascriptOutputFile from "../shared/fileTypes/JavascriptOutputFile";
-import OutputFile from "../shared/fileTypes/OutputFile";
-import { applyMixins } from "../shared";
-import javascriptCodegenMixin from "../mixins/javascriptCodegenMixin";
-import JSONOutputFile from "../shared/fileTypes/JSONOutputFile";
+import JavascriptOutputFile from "../../shared/fileTypes/JavascriptOutputFile";
+import OutputFile from "../../shared/fileTypes/OutputFile";
+import { applyMixins } from "../../shared";
+import javascriptCodegenMixin from "../../mixins/javascriptCodegenMixin";
+import JSONOutputFile from "../../shared/fileTypes/JSONOutputFile";
 import BaseFramework from "./base";
 
 export default class I18NextFramework extends applyMixins(
@@ -13,12 +12,9 @@ export default class I18NextFramework extends applyMixins(
   process(
     outputJsonFiles: Record<string, JSONOutputFile<{ variantId: string }>>
   ) {
-    const outputDir = appContext.projectConfigDir;
-    // Generate Driver file
-
     const driverFile = new JavascriptOutputFile({
       filename: "index",
-      path: outputDir,
+      path: this.outDir,
     });
 
     const filesGroupedByVariantId = Object.values(outputJsonFiles).reduce(

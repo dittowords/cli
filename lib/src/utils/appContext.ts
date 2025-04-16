@@ -18,7 +18,7 @@ class AppContext {
   #projectConfigFile: string;
   #clientId: string;
   #projectConfig: ProjectConfigYAML;
-
+  #outDir: string;
   constructor() {
     this.#apiHost = process.env.DITTO_API_HOST || "https://api.dittowords.com";
     this.#apiToken = process.env.DITTO_TOKEN;
@@ -32,6 +32,7 @@ class AppContext {
     );
     this.#clientId = crypto.randomUUID();
     this.#projectConfig = DEFAULT_PROJECT_CONFIG_JSON;
+    this.#outDir = process.env.DITTO_OUT_DIR || this.projectConfigDir;
   }
 
   get apiHost() {
@@ -84,6 +85,10 @@ class AppContext {
 
   get projectConfigDir() {
     return this.#projectConfigDir;
+  }
+
+  get outDir() {
+    return this.projectConfig.outDir || this.#outDir;
   }
 }
 

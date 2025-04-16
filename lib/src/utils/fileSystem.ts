@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs";
 import fsPromises from "fs/promises";
+
 /**
  * Creates a file with the given filename if it doesn't already exist.
  * @param filename The path to the file to create.
@@ -52,10 +53,16 @@ export async function createFileIfMissing(
 }
 
 export function writeFileSync(filename: string, content: string) {
+  if (!fs.existsSync(path.dirname(filename))) {
+    fs.mkdirSync(path.dirname(filename), { recursive: true });
+  }
   fs.writeFileSync(filename, content, "utf-8");
 }
 
 export async function writeFile(filename: string, content: string) {
+  if (!fs.existsSync(path.dirname(filename))) {
+    await fsPromises.mkdir(path.dirname(filename), { recursive: true });
+  }
   await fsPromises.writeFile(filename, content, "utf-8");
 }
 

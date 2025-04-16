@@ -5,7 +5,7 @@ import OutputFile from "./shared/fileTypes/OutputFile";
 import JSONOutputFile from "./shared/fileTypes/JSONOutputFile";
 import appContext from "../utils/appContext";
 import { applyMixins } from "./shared";
-import { getFrameworkProcessor } from "./frameworks";
+import { getFrameworkProcessor } from "./frameworks/json";
 
 type JSONAPIData = {
   textItems: TextItemsResponse;
@@ -29,7 +29,6 @@ export default class JSONFormatter extends applyMixins(
   }
 
   protected async transformAPIData(data: JSONAPIData) {
-    const outputDir = appContext.projectConfigDir;
 
     let outputJsonFiles: Record<
       string,
@@ -38,7 +37,7 @@ export default class JSONFormatter extends applyMixins(
 
     const variablesOutputFile = new JSONOutputFile({
       filename: "variables",
-      path: appContext.projectConfigDir,
+      path: this.outputDir,
     });
 
     for (let i = 0; i < data.textItems.length; i++) {
@@ -48,7 +47,7 @@ export default class JSONFormatter extends applyMixins(
 
       outputJsonFiles[fileName] ??= new JSONOutputFile({
         filename: fileName,
-        path: outputDir,
+        path: this.outputDir,
         metadata: { variantId: textItem.variantId || "base" },
       });
       
@@ -67,7 +66,7 @@ export default class JSONFormatter extends applyMixins(
 
     if (this.output.framework) {
       // process framework
-      results.push(...getFrameworkProcessor(this.output.framework).process(outputJsonFiles));
+      results.push(...getFrameworkProcessor(this.output).process(outputJsonFiles));
     }
 
     return results;

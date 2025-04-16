@@ -3,14 +3,17 @@ import { writeFile } from "../../utils/fileSystem";
 import logger from "../../utils/logger";
 import { ProjectConfigYAML } from "../../services/projectConfig";
 import OutputFile from "./fileTypes/OutputFile";
+import appContext from "../../utils/appContext";
 
 export default class BaseFormatter<APIDataType = unknown> {
   protected output: Output;
   protected projectConfig: ProjectConfigYAML;
+  protected outputDir: string;
 
   constructor(output: Output, projectConfig: ProjectConfigYAML) {
     this.output = output;
     this.projectConfig = projectConfig;
+    this.outputDir = output.outDir ?? appContext.outDir;
   }
 
   protected async fetchAPIData(): Promise<APIDataType> {
@@ -21,10 +24,7 @@ export default class BaseFormatter<APIDataType = unknown> {
     return [];
   }
 
-  async format(
-    output: Output,
-    projectConfig: ProjectConfigYAML
-  ): Promise<void> {
+  async format(): Promise<void> {
     const data = await this.fetchAPIData();
     const files = await this.transformAPIData(data);
     await this.writeFiles(files);

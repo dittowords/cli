@@ -1,5 +1,13 @@
 import * as esbuild from "esbuild";
 
+let define = {};
+
+if (process.env.ENV === "production") {
+  for (const k in process.env) {
+    define[`process.env.${k}`] = JSON.stringify(process.env[k]);
+  }
+}
+
 /**
  * @type {esbuild.BuildOptions}
  */
@@ -15,6 +23,7 @@ const config = {
   target: "es2020",
   packages: "external",
   platform: "node",
+  define,
 };
 
 async function main() {

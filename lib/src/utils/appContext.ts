@@ -32,7 +32,7 @@ class AppContext {
     );
     this.#clientId = crypto.randomUUID();
     this.#projectConfig = DEFAULT_PROJECT_CONFIG_JSON;
-    this.#outDir = process.env.DITTO_OUT_DIR || this.#projectConfigDir;
+    this.#outDir = process.env.DITTO_OUT_DIR || this.projectConfigDir;
   }
 
   get apiHost() {
@@ -88,7 +88,7 @@ class AppContext {
   }
 
   get outDir() {
-    return this.#outDir;
+    return this.projectConfig.outDir || this.#outDir;
   }
 }
 

@@ -8,10 +8,7 @@ export default function handleOutput(
 ) {
   switch (output.format) {
     case "json":
-      return new JSONFormatter(output, projectConfig).format(
-        output,
-        projectConfig
-      );
+      return new JSONFormatter(output, projectConfig).format();
     default:
       throw new Error(`Unsupported output format: ${output}`);
   }

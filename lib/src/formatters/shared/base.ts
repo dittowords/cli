@@ -13,7 +13,7 @@ export default class BaseFormatter<APIDataType = unknown> {
   constructor(output: Output, projectConfig: ProjectConfigYAML) {
     this.output = output;
     this.projectConfig = projectConfig;
-    this.outputDir = output.outDir ?? appContext.projectConfigDir;
+    this.outputDir = output.outDir ?? appContext.outDir;
   }
 
   protected async fetchAPIData(): Promise<APIDataType> {
@@ -24,10 +24,7 @@ export default class BaseFormatter<APIDataType = unknown> {
     return [];
   }
 
-  async format(
-    output: Output,
-    projectConfig: ProjectConfigYAML
-  ): Promise<void> {
+  async format(): Promise<void> {
     const data = await this.fetchAPIData();
     const files = await this.transformAPIData(data);
     await this.writeFiles(files);

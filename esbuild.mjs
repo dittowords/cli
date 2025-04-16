@@ -1,5 +1,20 @@
 import * as esbuild from "esbuild";
 
+let define = {};
+const KEYS_TO_DEFINE = [
+  "ENV",
+  "SENTRY_DSN",
+  "SENTRY_ORG",
+  "SENTRY_PROJECT",
+  "SENTRY_DSN",
+];
+
+if (process.env.ENV === "production") {
+  for (const k of KEYS_TO_DEFINE) {
+    define[`process.env.${k}`] = JSON.stringify(process.env[k]);
+  }
+}
+
 /**
  * @type {esbuild.BuildOptions}
  */
@@ -15,6 +30,7 @@ const config = {
   target: "es2020",
   packages: "external",
   platform: "node",
+  define,
 };
 
 async function main() {

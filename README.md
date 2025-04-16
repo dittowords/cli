@@ -17,7 +17,7 @@ The official documentation can be found [here](http://developer.dittowords.com/c
 ## Installation
 
 ```sh
-npm install --save-dev @dittowords/cli
+npm install --save-dev @dittowords/cli@beta
 ```
 
 It's recommended to install the CLI as a development dependency to ensure your whole team is on the same version.
@@ -37,10 +37,11 @@ The first time you run the CLI, a `ditto/` folder will be created if it doesn't 
 The default file looks like this:
 
 ```yml
-sources:
-  components: true
-variants: true
-format: flat
+projects: [],
+variants: [],
+outputs:
+  - format: json,
+    framework: i18next
 ```
 
 For more information on configuring the CLI, see [http://developer.dittowords.com/cli-reference/configuration](http://developer.dittowords.com/cli-reference/configuration).

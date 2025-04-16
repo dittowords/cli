@@ -6,7 +6,7 @@ import { pull } from "./commands/pull";
 import { quit } from "./utils/quit";
 import { version } from "../../package.json";
 import logger from "./utils/logger";
-import { initAPIToken } from "./services/apiToken";
+import initAPIToken from "./services/apiToken/initAPIToken";
 import { initProjectConfig } from "./services/projectConfig";
 import appContext from "./utils/appContext";
 

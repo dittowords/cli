@@ -33,8 +33,16 @@ export default function javascriptCodegenMixin<TBase extends Constructor>(
       return `import ${module} from "${moduleName}";\n`;
     }
 
+    protected codegenDefaultRequire(module: string, moduleName: string) {
+      return `const ${module} = require("${moduleName}");\n`;
+    }
+
     protected codegenDefaultExport(module: string) {
       return `export default ${module};`;
+    }
+
+    protected codegenModuleExports(module: string) {
+      return `module.exports = ${module};`;
     }
 
     protected codegenPad(depth: number) {

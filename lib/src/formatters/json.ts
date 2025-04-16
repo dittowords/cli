@@ -37,7 +37,7 @@ export default class JSONFormatter extends applyMixins(
 
     const variablesOutputFile = new JSONOutputFile({
       filename: "variables",
-      path: this.outputDir,
+      path: this.outDir,
     });
 
     for (let i = 0; i < data.textItems.length; i++) {
@@ -47,7 +47,7 @@ export default class JSONFormatter extends applyMixins(
 
       outputJsonFiles[fileName] ??= new JSONOutputFile({
         filename: fileName,
-        path: this.outputDir,
+        path: this.outDir,
         metadata: { variantId: textItem.variantId || "base" },
       });
       

@@ -2,15 +2,12 @@ import Enquirer from "enquirer";
 import * as CheckToken from "../../http/checkToken";
 import promptForApiToken, { validate } from "./promptForApiToken";
 
-jest.mock("enquirer", () => ({
-  prompt: jest.fn(),
-}));
-
 describe("promptForApiToken", () => {
   const mockResponse = { token: "mockToken" };
+  let promptSpy: jest.SpiedFunction<typeof Enquirer.prompt>;
 
   beforeEach(() => {
-    (Enquirer.prompt as jest.Mock).mockResolvedValue(mockResponse);
+    promptSpy = jest.spyOn(Enquirer, "prompt").mockResolvedValue(mockResponse);
   });
 
   afterEach(() => {
@@ -20,7 +17,7 @@ describe("promptForApiToken", () => {
   it("should prompt for API token and return it", async () => {
     const response = await promptForApiToken();
     expect(response).toEqual(mockResponse);
-    expect(Enquirer.prompt).toHaveBeenCalledWith({
+    expect(promptSpy).toHaveBeenCalledWith({
       type: "input",
       name: "token",
       message: "What is your API key?",

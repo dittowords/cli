@@ -66,7 +66,7 @@ type ConfigYamlLoadErrorData = {
 };
 
 type ConfigParseErrorData = {
-  issues: z.ZodIssue[];
+  formattedError: string;
   messagePrefix: string;
 };
 

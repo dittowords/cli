@@ -106,36 +106,7 @@ const executeCommand = async (
       if (isDittoErrorType(error, ErrorType.ConfigYamlLoadError)) {
         errorText = error.message;
       } else if (isDittoErrorType(error, ErrorType.ConfigParseError)) {
-        const invalidKeys = Array.from(
-          new Set(
-            error.data.issues
-              .map((issue) => ("keys" in issue ? issue.keys : null))
-              .flat()
-              .filter(Boolean)
-          )
-        );
-        const invalidValues = Array.from(
-          new Set(
-            error.data.issues
-              .map((issue) => issue.path)
-              .flat()
-              .filter(Boolean)
-          )
-        );
-
-        if (invalidKeys.length) {
-          errorText = `${
-            error.data.messagePrefix
-          } Please remove or rename the following fields: ${invalidKeys.join(
-            ", "
-          )}.`;
-        } else if (invalidValues.length) {
-          errorText = `${
-            error.data.messagePrefix
-          } Please check the following fields: ${invalidValues.join(", ")}.`;
-        } else {
-          errorText = `${error.data.messagePrefix} Please check the file format.`;
-        }
+        errorText = `${error.data.messagePrefix}\n\n${error.data.formattedError}`;
       }
     }
 

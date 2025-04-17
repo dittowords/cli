@@ -12,6 +12,11 @@ export default class I18NextFramework extends applyMixins(
   process(
     outputJsonFiles: Record<string, JSONOutputFile<{ variantId: string }>>
   ) {
+    let moduleType: "commonjs" | "module" = "commonjs";
+    if ("type" in this.output && this.output.type) {
+      moduleType = this.output.type;
+    }
+
     const driverFile = new JavascriptOutputFile({
       filename: "index",
       path: this.outDir,
@@ -27,19 +32,29 @@ export default class I18NextFramework extends applyMixins(
       {} as Record<string, OutputFile[]>
     );
 
-    driverFile.content += this.generateImportStatements(outputJsonFiles);
+    if (moduleType === "module") {
+      driverFile.content += this.generateImportStatements(outputJsonFiles);
 
-    driverFile.content += `\n`;
+      driverFile.content += `\n`;
 
-    driverFile.content += this.generateDefaultExportString(
-      filesGroupedByVariantId
-    );
+      driverFile.content += this.codegenDefaultExport(
+        this.generateExportedObjectString(filesGroupedByVariantId)
+      );
+    } else {
+      driverFile.content += this.generateRequireStatements(outputJsonFiles);
+
+      driverFile.content += `\n`;
+
+      driverFile.content += this.codegenCommonJSModuleExports(
+        this.generateExportedObjectString(filesGroupedByVariantId)
+      );
+    }
 
     return [driverFile];
   }
 
   /**
-   * Generates the import statements for the driver file. One import per generated json file.
+   * Generates the import statements for the driver file with type "module". One import per generated json file.
    * @param outputJsonFiles - The output json files.
    * @returns The import statements, stringified.
    */
@@ -57,11 +72,29 @@ export default class I18NextFramework extends applyMixins(
   }
 
   /**
+   * Generates the require statements for the driver file with type "commonjs". One require per generated json file.
+   * @param outputJsonFiles - The output json files.
+   * @returns The require statements, stringified.
+   */
+  private generateRequireStatements(
+    outputJsonFiles: Record<string, JSONOutputFile<{ variantId: string }>>
+  ) {
+    let requireStatements = "";
+    for (const file of Object.values(outputJsonFiles)) {
+      requireStatements += this.codegenDefaultRequire(
+        this.sanitizeStringForJSVariableName(file.filename),
+        `./${file.filenameWithExtension}`
+      );
+    }
+    return requireStatements;
+  }
+
+  /**
    * Generates the default export for the driver file. By default this is an object with the json imports grouped by variant id.
    * @param filesGroupedByVariantId - The files grouped by variant id.
    * @returns The default export, stringified.
    */
-  private generateDefaultExportString(
+  private generateExportedObjectString(
     filesGroupedByVariantId: Record<string, OutputFile[]>
   ) {
     const variantIds = Object.keys(filesGroupedByVariantId);
@@ -85,6 +118,6 @@ export default class I18NextFramework extends applyMixins(
 
     defaultExportObjectString += `}`;
 
-    return this.codegenDefaultExport(defaultExportObjectString);
+    return defaultExportObjectString;
   }
 }

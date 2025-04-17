@@ -8,12 +8,12 @@ import appContext from "../../utils/appContext";
 export default class BaseFormatter<APIDataType = unknown> {
   protected output: Output;
   protected projectConfig: ProjectConfigYAML;
-  protected outputDir: string;
+  protected outDir: string;
 
   constructor(output: Output, projectConfig: ProjectConfigYAML) {
     this.output = output;
     this.projectConfig = projectConfig;
-    this.outputDir = output.outDir ?? appContext.outDir;
+    this.outDir = output.outDir ?? appContext.outDir;
   }
 
   protected async fetchAPIData(): Promise<APIDataType> {

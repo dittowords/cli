@@ -8,6 +8,7 @@ const ZBaseJSONOutput = ZBaseOutputFilters.extend({
 
 const Zi18NextJSONOutput = ZBaseJSONOutput.extend({
   framework: z.literal("i18next"),
+  type: z.literal("module").or(z.literal("commonjs")).optional(),
 });
 
 export const ZJSONOutput = z.discriminatedUnion("framework", [

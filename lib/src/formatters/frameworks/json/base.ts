@@ -8,7 +8,7 @@ export default class BaseFramework {
 
   constructor(output: Output) {
     this.output = output;
-    this.outDir = output.outDir ?? appContext.projectConfigDir;
+    this.outDir = output.outDir ?? appContext.outDir;
   }
 
   get framework() {

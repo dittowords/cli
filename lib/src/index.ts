@@ -98,9 +98,6 @@ const executeCommand = async (
       "Something went wrong. Please contact support or try again later.";
 
     if (isDittoError(error)) {
-      sentryOptions = {
-        extra: { message: error.message, ...(error.data || {}) },
-      };
       exitCode = error.exitCode;
 
       if (isDittoErrorType(error, ErrorType.ConfigYamlLoadError)) {
@@ -108,6 +105,10 @@ const executeCommand = async (
       } else if (isDittoErrorType(error, ErrorType.ConfigParseError)) {
         errorText = `${error.data.messagePrefix}\n\n${error.data.formattedError}`;
       }
+
+      sentryOptions = {
+        extra: { message: errorText, ...(error.data || {}) },
+      };
     }
 
     const eventId = Sentry.captureException(error, sentryOptions);

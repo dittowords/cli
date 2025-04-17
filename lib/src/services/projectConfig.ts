@@ -5,6 +5,7 @@ import appContext from "../utils/appContext";
 import yaml from "js-yaml";
 import { ZBaseOutputFilters } from "../outputs/shared";
 import { ZOutput } from "../outputs";
+import DittoError, { ErrorType } from "../utils/DittoError";
 
 const ZProjectConfigYAML = ZBaseOutputFilters.extend({
   outputs: z.array(ZOutput),
@@ -38,12 +39,30 @@ function readProjectConfigData(
   file = appContext.projectConfigFile,
   defaultData: ProjectConfigYAML = DEFAULT_PROJECT_CONFIG_JSON
 ): ProjectConfigYAML {
-  createFileIfMissingSync(file, yaml.dump(defaultData));
-  const fileContents = fs.readFileSync(file, "utf8");
-  const yamlData = yaml.load(fileContents);
+  let yamlData: unknown = defaultData;
+
+  try {
+    createFileIfMissingSync(file, yaml.dump(defaultData));
+    const fileContents = fs.readFileSync(file, "utf8");
+    yamlData = yaml.load(fileContents);
+  } catch (err) {
+    throw new DittoError({
+      type: ErrorType.ConfigYamlLoadError,
+      data: { rawErrorMessage: (err as any).message },
+      message:
+        "Could not load the project config file. Please check the file path and that it is a valid YAML file.",
+    });
+  }
+
   const parsedYAML = ZProjectConfigYAML.safeParse(yamlData);
   if (!parsedYAML.success) {
-    throw new Error("Failed to parse project config file");
+    throw new DittoError({
+      type: ErrorType.ConfigParseError,
+      data: {
+        formattedError: JSON.stringify(parsedYAML.error.flatten(), null, 2),
+        messagePrefix: "There is an error in your project config file.",
+      },
+    });
   }
   return parsedYAML.data;
 }

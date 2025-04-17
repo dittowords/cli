@@ -10,6 +10,7 @@ import initAPIToken from "./services/apiToken/initAPIToken";
 import { initProjectConfig } from "./services/projectConfig";
 import appContext from "./utils/appContext";
 import type commander from "commander";
+import { ErrorType, isDittoError, isDittoErrorType } from "./utils/DittoError";
 
 type Command = "pull";
 
@@ -87,18 +88,33 @@ const executeCommand = async (
       }
     }
   } catch (error) {
-    const eventId = Sentry.captureException(error);
-    const eventStr = `\n\nError ID: ${logger.info(eventId)}`;
-
     if (process.env.DEBUG === "true") {
       console.error(logger.info("Development stack trace:\n"), error);
     }
 
-    return await quit(
-      logger.errorText(
-        "Something went wrong. Please contact support or try again later."
-      ) + eventStr
-    );
+    let sentryOptions = undefined;
+    let exitCode = undefined;
+    let errorText =
+      "Something went wrong. Please contact support or try again later.";
+
+    if (isDittoError(error)) {
+      exitCode = error.exitCode;
+
+      if (isDittoErrorType(error, ErrorType.ConfigYamlLoadError)) {
+        errorText = error.message;
+      } else if (isDittoErrorType(error, ErrorType.ConfigParseError)) {
+        errorText = `${error.data.messagePrefix}\n\n${error.data.formattedError}`;
+      }
+
+      sentryOptions = {
+        extra: { message: errorText, ...(error.data || {}) },
+      };
+    }
+
+    const eventId = Sentry.captureException(error, sentryOptions);
+    const eventStr = `\n\nError ID: ${logger.info(eventId)}`;
+
+    return await quit(logger.errorText(errorText) + eventStr, exitCode);
   }
 };
 

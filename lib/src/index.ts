@@ -10,7 +10,7 @@ import initAPIToken from "./services/apiToken/initAPIToken";
 import { initProjectConfig } from "./services/projectConfig";
 import appContext from "./utils/appContext";
 import type commander from "commander";
-import { YAML_PARSE_ERROR, YAML_LOAD_ERROR } from "./utils/errors";
+import { ErrorType, isDittoError, isDittoErrorType } from "./utils/DittoError";
 
 type Command = "pull";
 
@@ -93,57 +93,56 @@ const executeCommand = async (
     }
 
     let sentryOptions = undefined;
+    let exitCode = undefined;
     let errorText =
       "Something went wrong. Please contact support or try again later.";
 
-    if (error instanceof Error) {
-      sentryOptions = { extra: { message: error.message, cause: error.cause } };
+    if (isDittoError(error)) {
+      sentryOptions = {
+        extra: { message: error.message, ...(error.data || {}) },
+      };
+      exitCode = error.exitCode;
 
-      switch (error.message) {
-        case YAML_LOAD_ERROR:
-          errorText =
-            "Could not load the project config file. Please check the file path and that it is a valid YAML file.";
-          break;
-        case YAML_PARSE_ERROR:
-          if (Array.isArray(error.cause) && error.cause.length > 0) {
-            const invalidKeys = Array.from(
-              new Set(
-                error.cause
-                  .map((issue) => issue.keys)
-                  .flat()
-                  .filter(Boolean)
-              )
-            );
-            const invalidValues = Array.from(
-              new Set(
-                error.cause
-                  .map((issue) => issue.path)
-                  .flat()
-                  .filter(Boolean)
-              )
-            );
+      if (isDittoErrorType(error, ErrorType.ConfigYamlLoadError)) {
+        errorText = error.message;
+      } else if (isDittoErrorType(error, ErrorType.ConfigParseError)) {
+        const invalidKeys = Array.from(
+          new Set(
+            error.data.issues
+              .map((issue) => ("keys" in issue ? issue.keys : null))
+              .flat()
+              .filter(Boolean)
+          )
+        );
+        const invalidValues = Array.from(
+          new Set(
+            error.data.issues
+              .map((issue) => issue.path)
+              .flat()
+              .filter(Boolean)
+          )
+        );
 
-            if (invalidKeys.length) {
-              errorText = `Could not parse the project config file. Please remove or rename the following fields: ${invalidKeys.join(
-                ", "
-              )}.`;
-            } else if (invalidValues.length) {
-              errorText = `Could not parse the project config file. Please check the following fields: ${invalidValues.join(
-                ", "
-              )}.`;
-            }
-          } else {
-            errorText =
-              "Could not parse the project config file. Please check the file format.";
-          }
-          break;
+        if (invalidKeys.length) {
+          errorText = `${
+            error.data.messagePrefix
+          } Please remove or rename the following fields: ${invalidKeys.join(
+            ", "
+          )}.`;
+        } else if (invalidValues.length) {
+          errorText = `${
+            error.data.messagePrefix
+          } Please check the following fields: ${invalidValues.join(", ")}.`;
+        } else {
+          errorText = `${error.data.messagePrefix} Please check the file format.`;
+        }
       }
     }
 
     const eventId = Sentry.captureException(error, sentryOptions);
     const eventStr = `\n\nError ID: ${logger.info(eventId)}`;
 
-    return await quit(logger.errorText(errorText) + eventStr);
+    return await quit(logger.errorText(errorText) + eventStr, exitCode);
   }
 };
 

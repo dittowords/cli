@@ -5,7 +5,7 @@ import appContext from "../utils/appContext";
 import yaml from "js-yaml";
 import { ZBaseOutputFilters } from "../outputs/shared";
 import { ZOutput } from "../outputs";
-import { YAML_PARSE_ERROR, YAML_LOAD_ERROR } from "../utils/errors";
+import DittoError, { ErrorType } from "../utils/DittoError";
 
 const ZProjectConfigYAML = ZBaseOutputFilters.extend({
   outputs: z.array(ZOutput),
@@ -46,12 +46,23 @@ function readProjectConfigData(
     const fileContents = fs.readFileSync(file, "utf8");
     yamlData = yaml.load(fileContents);
   } catch (err) {
-    throw new Error(YAML_LOAD_ERROR);
+    throw new DittoError({
+      type: ErrorType.ConfigYamlLoadError,
+      data: { rawErrorMessage: (err as any).message },
+      message:
+        "Could not load the project config file. Please check the file path and that it is a valid YAML file.",
+    });
   }
 
   const parsedYAML = ZProjectConfigYAML.safeParse(yamlData);
   if (!parsedYAML.success) {
-    throw new Error(YAML_PARSE_ERROR, { cause: parsedYAML.error.issues });
+    throw new DittoError({
+      type: ErrorType.ConfigParseError,
+      data: {
+        issues: parsedYAML.error.issues,
+        messagePrefix: "There is an error in your project config file.",
+      },
+    });
   }
   return parsedYAML.data;
 }

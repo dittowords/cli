@@ -1,2 +1,0 @@
-export const YAML_LOAD_ERROR = "YAML_LOAD_ERROR";
-export const YAML_PARSE_ERROR = "YAML_PARSE_ERROR";

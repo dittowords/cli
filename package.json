@@ -1,6 +1,6 @@
 {
   "name": "@dittowords/cli",
-  "version": "5.0.0-beta.1",
+  "version": "5.0.0-beta.2",
   "description": "Command Line Interface for Ditto (dittowords.com).",
   "license": "MIT",
   "main": "bin/ditto.js",

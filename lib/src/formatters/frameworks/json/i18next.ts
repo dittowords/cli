@@ -45,7 +45,7 @@ export default class I18NextFramework extends applyMixins(
 
       driverFile.content += `\n`;
 
-      driverFile.content += this.codegenModuleExports(
+      driverFile.content += this.codegenCommonJSModuleExports(
         this.generateExportedObjectString(filesGroupedByVariantId)
       );
     }
@@ -54,7 +54,7 @@ export default class I18NextFramework extends applyMixins(
   }
 
   /**
-   * Generates the import statements for the driver file. One import per generated json file.
+   * Generates the import statements for the driver file with type "module". One import per generated json file.
    * @param outputJsonFiles - The output json files.
    * @returns The import statements, stringified.
    */
@@ -72,7 +72,7 @@ export default class I18NextFramework extends applyMixins(
   }
 
   /**
-   * Generates the require statements for the driver file. One require per generated json file.
+   * Generates the require statements for the driver file with type "commonjs". One require per generated json file.
    * @param outputJsonFiles - The output json files.
    * @returns The require statements, stringified.
    */

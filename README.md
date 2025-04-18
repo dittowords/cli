@@ -17,7 +17,7 @@ The official documentation can be found [here](https://dittov3.notion.site/Beta-
 ## Installation
 
 ```sh
-npm install --save-dev @dittowords/cli
+npm install --save-dev @dittowords/cli@beta
 ```
 
 It's recommended to install the CLI as a development dependency to ensure your whole team is on the same version.

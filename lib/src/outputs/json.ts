@@ -11,7 +11,13 @@ const Zi18NextJSONOutput = ZBaseJSONOutput.extend({
   type: z.literal("module").or(z.literal("commonjs")).optional(),
 }).strict();
 
+const ZVueI18nJSONOutput = ZBaseJSONOutput.extend({
+  framework: z.literal("vue-i18n"),
+  type: z.literal("module").or(z.literal("commonjs")).optional(),
+}).strict();
+
 export const ZJSONOutput = z.discriminatedUnion("framework", [
   ZBaseJSONOutput,
   Zi18NextJSONOutput,
+  ZVueI18nJSONOutput,
 ]);

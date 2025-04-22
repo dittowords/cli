@@ -1,5 +1,6 @@
 import I18NextFramework from "./i18next";
 import { Output } from "../../../outputs";
+import VueI18nFramework from "./vue-i18n";
 
 export function getFrameworkProcessor(output: Output) {
   if (!output.framework) {
@@ -9,6 +10,8 @@ export function getFrameworkProcessor(output: Output) {
   switch (frameworkType) {
     case "i18next":
       return new I18NextFramework(output);
+    case "vue-i18n":
+      return new VueI18nFramework(output);
     default:
       throw new Error(`Unsupported JSON framework: ${frameworkType}`);
   }

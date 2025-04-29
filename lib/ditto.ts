@@ -12,7 +12,7 @@ Sentry.init({ dsn: process.env.SENTRY_DSN, environment, release });
 
 const main = async () => {
   // Check for --legacy flag and run in legacy mode if present
-  if (process.argv.includes("--legacy")) {
+  if (process.argv.includes("--legacy") || process.argv.includes("-l")) {
     console.log(
       logger.warnText(
         "\nDitto CLI is running in legacy mode. This mode is deprecated and will be removed in a future release.\n"

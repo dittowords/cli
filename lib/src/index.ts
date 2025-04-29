@@ -62,7 +62,7 @@ const setupCommands = () => {
 };
 
 const setupOptions = () => {
-  program.option("-l, --legacy", "Run in legacy mode");
+  program.option("--legacy", "Run in legacy mode");
   program.version(version, "-v, --version", "Output the current version");
 };
 

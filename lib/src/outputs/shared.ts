@@ -8,4 +8,5 @@ export const ZBaseOutputFilters = z.object({
   projects: z.array(z.object({ id: z.string() })).optional(),
   variants: z.array(z.object({ id: z.string() })).optional(),
   outDir: z.string().optional(),
+  richText: z.literal("html").optional(),
 });

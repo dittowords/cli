@@ -85,6 +85,10 @@ export default class JSONFormatter extends applyMixins(
       filters.variants = this.output.variants;
     }
 
+    if (this.output.richText) {
+      filters.richText = this.output.richText;
+    }
+
     return filters;
   }
 }

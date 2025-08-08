@@ -51,8 +51,12 @@ export default class JSONFormatter extends applyMixins(
         metadata: { variantId: textItem.variantId || "base" },
       });
       
+      // Use richText if available and configured, otherwise use text
+      const textValue = (this.output.richText && textItem.richText) 
+        ? textItem.richText 
+        : textItem.text;
 
-      outputJsonFiles[fileName].content[textItem.id] = textItem.text;
+      outputJsonFiles[fileName].content[textItem.id] = textValue;
       for (const variableId of textItem.variableIds) {
         const variable = data.variablesById[variableId];
         variablesOutputFile.content[variableId] = variable.data;

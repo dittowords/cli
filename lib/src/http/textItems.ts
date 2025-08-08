@@ -11,6 +11,7 @@ const TextItemsResponse = z.array(
   z.object({
     id: z.string(),
     text: z.string(),
+    richText: z.string().optional(),
     status: z.string(),
     notes: z.string(),
     tags: z.array(z.string()),

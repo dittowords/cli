@@ -28,6 +28,7 @@ export default async function fetchText(filters?: PullFilters) {
   try {
     const params = filters;
 
+    // endpoint only takes "html" or undefined
     if (params?.richText === "false") {
       delete params.richText
     }

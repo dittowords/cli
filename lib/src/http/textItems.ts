@@ -5,7 +5,7 @@ import { z } from "zod";
 export interface PullFilters {
   projects?: { id: string }[];
   variants?: { id: string }[];
-  richText?: "html";
+  richText?: "html" | "false";
 }
 
 const TextItemsResponse = z.array(

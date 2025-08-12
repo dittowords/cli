@@ -52,7 +52,8 @@ export default class JSONFormatter extends applyMixins(
       });
       
       // Use richText if available and configured, otherwise use text
-      const textValue = (this.output.richText && textItem.richText) 
+      const richTextConfigured = this.output.richText === "html" || this.projectConfig.richText === "html" && this.output.richText !== "false"
+      const textValue = richTextConfigured && textItem.richText
         ? textItem.richText 
         : textItem.text;
 
@@ -89,8 +90,8 @@ export default class JSONFormatter extends applyMixins(
       filters.variants = this.output.variants;
     }
 
-    if (this.output.richText) {
-      filters.richText = this.output.richText;
+    if (this.projectConfig.richText === "html" || this.output.richText === "html") {
+      filters.richText = "html";
     }
 
     return filters;

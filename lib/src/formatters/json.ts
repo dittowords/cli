@@ -94,7 +94,7 @@ export default class JSONFormatter extends applyMixins(
     }
 
     if (this.output.richText) {
-      filters.richText = "html";
+      filters.richText = this.output.richText;
     }
 
     return filters;

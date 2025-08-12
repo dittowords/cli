@@ -53,7 +53,7 @@ export default class JSONFormatter extends applyMixins(
       
       // Use richText if available and configured, otherwise use text
       const outputRichTextEnabled = this.output.richText === "html"
-      const baseRichTextEnabledAndNotOveridden = this.projectConfig.richText === "html" && this.output.richText !== "false"
+      const baseRichTextEnabledAndNotOveridden = this.projectConfig.richText === "html" && this.output.richText !== false
       const richTextConfigured = outputRichTextEnabled || baseRichTextEnabledAndNotOveridden 
       const textValue = richTextConfigured && textItem.richText
         ? textItem.richText 

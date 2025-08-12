@@ -5,7 +5,7 @@ import { z } from "zod";
 export interface PullFilters {
   projects?: { id: string }[];
   variants?: { id: string }[];
-  richText?: "html" | "false";
+  richText?: "html" | false;
 }
 
 const TextItemsResponse = z.array(
@@ -29,7 +29,7 @@ export default async function fetchText(filters?: PullFilters) {
     const params = filters;
 
     // endpoint only takes "html" or undefined
-    if (params?.richText === "false") {
+    if (params?.richText === false) {
       delete params.richText
     }
 

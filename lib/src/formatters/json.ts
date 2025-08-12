@@ -83,6 +83,7 @@ export default class JSONFormatter extends applyMixins(
     let filters: PullFilters = {
       projects: this.projectConfig.projects,
       variants: this.projectConfig.variants,
+      richText: this.projectConfig.richText
     };
     if (this.output.projects) {
       filters.projects = this.output.projects;
@@ -92,7 +93,7 @@ export default class JSONFormatter extends applyMixins(
       filters.variants = this.output.variants;
     }
 
-    if (this.projectConfig.richText === "html" || this.output.richText === "html") {
+    if (this.output.richText) {
       filters.richText = "html";
     }
 

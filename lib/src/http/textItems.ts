@@ -24,18 +24,17 @@ const TextItemsResponse = z.array(
 
 export type TextItemsResponse = z.infer<typeof TextItemsResponse>;
 
-export default async function fetchText(filters?: PullFilters) {
+export default async function fetchText(filters: PullFilters) {
   try {
-    const params = filters;
+    // richText applied as a separate parameter from the rest of the filters
+    const { richText, ...filter } = filters;
 
-    // endpoint only takes "html" or undefined
-    if (params?.richText === false) {
-      delete params.richText
-    }
+    const params =
+      richText === false
+        ? { filter: JSON.stringify(filter) }
+        : { filter: JSON.stringify(filter), richText };
 
-    const response = await httpClient.get("/v2/textItems", {
-      params
-    });
+    const response = await httpClient.get("/v2/textItems", { params });
 
     return TextItemsResponse.parse(response.data);
   } catch (e: unknown) {

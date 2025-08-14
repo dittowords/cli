@@ -1,9 +1,8 @@
-import fetchText, { PullFilters, TextItemsResponse } from "../http/textItems";
-import fetchVariables, { Variable, VariablesResponse } from "../http/variables";
+import fetchText, { TextItemsResponse, PullFilters, PullQueryParams } from "../http/textItems";
+import fetchVariables, { Variable } from "../http/variables";
 import BaseFormatter from "./shared/base";
 import OutputFile from "./shared/fileTypes/OutputFile";
 import JSONOutputFile from "./shared/fileTypes/JSONOutputFile";
-import appContext from "../utils/appContext";
 import { applyMixins } from "./shared";
 import { getFrameworkProcessor } from "./frameworks/json";
 
@@ -16,8 +15,8 @@ export default class JSONFormatter extends applyMixins(
   BaseFormatter<JSONAPIData>) {
 
   protected async fetchAPIData() {
-    const filters = this.generatePullFilter();
-    const textItems = await fetchText(filters);
+    const queryParams = this.generateQueryParams();
+    const textItems = await fetchText(queryParams);
     const variables = await fetchVariables();
 
     const variablesById = variables.reduce((acc, variable) => {
@@ -83,7 +82,6 @@ export default class JSONFormatter extends applyMixins(
     let filters: PullFilters = {
       projects: this.projectConfig.projects,
       variants: this.projectConfig.variants,
-      richText: this.projectConfig.richText
     };
     if (this.output.projects) {
       filters.projects = this.output.projects;
@@ -93,10 +91,27 @@ export default class JSONFormatter extends applyMixins(
       filters.variants = this.output.variants;
     }
 
-    if (this.output.richText) {
-      filters.richText = this.output.richText;
+    return filters;
+  }
+
+  /**
+   * Returns the query parameters for the fetchText API request
+   */
+  private generateQueryParams() {
+    const filter = this.generatePullFilter();
+    
+    let params: PullQueryParams = {
+      filter: JSON.stringify(filter),
+    };
+
+    if (this.projectConfig.richText) {
+      params.richText = this.projectConfig.richText;
     }
 
-    return filters;
+    if (this.output.richText) {
+      params.richText = this.output.richText;
+    }
+
+    return params;
   }
 }

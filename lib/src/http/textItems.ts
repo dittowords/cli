@@ -5,7 +5,11 @@ import { z } from "zod";
 export interface PullFilters {
   projects?: { id: string }[];
   variants?: { id: string }[];
-  richText?: "html" | false;
+}
+
+export interface PullQueryParams {
+  filter: string; // Stringified PullFilters
+  richText?: "html";
 }
 
 const TextItemsResponse = z.array(
@@ -24,18 +28,9 @@ const TextItemsResponse = z.array(
 
 export type TextItemsResponse = z.infer<typeof TextItemsResponse>;
 
-export default async function fetchText(filters?: PullFilters) {
+export default async function fetchText(params: PullQueryParams) {
   try {
-    const params = filters;
-
-    // endpoint only takes "html" or undefined
-    if (params?.richText === false) {
-      delete params.richText
-    }
-
-    const response = await httpClient.get("/v2/textItems", {
-      params
-    });
+    const response = await httpClient.get("/v2/textItems", { params });
 
     return TextItemsResponse.parse(response.data);
   } catch (e: unknown) {

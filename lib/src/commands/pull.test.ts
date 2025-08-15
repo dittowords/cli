@@ -72,16 +72,6 @@ describe("pull command - end-to-end tests", () => {
   let testDir: string;
   let outputDir: string;
 
-  // Helper function for this test suite
-  const setupFilesystem = (configContent: string) => {
-    // Create config file
-    const configPath = path.join(testDir, "config.yml");
-    fs.mkdirSync(path.dirname(configPath), { recursive: true });
-    fs.writeFileSync(configPath, configContent, "utf-8");
-    
-    // Ensure output directory exists
-    fs.mkdirSync(outputDir, { recursive: true });
-  };
 
   // Reset appContext before each test
   beforeEach(() => {
@@ -106,20 +96,13 @@ describe("pull command - end-to-end tests", () => {
   });
   describe("Rich Text Feature", () => {
     it("should use rich text when configured at base level", async () => {
-      const config = `
-projects:
-  - id: project-1
-richText: html
-outputs:
-  - format: json
-    outDir: ${outputDir}
-`;
-      setupFilesystem(config);
+      // Only create output directory since we're mocking HTTP and setting appContext directly
+      fs.mkdirSync(outputDir, { recursive: true });
       
       const mockTextItem = createMockTextItem();
       setupMocks([mockTextItem], []);
       
-      // Set up appContext
+      // Set up appContext - this is what actually drives the test
       appContext.setProjectConfig({
         projects: [{ id: "project-1" }],
         richText: "html",
@@ -137,16 +120,7 @@ outputs:
     });
 
     it("should use plain text when richText is disabled at output level", async () => {
-      const config = `
-projects:
-  - id: project-1
-richText: html
-outputs:
-  - format: json
-    outDir: ${outputDir}
-    richText: false
-`;
-      setupFilesystem(config);
+      fs.mkdirSync(outputDir, { recursive: true });
       
       const mockTextItem = createMockTextItem();
       setupMocks([mockTextItem], []);
@@ -168,15 +142,7 @@ outputs:
     });
 
     it("should use rich text when enabled only at output level", async () => {
-      const config = `
-projects:
-  - id: project-1
-outputs:
-  - format: json
-    outDir: ${outputDir}
-    richText: html
-`;
-      setupFilesystem(config);
+      fs.mkdirSync(outputDir, { recursive: true });
       
       const mockTextItem = createMockTextItem();
       setupMocks([mockTextItem], []);
@@ -199,17 +165,7 @@ outputs:
 
   describe("Filter Feature", () => {
     it("should filter projects at output level", async () => {
-      const config = `
-projects:
-  - id: project-1
-  - id: project-2
-outputs:
-  - format: json
-    outDir: ${outputDir}
-    projects:
-      - id: project-1
-`;
-      setupFilesystem(config);
+      fs.mkdirSync(outputDir, { recursive: true });
       
       const textItem1 = createMockTextItem({ projectId: "project-1" });
       const textItem2 = createMockTextItem({ 
@@ -243,19 +199,7 @@ outputs:
     });
 
     it("should filter variants at output level", async () => {
-      const config = `
-projects:
-  - id: project-1
-variants:
-  - id: variant-a
-  - id: variant-b
-outputs:
-  - format: json
-    outDir: ${outputDir}
-    variants:
-      - id: variant-a
-`;
-      setupFilesystem(config);
+      fs.mkdirSync(outputDir, { recursive: true });
       
       const textItemBase = createMockTextItem({ variantId: null });
       const textItemA = createMockTextItem({ 

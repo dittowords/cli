@@ -168,13 +168,6 @@ describe("pull command - end-to-end tests", () => {
       fs.mkdirSync(outputDir, { recursive: true });
       
       const textItem1 = createMockTextItem({ projectId: "project-1" });
-      const textItem2 = createMockTextItem({ 
-        id: "text-2", 
-        projectId: "project-2" 
-      });
-      
-      // Mock should only return project-1 items when filtered
-      // The API only returns items for the requested projects
       setupMocks([textItem1], []);
       
       appContext.setProjectConfig({
@@ -191,6 +184,13 @@ describe("pull command - end-to-end tests", () => {
       
       await pull();
       
+      // Verify correct API call with filtered params
+      expect(mockHttpClient.get).toHaveBeenCalledWith('/v2/textItems', {
+        params: { 
+          filter: '{"projects":[{"id":"project-1"}]}'
+        }
+      });
+      
       // Verify only project-1 files were created
       assertFilesCreated(outputDir, [
         "project-1___base.json",
@@ -206,13 +206,6 @@ describe("pull command - end-to-end tests", () => {
         id: "text-2",
         variantId: "variant-a" 
       });
-      const textItemB = createMockTextItem({ 
-        id: "text-3",
-        variantId: "variant-b" 
-      });
-      
-      // Mock should only return base and variant-a items when filtered
-      // The API only returns items for the requested variants (plus base)
       setupMocks([textItemBase, textItemA], []);
       
       appContext.setProjectConfig({
@@ -229,6 +222,13 @@ describe("pull command - end-to-end tests", () => {
       });
       
       await pull();
+      
+      // Verify correct API call with filtered params
+      expect(mockHttpClient.get).toHaveBeenCalledWith('/v2/textItems', {
+        params: { 
+          filter: '{"projects":[{"id":"project-1"}],"variants":[{"id":"variant-a"}]}'
+        }
+      });
       
       // Verify only base and variant-a files were created
       assertFilesCreated(outputDir, [

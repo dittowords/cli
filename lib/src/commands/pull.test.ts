@@ -35,21 +35,7 @@ const createMockVariable = (overrides: any = {}) => ({
   ...overrides,
 });
 
-// Create a temporary directory for tests
-let testDir: string;
-let outputDir: string;
-
 // Helper functions
-const setupFilesystem = (configContent: string) => {
-  // Create config file
-  const configPath = path.join(testDir, "config.yml");
-  fs.mkdirSync(path.dirname(configPath), { recursive: true });
-  fs.writeFileSync(configPath, configContent, "utf-8");
-  
-  // Ensure output directory exists
-  fs.mkdirSync(outputDir, { recursive: true });
-};
-
 const setupMocks = (textItems: any[] = [], variables: any[] = []) => {
   mockHttpClient.get.mockImplementation((url: string) => {
     if (url.includes("/v2/textItems")) {
@@ -81,29 +67,43 @@ const assertFilesCreated = (outputDir: string, expectedFiles: string[]) => {
   expect(actualFiles).toEqual(expectedFiles.sort());
 };
 
-// Reset appContext before each test
-beforeEach(() => {
-  jest.clearAllMocks();
-  
-  // Create a fresh temp directory for each test
-  testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ditto-test-'));
-  outputDir = path.join(testDir, 'output');
-  
-  // Reset appContext to a clean state
-  appContext.setProjectConfig({
-    projects: [],
-    outputs: [],
-  });
-});
-
-// Clean up temp directory after each test
-afterEach(() => {
-  if (testDir && fs.existsSync(testDir)) {
-    fs.rmSync(testDir, { recursive: true, force: true });
-  }
-});
-
 describe("pull command - end-to-end tests", () => {
+  // Create a temporary directory for tests
+  let testDir: string;
+  let outputDir: string;
+
+  // Helper function for this test suite
+  const setupFilesystem = (configContent: string) => {
+    // Create config file
+    const configPath = path.join(testDir, "config.yml");
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
+    fs.writeFileSync(configPath, configContent, "utf-8");
+    
+    // Ensure output directory exists
+    fs.mkdirSync(outputDir, { recursive: true });
+  };
+
+  // Reset appContext before each test
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Create a fresh temp directory for each test
+    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ditto-test-'));
+    outputDir = path.join(testDir, 'output');
+    
+    // Reset appContext to a clean state
+    appContext.setProjectConfig({
+      projects: [],
+      outputs: [],
+    });
+  });
+
+  // Clean up temp directory after each test
+  afterEach(() => {
+    if (testDir && fs.existsSync(testDir)) {
+      fs.rmSync(testDir, { recursive: true, force: true });
+    }
+  });
   describe("Rich Text Feature", () => {
     it("should use rich text when configured at base level", async () => {
       const config = `

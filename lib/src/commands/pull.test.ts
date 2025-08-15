@@ -1,5 +1,6 @@
 import { pull } from "./pull";
 import httpClient from "../http/client";
+import { TextItemsResponse } from "../http/textItems";
 import appContext from "../utils/appContext";
 import * as path from "path";
 import * as fs from "fs";
@@ -10,7 +11,7 @@ jest.mock("../http/client");
 const mockHttpClient = httpClient as jest.Mocked<typeof httpClient>;
 
 // Test data factories
-const createMockTextItem = (overrides: any = {}) => ({
+const createMockTextItem = (overrides: Partial<TextItemsResponse[0]> = {}) => ({
   id: "text-1",
   text: "Plain text content",
   richText: "<p>Rich <strong>HTML</strong> content</p>",

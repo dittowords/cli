@@ -63,8 +63,8 @@ const assertFileContainsText = (
 };
 
 const assertFilesCreated = (outputDir: string, expectedFiles: string[]) => {
-  const actualFiles = fs.readdirSync(outputDir).sort();
-  expect(actualFiles).toEqual(expectedFiles.sort());
+  const actualFiles = fs.readdirSync(outputDir).toSorted();
+  expect(actualFiles).toEqual(expectedFiles.toSorted());
 };
 
 describe("pull command - end-to-end tests", () => {

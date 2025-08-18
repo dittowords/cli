@@ -1,6 +1,6 @@
 import { pull } from "./pull";
 import httpClient from "../http/client";
-import { TextItemsResponse } from "../http/textItems";
+import { TextItem } from "../http/textItems";
 import appContext from "../utils/appContext";
 import * as path from "path";
 import * as fs from "fs";
@@ -11,7 +11,7 @@ jest.mock("../http/client");
 const mockHttpClient = httpClient as jest.Mocked<typeof httpClient>;
 
 // Test data factories
-const createMockTextItem = (overrides: Partial<TextItemsResponse[0]> = {}) => ({
+const createMockTextItem = (overrides: Partial<TextItem> = {}) => ({
   id: "text-1",
   text: "Plain text content",
   richText: "<p>Rich <strong>HTML</strong> content</p>",
@@ -30,13 +30,13 @@ const createMockVariable = (overrides: any = {}) => ({
   type: "string",
   data: {
     example: "variable value",
-    fallback: undefined
+    fallback: undefined,
   },
   ...overrides,
 });
 
 // Helper functions
-const setupMocks = (textItems: any[] = [], variables: any[] = []) => {
+const setupMocks = (textItems: TextItem[] = [], variables: any[] = []) => {
   mockHttpClient.get.mockImplementation((url: string) => {
     if (url.includes("/v2/textItems")) {
       return Promise.resolve({ data: textItems });
@@ -72,19 +72,23 @@ describe("pull command - end-to-end tests", () => {
   let testDir: string;
   let outputDir: string;
 
-
   // Reset appContext before each test
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Create a fresh temp directory for each test
-    testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ditto-test-'));
-    outputDir = path.join(testDir, 'output');
-    
+    testDir = fs.mkdtempSync(path.join(os.tmpdir(), "ditto-test-"));
+    outputDir = path.join(testDir, "output");
+
     // Reset appContext to a clean state
     appContext.setProjectConfig({
       projects: [],
-      outputs: [],
+      outputs: [
+        {
+          format: "json",
+          outDir: outputDir,
+        },
+      ],
     });
   });
 
@@ -94,23 +98,24 @@ describe("pull command - end-to-end tests", () => {
       fs.rmSync(testDir, { recursive: true, force: true });
     }
   });
+
   describe("Rich Text Feature", () => {
     it("should use rich text when configured at base level", async () => {
       // Only create output directory since we're mocking HTTP and setting appContext directly
       fs.mkdirSync(outputDir, { recursive: true });
-      
+
       const mockTextItem = createMockTextItem();
       setupMocks([mockTextItem], []);
-      
+
       // Set up appContext - this is what actually drives the test
       appContext.setProjectConfig({
         projects: [{ id: "project-1" }],
         richText: "html",
         outputs: [{ format: "json", outDir: outputDir }],
       });
-      
+
       await pull();
-      
+
       // Verify rich text content was written
       assertFileContainsText(
         path.join(outputDir, "project-1___base.json"),
@@ -121,18 +126,18 @@ describe("pull command - end-to-end tests", () => {
 
     it("should use plain text when richText is disabled at output level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
-      
+
       const mockTextItem = createMockTextItem();
       setupMocks([mockTextItem], []);
-      
+
       appContext.setProjectConfig({
         projects: [{ id: "project-1" }],
         richText: "html",
         outputs: [{ format: "json", outDir: outputDir, richText: false }],
       });
-      
+
       await pull();
-      
+
       // Verify plain text content was written despite base config
       assertFileContainsText(
         path.join(outputDir, "project-1___base.json"),
@@ -143,17 +148,17 @@ describe("pull command - end-to-end tests", () => {
 
     it("should use rich text when enabled only at output level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
-      
+
       const mockTextItem = createMockTextItem();
       setupMocks([mockTextItem], []);
-      
+
       appContext.setProjectConfig({
         projects: [{ id: "project-1" }],
         outputs: [{ format: "json", outDir: outputDir, richText: "html" }],
       });
-      
+
       await pull();
-      
+
       // Verify rich text content was written
       assertFileContainsText(
         path.join(outputDir, "project-1___base.json"),
@@ -164,76 +169,192 @@ describe("pull command - end-to-end tests", () => {
   });
 
   describe("Filter Feature", () => {
+    it("should filter projects when configured at base level", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      appContext.setProjectConfig({
+        projects: [{ id: "project-1" }, { id: "project-2" }],
+        outputs: [
+          {
+            format: "json",
+            outDir: outputDir,
+          },
+        ],
+      });
+
+      await pull();
+
+      // Verify correct API call with filtered params
+      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
+        params: {
+          filter: '{"projects":[{"id":"project-1"},{"id":"project-2"}]}',
+        },
+      });
+    });
+
+    it("should filter variants at base level", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      appContext.setProjectConfig({
+        projects: [{ id: "project-1" }],
+        variants: [{ id: "variant-a" }, { id: "variant-b" }],
+        outputs: [
+          {
+            format: "json",
+            outDir: outputDir,
+          },
+        ],
+      });
+
+      await pull();
+
+      // Verify correct API call with filtered params
+      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
+        params: {
+          filter:
+            '{"projects":[{"id":"project-1"}],"variants":[{"id":"variant-a"},{"id":"variant-b"}]}',
+        },
+      });
+    });
+
     it("should filter projects at output level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
-      
-      const textItem1 = createMockTextItem({ projectId: "project-1" });
-      setupMocks([textItem1], []);
-      
+
       appContext.setProjectConfig({
-        projects: [
-          { id: "project-1" },
-          { id: "project-2" },
+        projects: [{ id: "project-1" }, { id: "project-2" }],
+        outputs: [
+          {
+            format: "json",
+            outDir: outputDir,
+            projects: [{ id: "project-1" }],
+          },
         ],
-        outputs: [{ 
-          format: "json", 
-          outDir: outputDir,
-          projects: [{ id: "project-1" }]
-        }],
       });
-      
+
       await pull();
-      
+
       // Verify correct API call with filtered params
-      expect(mockHttpClient.get).toHaveBeenCalledWith('/v2/textItems', {
-        params: { 
-          filter: '{"projects":[{"id":"project-1"}]}'
-        }
+      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
+        params: {
+          filter: '{"projects":[{"id":"project-1"}]}',
+        },
       });
-      
-      // Verify only project-1 files were created
-      assertFilesCreated(outputDir, [
-        "project-1___base.json",
-        "variables.json",
-      ]);
     });
 
     it("should filter variants at output level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
-      
-      const textItemBase = createMockTextItem({ variantId: null });
-      const textItemA = createMockTextItem({ 
-        id: "text-2",
-        variantId: "variant-a" 
-      });
-      setupMocks([textItemBase, textItemA], []);
-      
+
       appContext.setProjectConfig({
         projects: [{ id: "project-1" }],
-        variants: [
-          { id: "variant-a" },
-          { id: "variant-b" },
+        variants: [{ id: "variant-a" }, { id: "variant-b" }],
+        outputs: [
+          {
+            format: "json",
+            outDir: outputDir,
+            variants: [{ id: "variant-a" }],
+          },
         ],
-        outputs: [{ 
-          format: "json", 
-          outDir: outputDir,
-          variants: [{ id: "variant-a" }]
-        }],
       });
-      
+
       await pull();
-      
+
       // Verify correct API call with filtered params
-      expect(mockHttpClient.get).toHaveBeenCalledWith('/v2/textItems', {
-        params: { 
-          filter: '{"projects":[{"id":"project-1"}],"variants":[{"id":"variant-a"}]}'
-        }
+      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
+        params: {
+          filter:
+            '{"projects":[{"id":"project-1"}],"variants":[{"id":"variant-a"}]}',
+        },
       });
-      
-      // Verify only base and variant-a files were created
+    });
+
+    it("supports the default filter behavior", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      appContext.setProjectConfig({
+        outputs: [
+          {
+            format: "json",
+            outDir: outputDir,
+          },
+        ],
+      });
+
+      await pull();
+
+      // Verify correct API call with filtered params
+      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
+        params: {
+          filter: "{}",
+        },
+      });
+    });
+  });
+
+  describe("Output files", () => {
+    it("should create output files for each project and variant returned from the API", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      // project-1 and project-2 each have at least one base text item
+      const baseTextItems = [
+        createMockTextItem({
+          projectId: "project-1",
+          variantId: null,
+          id: "text-1",
+        }),
+        createMockTextItem({
+          projectId: "project-1",
+          variantId: null,
+          id: "text-2",
+        }),
+        createMockTextItem({
+          projectId: "project-2",
+          variantId: null,
+          id: "text-3",
+        }),
+      ];
+
+      // project-1 and project-2 each have a variant-a text item
+      const variantATextItems = [
+        createMockTextItem({
+          projectId: "project-1",
+          variantId: "variant-a",
+          id: "text-4",
+        }),
+        createMockTextItem({
+          projectId: "project-2",
+          variantId: "variant-a",
+          id: "text-5",
+        }),
+      ];
+
+      // Only project-1 has variant-b, so only project-1 should get a variant-b file
+      const variantBTextItems = [
+        createMockTextItem({
+          projectId: "project-1",
+          variantId: "variant-b",
+          id: "text-6",
+        }),
+        createMockTextItem({
+          projectId: "project-1",
+          variantId: "variant-b",
+          id: "text-7",
+        }),
+      ];
+
+      setupMocks(
+        [...baseTextItems, ...variantATextItems, ...variantBTextItems],
+        []
+      );
+
+      await pull();
+
+      // Verify a file was created for each project and variant present in the (mocked) API response
       assertFilesCreated(outputDir, [
         "project-1___base.json",
         "project-1___variant-a.json",
+        "project-1___variant-b.json",
+        "project-2___base.json",
+        "project-2___variant-a.json",
         "variables.json",
       ]);
     });

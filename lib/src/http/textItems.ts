@@ -12,19 +12,24 @@ export interface PullQueryParams {
   richText?: "html";
 }
 
-const TextItemsResponse = z.array(
-  z.object({
-    id: z.string(),
-    text: z.string(),
-    richText: z.string().optional(),
-    status: z.string(),
-    notes: z.string(),
-    tags: z.array(z.string()),
-    variableIds: z.array(z.string()),
-    projectId: z.string(),
-    variantId: z.string().nullable(),
-  })
-);
+const ZTextItem = z.object({
+  id: z.string(),
+  text: z.string(),
+  richText: z.string().optional(),
+  status: z.string(),
+  notes: z.string(),
+  tags: z.array(z.string()),
+  variableIds: z.array(z.string()),
+  projectId: z.string(),
+  variantId: z.string().nullable(),
+});
+
+/**
+ * Represents a single text item, as returned from the /v2/textItems endpoint
+ */
+export type TextItem = z.infer<typeof ZTextItem>;
+
+const TextItemsResponse = z.array(ZTextItem);
 
 export type TextItemsResponse = z.infer<typeof TextItemsResponse>;
 

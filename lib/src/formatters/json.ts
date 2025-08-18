@@ -1,9 +1,8 @@
-import fetchText, { PullFilters, TextItemsResponse } from "../http/textItems";
-import fetchVariables, { Variable, VariablesResponse } from "../http/variables";
+import fetchText, { TextItemsResponse, PullFilters, PullQueryParams } from "../http/textItems";
+import fetchVariables, { Variable } from "../http/variables";
 import BaseFormatter from "./shared/base";
 import OutputFile from "./shared/fileTypes/OutputFile";
 import JSONOutputFile from "./shared/fileTypes/JSONOutputFile";
-import appContext from "../utils/appContext";
 import { applyMixins } from "./shared";
 import { getFrameworkProcessor } from "./frameworks/json";
 
@@ -16,8 +15,8 @@ export default class JSONFormatter extends applyMixins(
   BaseFormatter<JSONAPIData>) {
 
   protected async fetchAPIData() {
-    const filters = this.generatePullFilter();
-    const textItems = await fetchText(filters);
+    const queryParams = this.generateQueryParams();
+    const textItems = await fetchText(queryParams);
     const variables = await fetchVariables();
 
     const variablesById = variables.reduce((acc, variable) => {
@@ -51,8 +50,15 @@ export default class JSONFormatter extends applyMixins(
         metadata: { variantId: textItem.variantId || "base" },
       });
       
+      // Use richText if available and configured, otherwise use text
+      const outputRichTextEnabled = this.output.richText === "html"
+      const baseRichTextEnabledAndNotOveridden = this.projectConfig.richText === "html" && this.output.richText !== false
+      const richTextConfigured = outputRichTextEnabled || baseRichTextEnabledAndNotOveridden 
+      const textValue = richTextConfigured && textItem.richText
+        ? textItem.richText 
+        : textItem.text;
 
-      outputJsonFiles[fileName].content[textItem.id] = textItem.text;
+      outputJsonFiles[fileName].content[textItem.id] = textValue;
       for (const variableId of textItem.variableIds) {
         const variable = data.variablesById[variableId];
         variablesOutputFile.content[variableId] = variable.data;
@@ -86,5 +92,26 @@ export default class JSONFormatter extends applyMixins(
     }
 
     return filters;
+  }
+
+  /**
+   * Returns the query parameters for the fetchText API request
+   */
+  private generateQueryParams() {
+    const filter = this.generatePullFilter();
+    
+    let params: PullQueryParams = {
+      filter: JSON.stringify(filter),
+    };
+
+    if (this.projectConfig.richText) {
+      params.richText = this.projectConfig.richText;
+    }
+
+    if (this.output.richText) {
+      params.richText = this.output.richText;
+    }
+
+    return params;
   }
 }

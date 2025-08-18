@@ -28,8 +28,6 @@ describe("collectToken", () => {
     const response = await collectToken();
     expect(response).toBe(token);
     expect(logger.url).toHaveBeenCalled();
-    expect(logger.bold).toHaveBeenCalled();
-    expect(logger.info).toHaveBeenCalled();
     expect(logger.writeLine).toHaveBeenCalled();
     expect(promptForApiTokenSpy).toHaveBeenCalled();
   });

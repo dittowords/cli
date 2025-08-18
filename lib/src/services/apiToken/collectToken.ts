@@ -6,9 +6,8 @@ import promptForApiToken from "./promptForApiToken";
  * @returns The collected token
  */
 export default async function collectToken() {
-  const apiUrl = logger.url("https://app.dittowords.com/account/devtools");
-  const breadcrumbs = logger.bold(logger.info("API Keys"));
-  const tokenDescription = `To get started, you'll need your Ditto API key. You can find this at: ${apiUrl} under "${breadcrumbs}".`;
+  const apiUrl = logger.url("https://app.dittowords.com/developers/api-keys");
+  const tokenDescription = `To get started, you'll need your Ditto API key. You can find this at: ${apiUrl}.`;
 
   logger.writeLine(tokenDescription);
 

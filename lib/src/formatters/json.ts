@@ -147,10 +147,6 @@ export default class JSONFormatter extends applyMixins(
    * @returns components data
    */
   private async fetchComponents() {
-    console.log("this projectConfig, this output", {
-      projectConfig: this.projectConfig,
-      output: this.output,
-    })
     if (!this.projectConfig.components && !this.output.components) return [];
 
     return await fetchComponents(this.generateQueryParams("component"));

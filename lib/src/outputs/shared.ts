@@ -11,7 +11,7 @@ export const ZBaseOutputFilters = z.object({
       id: z.string(),
       // TODO DIT-1139 - Support modifying folder traversal
       // includeNestedFolders: z.boolean(),
-    }))
+    })).optional(),
   }).optional(),
   variants: z.array(z.object({ id: z.string() })).optional(),
   outDir: z.string().optional(),

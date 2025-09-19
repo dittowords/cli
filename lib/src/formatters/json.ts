@@ -1,4 +1,6 @@
-import fetchText, { TextItemsResponse, PullFilters, PullQueryParams } from "../http/textItems";
+import fetchText from "../http/textItems";
+import { Component, ComponentsResponse, isTextItem, PullFilters, PullQueryParams, TextItem, TextItemsResponse } from "../http/types";
+import fetchComponents from "../http/components";
 import fetchVariables, { Variable } from "../http/variables";
 import BaseFormatter from "./shared/base";
 import OutputFile from "./shared/fileTypes/OutputFile";
@@ -8,15 +10,18 @@ import { getFrameworkProcessor } from "./frameworks/json";
 
 type JSONAPIData = {
   textItems: TextItemsResponse;
+  components: ComponentsResponse;
   variablesById: Record<string, Variable>;
 };
+
+type RequestType = "textItem" | "component";
 
 export default class JSONFormatter extends applyMixins(
   BaseFormatter<JSONAPIData>) {
 
   protected async fetchAPIData() {
-    const queryParams = this.generateQueryParams();
-    const textItems = await fetchText(queryParams);
+    const textItems = await this.fetchTextItems();
+    const components = await this.fetchComponents();
     const variables = await fetchVariables();
 
     const variablesById = variables.reduce((acc, variable) => {
@@ -24,68 +29,76 @@ export default class JSONFormatter extends applyMixins(
       return acc;
     }, {} as Record<string, Variable>);
 
-    return { textItems, variablesById };
+    return { textItems, variablesById, components };
   }
 
   protected async transformAPIData(data: JSONAPIData) {
-
-    let outputJsonFiles: Record<
-      string,
-      JSONOutputFile<{ variantId: string }>
-    > = {};
-
-    const variablesOutputFile = new JSONOutputFile({
-      filename: "variables",
-      path: this.outDir,
-    });
-
     for (let i = 0; i < data.textItems.length; i++) {
       const textItem = data.textItems[i];
-    
-      const fileName = `${textItem.projectId}___${textItem.variantId || "base"}`;
+      this.transformAPITextEntity(textItem, data.variablesById);
+    }
 
-      outputJsonFiles[fileName] ??= new JSONOutputFile({
-        filename: fileName,
-        path: this.outDir,
-        metadata: { variantId: textItem.variantId || "base" },
-      });
-      
-      // Use richText if available and configured, otherwise use text
-      const outputRichTextEnabled = this.output.richText === "html"
-      const baseRichTextEnabledAndNotOveridden = this.projectConfig.richText === "html" && this.output.richText !== false
-      const richTextConfigured = outputRichTextEnabled || baseRichTextEnabledAndNotOveridden 
-      const textValue = richTextConfigured && textItem.richText
-        ? textItem.richText 
-        : textItem.text;
-
-      outputJsonFiles[fileName].content[textItem.id] = textValue;
-      for (const variableId of textItem.variableIds) {
-        const variable = data.variablesById[variableId];
-        variablesOutputFile.content[variableId] = variable.data;
-      }
+    for (let i = 0; i < data.components.length; i++) {
+      const component = data.components[i];
+      this.transformAPITextEntity(component, data.variablesById);
     }
 
     let results: OutputFile[] = [
-      ...Object.values(outputJsonFiles),
-      variablesOutputFile,
+      ...Object.values(this.outputJsonFiles),
+      this.variablesOutputFile,
     ]
 
     if (this.output.framework) {
       // process framework
-      results.push(...getFrameworkProcessor(this.output).process(outputJsonFiles));
+      results.push(...getFrameworkProcessor(this.output).process(this.outputJsonFiles));
     }
 
     return results;
   }
 
-  private generatePullFilter() {
+  /**
+   * Transforms text entity returned from API response into JSON and inserts into corresponding output file.
+   * @param textEntity The text entity returned from API response.
+   * @param variablesById Mapping of devID <> variable data returned from API response.
+   */
+  private transformAPITextEntity(textEntity: TextItem | Component, variablesById: Record<string, Variable>) {
+    const fileName = isTextItem(textEntity) ? `${textEntity.projectId}___${textEntity.variantId || "base"}` : `components___${textEntity.variantId || "base"}`;
+
+    this.outputJsonFiles[fileName] ??= new JSONOutputFile({
+      filename: fileName,
+      path: this.outDir,
+      metadata: { variantId: textEntity.variantId || "base" },
+    });
+    
+    // Use richText if available and configured, otherwise use text
+    const outputRichTextEnabled = this.output.richText === "html"
+    const baseRichTextEnabledAndNotOveridden = this.projectConfig.richText === "html" && this.output.richText !== false
+    const richTextConfigured = outputRichTextEnabled || baseRichTextEnabledAndNotOveridden 
+    const textValue = richTextConfigured && textEntity.richText
+      ? textEntity.richText 
+      : textEntity.text;
+
+    this.outputJsonFiles[fileName].content[textEntity.id] = textValue;
+    for (const variableId of textEntity.variableIds) {
+      const variable = variablesById[variableId];
+      this.variablesOutputFile.content[variableId] = variable.data;
+    }
+  }
+
+  private generatePullFilter(requestType: RequestType) {
     let filters: PullFilters = {
-      projects: this.projectConfig.projects,
+      ...(requestType === "textItem" && { projects: this.projectConfig.projects }),
+      ...(requestType === "component" && { folders: this.projectConfig.components?.folders }),
       variants: this.projectConfig.variants,
     };
-    if (this.output.projects) {
+
+    if (this.output.projects && requestType === "textItem") {
       filters.projects = this.output.projects;
-    } 
+    }
+
+    if (this.output.components && requestType === "component") {
+      filters.folders = this.output.components?.folders;
+    }
 
     if (this.output.variants) {
       filters.variants = this.output.variants;
@@ -97,8 +110,8 @@ export default class JSONFormatter extends applyMixins(
   /**
    * Returns the query parameters for the fetchText API request
    */
-  private generateQueryParams() {
-    const filter = this.generatePullFilter();
+  private generateQueryParams(requestType: RequestType) {
+    const filter = this.generatePullFilter(requestType);
     
     let params: PullQueryParams = {
       filter: JSON.stringify(filter),
@@ -113,5 +126,33 @@ export default class JSONFormatter extends applyMixins(
     }
 
     return params;
+  }
+
+  /**
+   * Fetches text item data via API.
+   * Skips the fetch request if projects field is not specified in config.
+   * 
+   * @returns text items data
+   */
+  private async fetchTextItems() {
+    if (!this.projectConfig.projects && !this.output.projects) return [];
+
+    return await fetchText(this.generateQueryParams("textItem"));
+  }
+
+  /**
+   * Fetches component data via API.
+   * Skips the fetch request if components field is not specified in config.
+   * 
+   * @returns components data
+   */
+  private async fetchComponents() {
+    console.log("this projectConfig, this output", {
+      projectConfig: this.projectConfig,
+      output: this.output,
+    })
+    if (!this.projectConfig.components && !this.output.components) return [];
+
+    return await fetchComponents(this.generateQueryParams("component"));
   }
 }

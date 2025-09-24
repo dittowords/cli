@@ -16,8 +16,15 @@ export default async function fetchText(params: PullQueryParams) {
 
     // Handle invalid filters
     if (e.response?.status === 400) {
+      let errorMsgBase = "Invalid project filters";
+
+      if (e.response?.data?.message) errorMsgBase = e.response.data.message;
+
       throw new Error(
-        "Invalid filters. Please check your filters and try again."
+        `${errorMsgBase}. Please check your project filters and try again.`,
+        {
+          cause: e.response?.data,
+        }
       );
     }
 

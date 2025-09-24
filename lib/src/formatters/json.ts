@@ -85,18 +85,30 @@ export default class JSONFormatter extends applyMixins(
     }
   }
 
-  private generatePullFilter(requestType: RequestType) {
+  private generateTextItemPullFilter() {
     let filters: PullFilters = {
-      ...(requestType === "textItem" && { projects: this.projectConfig.projects }),
-      ...(requestType === "component" && { folders: this.projectConfig.components?.folders }),
+      projects: this.projectConfig.projects,
       variants: this.projectConfig.variants,
     };
 
-    if (this.output.projects && requestType === "textItem") {
+    if (this.output.projects) {
       filters.projects = this.output.projects;
     }
 
-    if (this.output.components && requestType === "component") {
+    if (this.output.variants) {
+      filters.variants = this.output.variants;
+    }
+
+    return filters;
+  }
+
+  private generateComponentPullFilter() {
+    let filters: PullFilters = {
+      ...(this.projectConfig.components?.folders && { folders: this.projectConfig.components.folders }),
+      variants: this.projectConfig.variants,
+    };
+
+    if (this.output.components) {
       filters.folders = this.output.components?.folders;
     }
 
@@ -111,8 +123,8 @@ export default class JSONFormatter extends applyMixins(
    * Returns the query parameters for the fetchText API request
    */
   private generateQueryParams(requestType: RequestType) {
-    const filter = this.generatePullFilter(requestType);
-    
+    const filter = requestType === "textItem" ? this.generateTextItemPullFilter() : this.generateComponentPullFilter();
+
     let params: PullQueryParams = {
       filter: JSON.stringify(filter),
     };

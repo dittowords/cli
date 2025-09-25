@@ -9,8 +9,7 @@ export const ZBaseOutputFilters = z.object({
   components: z.object({ 
     folders: z.array(z.object({ 
       id: z.string(),
-      // TODO DIT-1139 - Support modifying folder traversal
-      // includeNestedFolders: z.boolean(),
+      excludeNestedFolders: z.boolean().optional(),
     })).optional(),
   }).optional(),
   variants: z.array(z.object({ id: z.string() })).optional(),

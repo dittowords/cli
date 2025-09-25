@@ -4,8 +4,7 @@ export interface PullFilters {
   projects?: { id: string }[] | false;
   folders?: {
     id: string;
-    // TODO DIT-1139 - Support modifying folder traversal
-    // includeNestedFolders: boolean;
+    excludeNestedFolders?: boolean;
   }[];
   variants?: { id: string }[];
 }

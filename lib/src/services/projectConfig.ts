@@ -16,6 +16,9 @@ export type ProjectConfigYAML = z.infer<typeof ZProjectConfigYAML>;
 export const DEFAULT_PROJECT_CONFIG_JSON: ProjectConfigYAML = {
   projects: [],
   variants: [],
+  components: {
+    folders: [],
+  },
   outputs: [
     {
       format: "json",

@@ -4,16 +4,27 @@ import logger from "../../utils/logger";
 import { ProjectConfigYAML } from "../../services/projectConfig";
 import OutputFile from "./fileTypes/OutputFile";
 import appContext from "../../utils/appContext";
+import JSONOutputFile from "./fileTypes/JSONOutputFile";
 
 export default class BaseFormatter<APIDataType = unknown> {
   protected output: Output;
   protected projectConfig: ProjectConfigYAML;
   protected outDir: string;
+  protected outputJsonFiles: Record<
+    string,
+    JSONOutputFile<{ variantId: string }>
+  >;
+  protected variablesOutputFile: JSONOutputFile<unknown>;
 
   constructor(output: Output, projectConfig: ProjectConfigYAML) {
     this.output = output;
     this.projectConfig = projectConfig;
     this.outDir = output.outDir ?? appContext.outDir;
+    this.outputJsonFiles = {};
+    this.variablesOutputFile = new JSONOutputFile({
+      filename: "variables",
+      path: this.outDir,
+    });
   }
 
   protected async fetchAPIData(): Promise<APIDataType> {

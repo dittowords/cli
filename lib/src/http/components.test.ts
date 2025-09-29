@@ -1,9 +1,9 @@
-import fetchText from "./textItems";
 import httpClient from "./client";
+import fetchComponents from "./components";
 
 jest.mock("./client");
 
-describe("fetchText", () => {
+describe("fetchComponents", () => {
   const mockHttpClient = httpClient as jest.Mocked<typeof httpClient>;
 
   beforeEach(() => {
@@ -22,7 +22,7 @@ describe("fetchText", () => {
             notes: "Test note",
             tags: ["tag1"],
             variableIds: ["var1"],
-            projectId: "project1",
+            folderId: null,
             variantId: "variant1",
           },
         ],
@@ -30,24 +30,12 @@ describe("fetchText", () => {
 
       mockHttpClient.get.mockResolvedValue(mockResponse);
 
-      const result = await fetchText({
+      const result = await fetchComponents({
         filter: "",
         richText: "html",
       });
 
-      expect(result).toEqual([
-        {
-          id: "text1",
-          text: "Plain text",
-          richText: "<p>Rich <strong>HTML</strong> text</p>",
-          status: "active",
-          notes: "Test note",
-          tags: ["tag1"],
-          variableIds: ["var1"],
-          projectId: "project1",
-          variantId: "variant1",
-        },
-      ]);
+      expect(result).toEqual([...mockResponse.data]);
     });
 
     it("should handle response without richText field", async () => {
@@ -60,7 +48,7 @@ describe("fetchText", () => {
             notes: "",
             tags: [],
             variableIds: [],
-            projectId: "project1",
+            folderId: null,
             variantId: null,
           },
         ],
@@ -68,24 +56,12 @@ describe("fetchText", () => {
 
       mockHttpClient.get.mockResolvedValue(mockResponse);
 
-      const result = await fetchText({
+      const result = await fetchComponents({
         filter: "",
         richText: "html",
       });
 
-      expect(result).toEqual([
-        {
-          id: "text1",
-          text: "Plain text only",
-          richText: undefined,
-          status: "active",
-          notes: "",
-          tags: [],
-          variableIds: [],
-          projectId: "project1",
-          variantId: null,
-        },
-      ]);
+      expect(result).toEqual([...mockResponse.data]);
     });
   });
 });

@@ -38,6 +38,9 @@ The default file looks like this:
 
 ```yml
 projects: [],
+components: {
+  folders: []
+},
 variants: [],
 outputs:
   - format: json,

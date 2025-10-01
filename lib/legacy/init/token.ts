@@ -126,9 +126,8 @@ export const collectAndSaveToken = async (message: string | null = null) => {
     console.log(
       `Thanks for authenticating.  We'll save the key to: ${output.info(
         consts.CONFIG_FILE
-      )}`
+      )}\n`
     );
-    output.nl();
 
     config.saveToken(consts.CONFIG_FILE, consts.API_HOST, token);
     return token;

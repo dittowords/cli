@@ -11,6 +11,7 @@ const config: Config = {
   ],
   watchPathIgnorePatterns: ["<rootDir>/.testing/", "<rootDir>/testing/"],
   collectCoverageFrom: ["lib/**/*.{js,jsx,ts,tsx}"],
+  restoreMocks: true,
 };
 
 export default config;

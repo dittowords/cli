@@ -40,14 +40,13 @@ The first time you run the CLI, a `ditto/` folder will be created if it doesn't 
 The default file looks like this:
 
 ```yml
-projects: [],
-components: {
+projects: []
+variants: []
+components:
   folders: []
-},
-variants: [],
 outputs:
-  - format: json,
-    framework: i18next
+	- format: json
+		framework: i18next
 ```
 
 For more information on configuring the CLI, see [this documentation section](https://developer.dittowords.com/cli-reference/configuration).

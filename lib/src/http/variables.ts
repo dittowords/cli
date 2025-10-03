@@ -1,6 +1,8 @@
 import httpClient from "./client";
 import { AxiosError } from "axios";
 import { z } from "zod";
+import getHttpClient from "./client";
+import { CommandMetaFlags } from "./types";
 
 const ZBaseVariable = z.object({
   id: z.string(),
@@ -65,8 +67,9 @@ const ZVariablesResponse = z.array(ZVariable);
 
 export type VariablesResponse = z.infer<typeof ZVariablesResponse>;
 
-export default async function fetchVariables() {
+export default async function fetchVariables(meta: CommandMetaFlags) {
   try {
+    const httpClient = getHttpClient({ meta });
     const response = await httpClient.get("/v2/variables");
 
     return ZVariablesResponse.parse(response.data);

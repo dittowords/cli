@@ -1,10 +1,20 @@
 import { AxiosError } from "axios";
-import { ZComponentsResponse, PullQueryParams } from "./types";
-import httpClient from "./client";
+import {
+  ZComponentsResponse,
+  PullQueryParams,
+  CommandMetaFlags,
+} from "./types";
+import getHttpClient from "./client";
 
-export default async function fetchComponents(params: PullQueryParams) {
+export default async function fetchComponents(
+  params: PullQueryParams,
+  meta: CommandMetaFlags
+) {
   try {
-    const response = await httpClient.get("/v2/components", { params });
+    const httpClient = getHttpClient({ meta });
+    const response = await httpClient.get("/v2/components", {
+      params,
+    });
 
     return ZComponentsResponse.parse(response.data);
   } catch (e) {

@@ -22,7 +22,7 @@ export default class JSONFormatter extends applyMixins(
   protected async fetchAPIData() {
     const textItems = await this.fetchTextItems();
     const components = await this.fetchComponents();
-    const variables = await fetchVariables();
+    const variables = await this.fetchVariables();
 
     const variablesById = variables.reduce((acc, variable) => {
       acc[variable.id] = variable;
@@ -137,9 +137,6 @@ export default class JSONFormatter extends applyMixins(
       params.richText = this.output.richText;
     }
 
-    if (this.meta) {
-      params = { ...this.meta, ...params };
-    }
 
     return params;
   }
@@ -153,7 +150,7 @@ export default class JSONFormatter extends applyMixins(
   private async fetchTextItems() {
     if (!this.projectConfig.projects && !this.output.projects) return [];
 
-    return await fetchText(this.generateQueryParams("textItem"));
+    return await fetchText(this.generateQueryParams("textItem"), this.meta);
   }
 
   /**
@@ -165,6 +162,10 @@ export default class JSONFormatter extends applyMixins(
   private async fetchComponents() {
     if (!this.projectConfig.components && !this.output.components) return [];
 
-    return await fetchComponents(this.generateQueryParams("component"));
+    return await fetchComponents(this.generateQueryParams("component"), this.meta);
+  }
+
+  private async fetchVariables() {
+    return await fetchVariables(this.meta);
   }
 }

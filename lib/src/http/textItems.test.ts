@@ -1,10 +1,16 @@
 import fetchText from "./textItems";
-import httpClient from "./client";
+import getHttpClient from "./client";
 
 jest.mock("./client");
 
 describe("fetchText", () => {
-  const mockHttpClient = httpClient as jest.Mocked<typeof httpClient>;
+  // Create a mock client with a mock 'get' method
+  const mockHttpClient = {
+    get: jest.fn(),
+  };
+
+  // Make getHttpClient return your mock client
+  (getHttpClient as jest.Mock).mockReturnValue(mockHttpClient);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -30,10 +36,13 @@ describe("fetchText", () => {
 
       mockHttpClient.get.mockResolvedValue(mockResponse);
 
-      const result = await fetchText({
-        filter: "",
-        richText: "html",
-      });
+      const result = await fetchText(
+        {
+          filter: "",
+          richText: "html",
+        },
+        {}
+      );
 
       expect(result).toEqual([
         {
@@ -68,10 +77,13 @@ describe("fetchText", () => {
 
       mockHttpClient.get.mockResolvedValue(mockResponse);
 
-      const result = await fetchText({
-        filter: "",
-        richText: "html",
-      });
+      const result = await fetchText(
+        {
+          filter: "",
+          richText: "html",
+        },
+        {}
+      );
 
       expect(result).toEqual([
         {

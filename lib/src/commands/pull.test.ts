@@ -1,5 +1,5 @@
 import { pull } from "./pull";
-import httpClient from "../http/client";
+import getHttpClient from "../http/client";
 import { Component, TextItem } from "../http/types";
 import appContext from "../utils/appContext";
 import * as path from "path";
@@ -8,7 +8,13 @@ import * as os from "os";
 
 jest.mock("../http/client");
 
-const mockHttpClient = httpClient as jest.Mocked<typeof httpClient>;
+// Create a mock client with a mock 'get' method
+const mockHttpClient = {
+  get: jest.fn(),
+};
+
+// Make getHttpClient return your mock client
+(getHttpClient as jest.Mock).mockReturnValue(mockHttpClient);
 
 // Test data factories
 const createMockTextItem = (overrides: Partial<TextItem> = {}) => ({
@@ -58,7 +64,7 @@ const setupMocks = ({
   components?: Component[];
   variables?: any[];
 }) => {
-  mockHttpClient.get.mockImplementation((url: string) => {
+  mockHttpClient.get.mockImplementation((url: string, config?: any) => {
     if (url.includes("/v2/textItems")) {
       return Promise.resolve({ data: textItems });
     }
@@ -460,39 +466,6 @@ describe("pull command - end-to-end tests", () => {
 
       // Components endpoint should not be called if not provided as source field
       expect(mockHttpClient.get).toHaveBeenCalledTimes(2);
-    });
-  });
-
-  describe("Custom metadata", () => {
-    it("should include custom metadata in query params", async () => {
-      fs.mkdirSync(outputDir, { recursive: true });
-
-      await pull({
-        githubActionRequest: "true",
-      });
-
-      // Verify correct API call with filtered params
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
-        params: {
-          filter: '{"projects":[]}',
-          githubActionRequest: "true",
-        },
-      });
-    });
-
-    it("should ignore custom metadata with field name collisions", async () => {
-      fs.mkdirSync(outputDir, { recursive: true });
-
-      await pull({
-        filter: "malicious",
-      });
-
-      // Verify that the filter param was not overridden by the custom metadata
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
-        params: {
-          filter: '{"projects":[]}',
-        },
-      });
     });
   });
 

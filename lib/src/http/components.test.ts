@@ -1,10 +1,16 @@
-import httpClient from "./client";
+import getHttpClient from "./client";
 import fetchComponents from "./components";
 
 jest.mock("./client");
 
 describe("fetchComponents", () => {
-  const mockHttpClient = httpClient as jest.Mocked<typeof httpClient>;
+  // Create a mock client with a mock 'get' method
+  const mockHttpClient = {
+    get: jest.fn(),
+  };
+
+  // Make getHttpClient return your mock client
+  (getHttpClient as jest.Mock).mockReturnValue(mockHttpClient);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -30,10 +36,13 @@ describe("fetchComponents", () => {
 
       mockHttpClient.get.mockResolvedValue(mockResponse);
 
-      const result = await fetchComponents({
-        filter: "",
-        richText: "html",
-      });
+      const result = await fetchComponents(
+        {
+          filter: "",
+          richText: "html",
+        },
+        {}
+      );
 
       expect(result).toEqual([...mockResponse.data]);
     });
@@ -56,10 +65,13 @@ describe("fetchComponents", () => {
 
       mockHttpClient.get.mockResolvedValue(mockResponse);
 
-      const result = await fetchComponents({
-        filter: "",
-        richText: "html",
-      });
+      const result = await fetchComponents(
+        {
+          filter: "",
+          richText: "html",
+        },
+        {}
+      );
 
       expect(result).toEqual([...mockResponse.data]);
     });

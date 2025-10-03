@@ -1,9 +1,14 @@
 import httpClient from "./client";
 import { AxiosError } from "axios";
-import { PullQueryParams, ZTextItemsResponse } from "./types";
+import { CommandMetaFlags, PullQueryParams, ZTextItemsResponse } from "./types";
+import getHttpClient from "./client";
 
-export default async function fetchText(params: PullQueryParams) {
+export default async function fetchText(
+  params: PullQueryParams,
+  meta: CommandMetaFlags
+) {
   try {
+    const httpClient = getHttpClient({ meta });
     const response = await httpClient.get("/v2/textItems", { params });
 
     return ZTextItemsResponse.parse(response.data);

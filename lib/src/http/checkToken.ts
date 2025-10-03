@@ -1,13 +1,11 @@
-import { defaultInterceptor } from "./client";
+import getHttpClient from "./client";
 import logger from "../utils/logger";
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import appContext from "../utils/appContext";
 
 export default async function checkToken(token: string) {
   try {
-    const httpClient = axios.create({});
-
-    httpClient.interceptors.request.use(defaultInterceptor(token));
+    const httpClient = getHttpClient({ token });
 
     const response = await httpClient.get("/token-check");
 

@@ -35,7 +35,7 @@ const createMockComponent = (overrides: Partial<Component> = {}) => ({
   folderId: null,
   variantId: null,
   ...overrides,
-})
+});
 
 const createMockVariable = (overrides: any = {}) => ({
   id: "var-1",
@@ -49,7 +49,15 @@ const createMockVariable = (overrides: any = {}) => ({
 });
 
 // Helper functions
-const setupMocks = ({ textItems = [], components = [], variables = [] }: { textItems: TextItem[]; components?: Component[]; variables?: any[] }) => {
+const setupMocks = ({
+  textItems = [],
+  components = [],
+  variables = [],
+}: {
+  textItems: TextItem[];
+  components?: Component[];
+  variables?: any[];
+}) => {
   mockHttpClient.get.mockImplementation((url: string) => {
     if (url.includes("/v2/textItems")) {
       return Promise.resolve({ data: textItems });
@@ -122,7 +130,7 @@ describe("pull command - end-to-end tests", () => {
 
       const mockTextItem = createMockTextItem();
       const mockComponent = createMockComponent();
-      setupMocks({ textItems: [mockTextItem], components: [mockComponent]});
+      setupMocks({ textItems: [mockTextItem], components: [mockComponent] });
 
       // Set up appContext - this is what actually drives the test
       appContext.setProjectConfig({
@@ -132,7 +140,7 @@ describe("pull command - end-to-end tests", () => {
         outputs: [{ format: "json", outDir: outputDir }],
       });
 
-      await pull();
+      await pull({});
 
       // Verify rich text content was written
       assertFileContainsText(
@@ -145,7 +153,7 @@ describe("pull command - end-to-end tests", () => {
         path.join(outputDir, "components___base.json"),
         "component-1",
         "<p>Rich <strong>HTML</strong> content</p>"
-      )
+      );
     });
 
     it("should use plain text when richText is disabled at output level", async () => {
@@ -162,7 +170,7 @@ describe("pull command - end-to-end tests", () => {
         outputs: [{ format: "json", outDir: outputDir, richText: false }],
       });
 
-      await pull();
+      await pull({});
 
       // Verify plain text content was written despite base config
       assertFileContainsText(
@@ -189,7 +197,7 @@ describe("pull command - end-to-end tests", () => {
         outputs: [{ format: "json", outDir: outputDir, richText: "html" }],
       });
 
-      await pull();
+      await pull({});
 
       // Verify rich text content was written
       assertFileContainsText(
@@ -214,7 +222,7 @@ describe("pull command - end-to-end tests", () => {
         ],
       });
 
-      await pull();
+      await pull({});
 
       // Verify correct API call with filtered params
       expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
@@ -238,7 +246,7 @@ describe("pull command - end-to-end tests", () => {
         ],
       });
 
-      await pull();
+      await pull({});
 
       // Verify correct API call with filtered params
       expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
@@ -262,15 +270,14 @@ describe("pull command - end-to-end tests", () => {
         ],
       });
 
-      await pull();
+      await pull({});
 
       expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/components", {
         params: {
-          filter:
-            '{}',
+          filter: "{}",
         },
       });
-    })
+    });
 
     it("should filter components by folder at base level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
@@ -287,15 +294,14 @@ describe("pull command - end-to-end tests", () => {
         ],
       });
 
-      await pull();
+      await pull({});
 
       expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/components", {
         params: {
-          filter:
-            '{"folders":[{"id":"folder-1"}]}',
+          filter: '{"folders":[{"id":"folder-1"}]}',
         },
       });
-    })
+    });
 
     it("should filter components by folder and variants at base level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
@@ -313,7 +319,7 @@ describe("pull command - end-to-end tests", () => {
         ],
       });
 
-      await pull();
+      await pull({});
 
       expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/components", {
         params: {
@@ -321,7 +327,7 @@ describe("pull command - end-to-end tests", () => {
             '{"folders":[{"id":"folder-1"}],"variants":[{"id":"variant-a"},{"id":"variant-b"}]}',
         },
       });
-    })
+    });
 
     it("should filter components by folder at output level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
@@ -335,21 +341,20 @@ describe("pull command - end-to-end tests", () => {
             format: "json",
             outDir: outputDir,
             components: {
-              folders: [{ id: "folder-3" }]
-            }
+              folders: [{ id: "folder-3" }],
+            },
           },
         ],
       });
 
-      await pull();
+      await pull({});
 
       expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/components", {
         params: {
-          filter:
-            '{"folders":[{"id":"folder-3"}]}',
+          filter: '{"folders":[{"id":"folder-3"}]}',
         },
       });
-    })
+    });
 
     it("should filter components by folder and variants at output level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
@@ -363,14 +368,14 @@ describe("pull command - end-to-end tests", () => {
             format: "json",
             outDir: outputDir,
             components: {
-              folders: [{ id: "folder-3" }]
+              folders: [{ id: "folder-3" }],
             },
             variants: [{ id: "variant-a" }, { id: "variant-b" }],
           },
         ],
       });
 
-      await pull();
+      await pull({});
 
       expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/components", {
         params: {
@@ -378,7 +383,7 @@ describe("pull command - end-to-end tests", () => {
             '{"folders":[{"id":"folder-3"}],"variants":[{"id":"variant-a"},{"id":"variant-b"}]}',
         },
       });
-    })
+    });
 
     it("should filter projects at output level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
@@ -394,7 +399,7 @@ describe("pull command - end-to-end tests", () => {
         ],
       });
 
-      await pull();
+      await pull({});
 
       // Verify correct API call with filtered params
       expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
@@ -419,7 +424,7 @@ describe("pull command - end-to-end tests", () => {
         ],
       });
 
-      await pull();
+      await pull({});
 
       // Verify correct API call with filtered params
       expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
@@ -443,18 +448,51 @@ describe("pull command - end-to-end tests", () => {
         ],
       });
 
-      await pull();
+      await pull({});
 
       // Verify correct API call with filtered params
       expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
         params: {
-          filter: "{\"projects\":[]}",
+          filter: '{"projects":[]}',
         },
       });
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/variables")
+      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/variables");
 
       // Components endpoint should not be called if not provided as source field
-      expect(mockHttpClient.get).toHaveBeenCalledTimes(2)
+      expect(mockHttpClient.get).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("Custom metadata", () => {
+    it("should include custom metadata in query params", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      await pull({
+        githubActionRequest: "true",
+      });
+
+      // Verify correct API call with filtered params
+      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
+        params: {
+          filter: '{"projects":[]}',
+          githubActionRequest: "true",
+        },
+      });
+    });
+
+    it("should ignore custom metadata with field name collisions", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      await pull({
+        filter: "malicious",
+      });
+
+      // Verify that the filter param was not overridden by the custom metadata
+      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
+        params: {
+          filter: '{"projects":[]}',
+        },
+      });
     });
   });
 
@@ -536,7 +574,7 @@ describe("pull command - end-to-end tests", () => {
           variantId: null,
           folderId: "folder-2",
         }),
-      ]
+      ];
 
       const componentsVariantA = [
         createMockComponent({
@@ -549,7 +587,7 @@ describe("pull command - end-to-end tests", () => {
           variantId: "variant-a",
           folderId: "folder-1",
         }),
-      ]
+      ];
 
       const componentsVariantB = [
         createMockComponent({
@@ -562,14 +600,22 @@ describe("pull command - end-to-end tests", () => {
           variantId: "variant-b",
           folderId: "folder-1",
         }),
-      ]
+      ];
 
       setupMocks({
-        textItems: [...baseTextItems, ...variantATextItems, ...variantBTextItems],
-        components: [...componentsBase, ...componentsVariantA, ...componentsVariantB],
+        textItems: [
+          ...baseTextItems,
+          ...variantATextItems,
+          ...variantBTextItems,
+        ],
+        components: [
+          ...componentsBase,
+          ...componentsVariantA,
+          ...componentsVariantB,
+        ],
       });
 
-      await pull();
+      await pull({});
 
       // Verify a file was created for each project and variant present in the (mocked) API response
       assertFilesCreated(outputDir, [

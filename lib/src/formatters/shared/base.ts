@@ -15,8 +15,13 @@ export default class BaseFormatter<APIDataType = unknown> {
     JSONOutputFile<{ variantId: string }>
   >;
   protected variablesOutputFile: JSONOutputFile<unknown>;
+  protected meta: Record<string, string>;
 
-  constructor(output: Output, projectConfig: ProjectConfigYAML) {
+  constructor(
+    output: Output,
+    projectConfig: ProjectConfigYAML,
+    meta: Record<string, string>
+  ) {
     this.output = output;
     this.projectConfig = projectConfig;
     this.outDir = output.outDir ?? appContext.outDir;
@@ -25,6 +30,7 @@ export default class BaseFormatter<APIDataType = unknown> {
       filename: "variables",
       path: this.outDir,
     });
+    this.meta = meta;
   }
 
   protected async fetchAPIData(): Promise<APIDataType> {

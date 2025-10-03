@@ -137,6 +137,10 @@ export default class JSONFormatter extends applyMixins(
       params.richText = this.output.richText;
     }
 
+    if (this.meta) {
+      params = { ...this.meta, ...params };
+    }
+
     return params;
   }
 

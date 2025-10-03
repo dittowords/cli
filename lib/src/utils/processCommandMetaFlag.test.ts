@@ -1,9 +1,9 @@
-import processMetaOption from "./processMetaOption";
+import processCommandMetaFlag from "./processCommandMetaFlag";
 
-describe("processMetaOption tests", () => {
+describe("processCommandMetaFlag tests", () => {
   it("It parses correctly", () => {
     expect(
-      processMetaOption(["githubActionRequest:true", "trigger:manual"])
+      processCommandMetaFlag(["githubActionRequest:true", "trigger:manual"])
     ).toEqual({
       githubActionRequest: "true",
       trigger: "manual",
@@ -11,7 +11,9 @@ describe("processMetaOption tests", () => {
   });
 
   it("Successfully parses entries without : as key with undefined value", () => {
-    expect(processMetaOption(["context:github-action", "trigger"])).toEqual({
+    expect(
+      processCommandMetaFlag(["context:github-action", "trigger"])
+    ).toEqual({
       context: "github-action",
       trigger: undefined,
     });
@@ -19,7 +21,7 @@ describe("processMetaOption tests", () => {
 
   it("Ignores entries with multiple : in them", () => {
     expect(
-      processMetaOption(["context:github-action", "trigger:manual:ci"])
+      processCommandMetaFlag(["context:github-action", "trigger:manual:ci"])
     ).toEqual({
       context: "github-action",
     });

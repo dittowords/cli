@@ -1,3 +1,4 @@
+import { CommandMetaFlags } from "../http/types";
 import { Output } from "../outputs";
 import { ProjectConfigYAML } from "../services/projectConfig";
 import JSONFormatter from "./json";
@@ -5,7 +6,7 @@ import JSONFormatter from "./json";
 export default function formatOutput(
   output: Output,
   projectConfig: ProjectConfigYAML,
-  meta: Record<string, string>
+  meta: CommandMetaFlags
 ) {
   switch (output.format) {
     case "json":

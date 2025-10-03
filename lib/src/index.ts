@@ -11,7 +11,7 @@ import { initProjectConfig } from "./services/projectConfig";
 import appContext from "./utils/appContext";
 import type commander from "commander";
 import { ErrorType, isDittoError, isDittoErrorType } from "./utils/DittoError";
-import processMetaOption from "./utils/processMetaOption";
+import processCommandMetaFlag from "./utils/processCommandMetaFlag";
 
 type Command = "pull";
 
@@ -87,7 +87,7 @@ const executeCommand = async (
     switch (commandName) {
       case "none":
       case "pull": {
-        return await pull(processMetaOption(meta));
+        return await pull(processCommandMetaFlag(meta));
       }
       default: {
         await quit(`Invalid command: ${commandName}. Exiting Ditto CLI...`);

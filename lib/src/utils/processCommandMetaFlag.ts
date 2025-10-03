@@ -1,10 +1,12 @@
+import { CommandMetaFlags } from "../http/types";
+
 /**
  * Processes an array of strings in the format "key:value" and returns an object mapping keys to values.
  * @param inputArr Array of strings in the format "key:value"
  * @returns An object mapping keys to values
  */
-const processMetaOption = (inputArr: string[] | null) => {
-  const res: Record<string, string> = {};
+const processCommandMetaFlag = (inputArr: string[] | null) => {
+  const res: CommandMetaFlags = {};
 
   if (!Array.isArray(inputArr)) {
     return res;
@@ -12,9 +14,9 @@ const processMetaOption = (inputArr: string[] | null) => {
 
   inputArr.forEach((element) => {
     const parts = element.split(":");
+    // Skip entries with multiple ":" characters
+    // Entries with no ":" will result in key with undefined value, which is ok
     if (parts.length > 2) {
-      // skip entries with multiple : characters
-      // Note: entries with no : will result in key with undefined value, which is ok
       return;
     }
     const [key, value] = parts;
@@ -24,4 +26,4 @@ const processMetaOption = (inputArr: string[] | null) => {
   return res;
 };
 
-export default processMetaOption;
+export default processCommandMetaFlag;

@@ -5,7 +5,9 @@ import { CommandMetaFlags } from "../http/types";
  * @param inputArr Array of strings in the format "key:value"
  * @returns An object mapping keys to values
  */
-const processCommandMetaFlag = (inputArr: string[] | null) => {
+const processCommandMetaFlag = (
+  inputArr: string[] | null
+): CommandMetaFlags => {
   const res: CommandMetaFlags = {};
 
   if (!Array.isArray(inputArr)) {

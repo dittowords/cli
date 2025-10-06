@@ -57,5 +57,9 @@ export type ComponentsResponse = z.infer<typeof ZComponentsResponse>;
 
 /**
  * Contains metadata attached to CLI commands via -m or --meta flag
+ * Currently only used internally to identify requests from our GitHub Action
  */
-export type CommandMetaFlags = Record<string, string>;
+export type CommandMetaFlags = {
+  githubActionRequest?: string; // Set to "true" if the request is from our GitHub Action
+  [key: string]: string | undefined; // Allow other arbitrary key-value pairs, but none of these values are used for anything at the moment
+};

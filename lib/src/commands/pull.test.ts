@@ -13,7 +13,7 @@ const mockHttpClient = {
   get: jest.fn(),
 };
 
-// Make getHttpClient return your mock client
+// Make getHttpClient return the mock client
 (getHttpClient as jest.Mock).mockReturnValue(mockHttpClient);
 
 // Test data factories

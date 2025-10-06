@@ -5,6 +5,7 @@ import { ProjectConfigYAML } from "../../services/projectConfig";
 import OutputFile from "./fileTypes/OutputFile";
 import appContext from "../../utils/appContext";
 import JSONOutputFile from "./fileTypes/JSONOutputFile";
+import { CommandMetaFlags } from "../../http/types";
 
 export default class BaseFormatter<APIDataType = unknown> {
   protected output: Output;
@@ -15,8 +16,13 @@ export default class BaseFormatter<APIDataType = unknown> {
     JSONOutputFile<{ variantId: string }>
   >;
   protected variablesOutputFile: JSONOutputFile<unknown>;
+  protected meta: CommandMetaFlags;
 
-  constructor(output: Output, projectConfig: ProjectConfigYAML) {
+  constructor(
+    output: Output,
+    projectConfig: ProjectConfigYAML,
+    meta: CommandMetaFlags
+  ) {
     this.output = output;
     this.projectConfig = projectConfig;
     this.outDir = output.outDir ?? appContext.outDir;
@@ -25,6 +31,7 @@ export default class BaseFormatter<APIDataType = unknown> {
       filename: "variables",
       path: this.outDir,
     });
+    this.meta = meta;
   }
 
   protected async fetchAPIData(): Promise<APIDataType> {

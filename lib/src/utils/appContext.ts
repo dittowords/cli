@@ -66,6 +66,10 @@ class AppContext {
     return this.#clientId;
   }
 
+  setClientId(value: string) {
+    this.#clientId = value;
+  }
+
   setApiToken(value: string | undefined) {
     this.#apiToken = value;
   }

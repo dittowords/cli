@@ -11,6 +11,7 @@ import { initProjectConfig } from "./services/projectConfig";
 import appContext from "./utils/appContext";
 import type commander from "commander";
 import { ErrorType, isDittoError, isDittoErrorType } from "./utils/DittoError";
+import processCommandMetaFlag from "./utils/processCommandMetaFlag";
 
 type Command = "pull";
 
@@ -63,6 +64,10 @@ const setupCommands = () => {
 
 const setupOptions = () => {
   program.option("--legacy", "Run in legacy mode");
+  program.option(
+    "-m, --meta <data...>",
+    "Include arbitrary data in requests to the Ditto API. Ex: -m githubActionRequest:true trigger:manual"
+  );
   program.version(version, "-v, --version", "Output the current version");
 };
 
@@ -77,10 +82,12 @@ const executeCommand = async (
 
     await initProjectConfig(options);
 
+    const { meta } = program.opts();
+
     switch (commandName) {
       case "none":
       case "pull": {
-        return await pull();
+        return await pull(processCommandMetaFlag(meta));
       }
       default: {
         await quit(`Invalid command: ${commandName}. Exiting Ditto CLI...`);

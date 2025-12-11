@@ -5,13 +5,18 @@ import { ProjectConfigYAML } from "../../services/projectConfig";
 import OutputFile from "./fileTypes/OutputFile";
 import appContext from "../../utils/appContext";
 import JSONOutputFile from "./fileTypes/JSONOutputFile";
-import { CommandMetaFlags } from "../../http/types";
+import {
+  CommandMetaFlags,
+  PullFilters,
+  PullQueryParams,
+} from "../../http/types";
 
-export default class BaseFormatter<APIDataType = unknown> {
+type RequestType = "textItem" | "component";
+export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
   protected output: Output;
   protected projectConfig: ProjectConfigYAML;
   protected outDir: string;
-  protected outputFiles: Record<string, JSONOutputFile<{ variantId: string }>>;
+  protected outputFiles: Record<string, OutputFileType>;
   protected variablesOutputFile: JSONOutputFile<unknown>;
   protected meta: CommandMetaFlags;
 
@@ -29,6 +34,69 @@ export default class BaseFormatter<APIDataType = unknown> {
       path: this.outDir,
     });
     this.meta = meta;
+  }
+
+  private generateTextItemPullFilter() {
+    let filters: PullFilters = {
+      projects: this.projectConfig.projects,
+      variants: this.projectConfig.variants,
+    };
+
+    if (this.output.projects) {
+      filters.projects = this.output.projects;
+    }
+
+    if (this.output.variants) {
+      filters.variants = this.output.variants;
+    }
+
+    return filters;
+  }
+
+  private generateComponentPullFilter() {
+    let filters: PullFilters = {
+      ...(this.projectConfig.components?.folders && {
+        folders: this.projectConfig.components.folders,
+      }),
+      variants: this.projectConfig.variants,
+    };
+
+    if (this.output.components) {
+      filters.folders = this.output.components?.folders;
+    }
+
+    if (this.output.variants) {
+      filters.variants = this.output.variants;
+    }
+
+    return filters;
+  }
+
+  /**
+   * Returns the query parameters for the fetchText API request
+   */
+  protected generateQueryParams(
+    requestType: RequestType,
+    filter: PullFilters = {}
+  ): PullQueryParams {
+    const baseFilter =
+      requestType === "textItem"
+        ? this.generateTextItemPullFilter()
+        : this.generateComponentPullFilter();
+
+    let params: PullQueryParams = {
+      filter: JSON.stringify({ ...baseFilter, ...filter }),
+    };
+
+    if (this.projectConfig.richText) {
+      params.richText = this.projectConfig.richText;
+    }
+
+    if (this.output.richText) {
+      params.richText = this.output.richText;
+    }
+
+    return params;
   }
 
   protected async fetchAPIData(): Promise<APIDataType> {

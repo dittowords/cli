@@ -74,6 +74,22 @@ export type Project = z.infer<typeof ZProject>;
 export const ZProjectsResponse = z.array(ZProject);
 export type ProjectsResponse = z.infer<typeof ZProjectsResponse>;
 
+// MARK - Variants
+
+const ZVariant = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+});
+
+/**
+ * Represents a single variant, as returned from the /v2/variants endpoint
+ */
+export type Variant = z.infer<typeof ZVariant>;
+
+export const ZVariantsResponse = z.array(ZVariant);
+export type VariantsResponse = z.infer<typeof ZVariantsResponse>;
+
 /**
  * Contains metadata attached to CLI commands via -m or --meta flag
  * Currently only used internally to identify requests from our GitHub Action

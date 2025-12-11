@@ -14,13 +14,10 @@ type JSONAPIData = {
   variablesById: Record<string, Variable>;
 };
 
-type RequestType = "textItem" | "component";
-
 export default class JSONFormatter extends applyMixins(
-  BaseFormatter<JSONAPIData>) {
+  BaseFormatter<JSONOutputFile<{ variantId: string }>, JSONAPIData>) {
 
   protected async fetchAPIData() {
-    console.log('this', this)
     const textItems = await this.fetchTextItems() as TextItemsResponse;
     const components = await this.fetchComponents();
     const variables = await this.fetchVariables();
@@ -86,62 +83,6 @@ export default class JSONFormatter extends applyMixins(
     }
   }
 
-  private generateTextItemPullFilter() {
-    let filters: PullFilters = {
-      projects: this.projectConfig.projects,
-      variants: this.projectConfig.variants,
-    };
-
-    if (this.output.projects) {
-      filters.projects = this.output.projects;
-    }
-
-    if (this.output.variants) {
-      filters.variants = this.output.variants;
-    }
-
-    return filters;
-  }
-
-  private generateComponentPullFilter() {
-    let filters: PullFilters = {
-      ...(this.projectConfig.components?.folders && { folders: this.projectConfig.components.folders }),
-      variants: this.projectConfig.variants,
-    };
-
-    if (this.output.components) {
-      filters.folders = this.output.components?.folders;
-    }
-
-    if (this.output.variants) {
-      filters.variants = this.output.variants;
-    }
-
-    return filters;
-  }
-
-  /**
-   * Returns the query parameters for the fetchText API request
-   */
-  private generateQueryParams(requestType: RequestType) {
-    const filter = requestType === "textItem" ? this.generateTextItemPullFilter() : this.generateComponentPullFilter();
-
-    let params: PullQueryParams = {
-      filter: JSON.stringify(filter),
-    };
-
-    if (this.projectConfig.richText) {
-      params.richText = this.projectConfig.richText;
-    }
-
-    if (this.output.richText) {
-      params.richText = this.output.richText;
-    }
-
-
-    return params;
-  }
-
   /**
    * Fetches text item data via API.
    * Skips the fetch request if projects field is not specified in config.
@@ -151,7 +92,7 @@ export default class JSONFormatter extends applyMixins(
   private async fetchTextItems() {
     if (!this.projectConfig.projects && !this.output.projects) return [];
 
-    return await fetchText(this.generateQueryParams("textItem"), this.meta);
+    return await fetchText(super.generateQueryParams("textItem"), this.meta);
   }
 
   /**
@@ -163,7 +104,7 @@ export default class JSONFormatter extends applyMixins(
   private async fetchComponents() {
     if (!this.projectConfig.components && !this.output.components) return [];
 
-    return await fetchComponents(this.generateQueryParams("component"), this.meta);
+    return await fetchComponents(super.generateQueryParams("component"), this.meta);
   }
 
   private async fetchVariables() {

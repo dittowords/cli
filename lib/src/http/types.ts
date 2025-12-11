@@ -21,7 +21,7 @@ const ZBaseTextEntity = z.object({
   id: z.string(),
   text: z.string(),
   richText: z.string().optional(),
-  status: z.array(ZTextStatus).optional(),
+  status: ZTextStatus,
   notes: z.string(),
   tags: z.array(z.string()),
   variableIds: z.array(z.string()),

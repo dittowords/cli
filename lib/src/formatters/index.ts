@@ -1,6 +1,7 @@
 import { CommandMetaFlags } from "../http/types";
 import { Output } from "../outputs";
 import { ProjectConfigYAML } from "../services/projectConfig";
+import IOSStringsFormatter from "./iosStrings";
 import JSONFormatter from "./json";
 
 export default function formatOutput(
@@ -11,6 +12,8 @@ export default function formatOutput(
   switch (output.format) {
     case "json":
       return new JSONFormatter(output, projectConfig, meta).format();
+    case "ios-strings":
+      return new IOSStringsFormatter(output, projectConfig, meta).format();
     default:
       throw new Error(`Unsupported output format: ${output}`);
   }

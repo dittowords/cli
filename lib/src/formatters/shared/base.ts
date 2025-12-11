@@ -11,10 +11,7 @@ export default class BaseFormatter<APIDataType = unknown> {
   protected output: Output;
   protected projectConfig: ProjectConfigYAML;
   protected outDir: string;
-  protected outputJsonFiles: Record<
-    string,
-    JSONOutputFile<{ variantId: string }>
-  >;
+  protected outputFiles: Record<string, JSONOutputFile<{ variantId: string }>>;
   protected variablesOutputFile: JSONOutputFile<unknown>;
   protected meta: CommandMetaFlags;
 
@@ -26,7 +23,7 @@ export default class BaseFormatter<APIDataType = unknown> {
     this.output = output;
     this.projectConfig = projectConfig;
     this.outDir = output.outDir ?? appContext.outDir;
-    this.outputJsonFiles = {};
+    this.outputFiles = {};
     this.variablesOutputFile = new JSONOutputFile({
       filename: "variables",
       path: this.outDir,

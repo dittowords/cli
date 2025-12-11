@@ -1,17 +1,18 @@
 import httpClient from "./client";
 import { AxiosError } from "axios";
-import { CommandMetaFlags, PullQueryParams, ZTextItemsResponse } from "./types";
+import {
+  CommandMetaFlags,
+  PullQueryParams,
+  ZTextItemsResponse,
+  ZExportTextItemsResponse,
+  ExportTextItemsResponse,
+  TextItemsResponse,
+} from "./types";
 import getHttpClient from "./client";
 
-export default async function fetchText(
-  params: PullQueryParams,
-  meta: CommandMetaFlags
-) {
+function fetchTextWrapper<TResponse>(cb: () => Promise<TResponse>) {
   try {
-    const httpClient = getHttpClient({ meta });
-    const response = await httpClient.get("/v2/textItems", { params });
-
-    return ZTextItemsResponse.parse(response.data);
+    return cb();
   } catch (e: unknown) {
     if (!(e instanceof AxiosError)) {
       throw new Error(
@@ -34,5 +35,27 @@ export default async function fetchText(
     }
 
     throw e;
+  }
+}
+
+export default async function fetchText<TResponse>(
+  params: PullQueryParams,
+  meta: CommandMetaFlags
+) {
+  switch (params.format) {
+    case "ios-strings":
+      return fetchTextWrapper<TResponse>(async () => {
+        const httpClient = getHttpClient({ meta });
+        const response = await httpClient.get("/v2/textItems/export", {
+          params,
+        });
+        return ZExportTextItemsResponse.parse(response.data) as TResponse;
+      });
+    default:
+      return fetchTextWrapper<TResponse>(async () => {
+        const httpClient = getHttpClient({ meta });
+        const response = await httpClient.get("/v2/textItems", { params });
+        return ZTextItemsResponse.parse(response.data) as TResponse;
+      });
   }
 }

@@ -1,5 +1,5 @@
 import fetchText from "../http/textItems";
-import { Component, ComponentsResponse, isTextItem, PullFilters, PullQueryParams, TextItem, TextItemsResponse } from "../http/types";
+import { Component, ComponentsResponse, ExportTextItemsResponse, isTextItem, PullFilters, PullQueryParams, TextItem, TextItemsResponse } from "../http/types";
 import fetchComponents from "../http/components";
 import fetchVariables, { Variable } from "../http/variables";
 import BaseFormatter from "./shared/base";
@@ -7,21 +7,26 @@ import OutputFile from "./shared/fileTypes/OutputFile";
 import JSONOutputFile from "./shared/fileTypes/JSONOutputFile";
 import { applyMixins } from "./shared";
 import { getFrameworkProcessor } from "./frameworks/json";
+import fetchProjects from "../http/projects";
+import IOSStringsOutputFile from "./shared/fileTypes/IOSStringsOutputFile";
 
-type JSONAPIData = {
-  textItems: TextItemsResponse;
+interface ProjectTextItemsMap {
+  [projectId: string]: ExportTextItemsResponse
+}
+
+type IOSStringsAPIData = {
+  projects: ProjectTextItemsMap;
   components: ComponentsResponse;
   variablesById: Record<string, Variable>;
 };
 
 type RequestType = "textItem" | "component";
 
-export default class JSONFormatter extends applyMixins(
-  BaseFormatter<JSONAPIData>) {
+export default class IOSStringsFormatter extends applyMixins(
+  BaseFormatter<IOSStringsAPIData>) {
 
   protected async fetchAPIData() {
-    console.log('this', this)
-    const textItems = await this.fetchTextItems() as TextItemsResponse;
+    const projects = await this.fetchProjectTextItemsMap();
     const components = await this.fetchComponents();
     const variables = await this.fetchVariables();
 
@@ -30,20 +35,25 @@ export default class JSONFormatter extends applyMixins(
       return acc;
     }, {} as Record<string, Variable>);
 
-    return { textItems, variablesById, components };
+    return { projects, variablesById, components };
   }
 
-  protected async transformAPIData(data: JSONAPIData) {
-    for (let i = 0; i < data.textItems.length; i++) {
-      const textItem = data.textItems[i];
-      this.transformAPITextEntity(textItem, data.variablesById);
-    }
+  protected async transformAPIData(data: IOSStringsAPIData) {
+    console.log("DATA: ", data.projects)
+    Object.keys(data.projects).map((projectId: string) => {
+    const fileName = `${projectId}___${variantId || "base"}`;
+      this.outputFiles[fileName] ??= new IOSStringsOutputFile({
+        filename: fileName,
+        path: this.outDir,
+        metadata: { variantId: textEntity.variantId || "base" },
+      });
+    })
 
-    for (let i = 0; i < data.components.length; i++) {
-      const component = data.components[i];
-      this.transformAPITextEntity(component, data.variablesById);
-    }
-
+    this.outputFiles[fileName] ??= new IOSStringsOutputFile({
+      filename: fileName,
+      path: this.outDir,
+      metadata: { variantId: textEntity.variantId || "base" },
+    });
     let results: OutputFile[] = [
       ...Object.values(this.outputFiles),
       this.variablesOutputFile,
@@ -52,37 +62,6 @@ export default class JSONFormatter extends applyMixins(
     if (this.output.framework) {
       // process framework
       results.push(...getFrameworkProcessor(this.output).process(this.outputFiles));
-    }
-
-    return results;
-  }
-
-  /**
-   * Transforms text entity returned from API response into JSON and inserts into corresponding output file.
-   * @param textEntity The text entity returned from API response.
-   * @param variablesById Mapping of devID <> variable data returned from API response.
-   */
-  private transformAPITextEntity(textEntity: TextItem | Component, variablesById: Record<string, Variable>) {
-    const fileName = isTextItem(textEntity) ? `${textEntity.projectId}___${textEntity.variantId || "base"}` : `components___${textEntity.variantId || "base"}`;
-
-    this.outputFiles[fileName] ??= new JSONOutputFile({
-      filename: fileName,
-      path: this.outDir,
-      metadata: { variantId: textEntity.variantId || "base" },
-    });
-    
-    // Use richText if available and configured, otherwise use text
-    const outputRichTextEnabled = this.output.richText === "html"
-    const baseRichTextEnabledAndNotOveridden = this.projectConfig.richText === "html" && this.output.richText !== false
-    const richTextConfigured = outputRichTextEnabled || baseRichTextEnabledAndNotOveridden 
-    const textValue = richTextConfigured && textEntity.richText
-      ? textEntity.richText 
-      : textEntity.text;
-
-    this.outputFiles[fileName].content[textEntity.id] = textValue;
-    for (const variableId of textEntity.variableIds) {
-      const variable = variablesById[variableId];
-      this.variablesOutputFile.content[variableId] = variable.data;
     }
   }
 
@@ -99,7 +78,7 @@ export default class JSONFormatter extends applyMixins(
     if (this.output.variants) {
       filters.variants = this.output.variants;
     }
-
+ 
     return filters;
   }
 
@@ -123,11 +102,11 @@ export default class JSONFormatter extends applyMixins(
   /**
    * Returns the query parameters for the fetchText API request
    */
-  private generateQueryParams(requestType: RequestType) {
+  private generateQueryParams(requestType: RequestType, additionalFilterParams = {}): PullQueryParams {
     const filter = requestType === "textItem" ? this.generateTextItemPullFilter() : this.generateComponentPullFilter();
 
     let params: PullQueryParams = {
-      filter: JSON.stringify(filter),
+      filter: JSON.stringify({ ...filter, ...additionalFilterParams }),
     };
 
     if (this.projectConfig.richText) {
@@ -139,7 +118,7 @@ export default class JSONFormatter extends applyMixins(
     }
 
 
-    return params;
+    return { ...params, format: 'ios-strings' };
   }
 
   /**
@@ -148,10 +127,21 @@ export default class JSONFormatter extends applyMixins(
    * 
    * @returns text items data
    */
-  private async fetchTextItems() {
-    if (!this.projectConfig.projects && !this.output.projects) return [];
+  private async fetchProjectTextItemsMap(): Promise<ProjectTextItemsMap> {
+    if (!this.projectConfig.projects && !this.output.projects) return {};
+    let projects: { id: string }[] = this.output.projects ?? this.projectConfig.projects ?? [];
+    const result: ProjectTextItemsMap = {};
 
-    return await fetchText(this.generateQueryParams("textItem"), this.meta);
+    if (projects.length === 0) {
+      projects = await fetchProjects(this.meta);
+    }
+
+    for (const project of projects) {
+      const projectIosStringsFile = await fetchText<ExportTextItemsResponse>(this.generateQueryParams("textItem", { projects: [{ id: project.id }] }), this.meta);
+      result[project.id] = projectIosStringsFile;
+    }
+    
+    return result;
   }
 
   /**

@@ -89,6 +89,7 @@ export default class JSONFormatter extends applyMixins(
     let filters: PullFilters = {
       projects: this.projectConfig.projects,
       variants: this.projectConfig.variants,
+      statuses: this.projectConfig.statuses
     };
 
     if (this.output.projects) {
@@ -106,6 +107,7 @@ export default class JSONFormatter extends applyMixins(
     let filters: PullFilters = {
       ...(this.projectConfig.components?.folders && { folders: this.projectConfig.components.folders }),
       variants: this.projectConfig.variants,
+      statuses: this.projectConfig.statuses
     };
 
     if (this.output.components) {

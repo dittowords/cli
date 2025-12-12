@@ -42,6 +42,10 @@ class TestIOSStringsFormatter extends IOSStringsFormatter {
     return super.transformAPIData(data);
   }
 
+  public async fetchVariants() {
+    return super["fetchVariants"]();
+  }
+
   // Expose private methods for testing
   public async fetchTextItemsMap() {
     return super["fetchTextItemsMap"]();
@@ -114,6 +118,7 @@ describe("IOSStringsFormatter", () => {
       const mockContent = createMockIOSStringsContent();
       mockFetchText.mockResolvedValue(mockContent);
 
+      await formatter.fetchVariants();
       const result = await formatter.fetchTextItemsMap();
 
       expect(result).toEqual({
@@ -151,6 +156,7 @@ describe("IOSStringsFormatter", () => {
       mockFetchProjects.mockResolvedValue(mockProjects);
       mockFetchText.mockResolvedValue(mockContent);
 
+      await formatter.fetchVariants();
       const result = await formatter.fetchTextItemsMap();
 
       expect(mockFetchProjects).toHaveBeenCalled();
@@ -191,6 +197,7 @@ describe("IOSStringsFormatter", () => {
       mockFetchVariants.mockResolvedValue(mockVariants);
       mockFetchText.mockResolvedValue(mockContent);
 
+      await formatter.fetchVariants();
       const result = await formatter.fetchTextItemsMap();
 
       expect(mockFetchVariants).toHaveBeenCalled();
@@ -217,6 +224,7 @@ describe("IOSStringsFormatter", () => {
       const mockContent = createMockIOSStringsContent();
       mockFetchText.mockResolvedValue(mockContent);
 
+      await formatter.fetchVariants();
       const result = await formatter.fetchTextItemsMap();
 
       expect(result).toEqual({
@@ -245,6 +253,7 @@ describe("IOSStringsFormatter", () => {
       const mockContent = createMockComponentsContent();
       mockFetchComponents.mockResolvedValue(mockContent);
 
+      await formatter.fetchVariants();
       const result = await formatter.fetchComponentsMap();
 
       expect(result).toEqual({
@@ -278,6 +287,7 @@ describe("IOSStringsFormatter", () => {
       mockFetchVariants.mockResolvedValue(mockVariants);
       mockFetchComponents.mockResolvedValue(mockContent);
 
+      await formatter.fetchVariants();
       const result = await formatter.fetchComponentsMap();
 
       expect(mockFetchVariants).toHaveBeenCalled();
@@ -301,6 +311,7 @@ describe("IOSStringsFormatter", () => {
       const mockContent = createMockComponentsContent();
       mockFetchComponents.mockResolvedValue(mockContent);
 
+      await formatter.fetchVariants();
       const result = await formatter.fetchComponentsMap();
 
       expect(result).toEqual({
@@ -327,7 +338,7 @@ describe("IOSStringsFormatter", () => {
   });
 
   describe("fetchAPIData", () => {
-    it("should combine text items and components data", async () => {
+    it("should fetchVariants and combine text items and components data", async () => {
       const projectConfig = createMockProjectConfig({
         projects: [{ id: "project1" }],
         variants: [{ id: "base" }],
@@ -348,8 +359,10 @@ describe("IOSStringsFormatter", () => {
       mockFetchText.mockResolvedValue(mockTextContent);
       mockFetchComponents.mockResolvedValue(mockComponentsContent);
 
+      const fetchVariantsSpy = jest.spyOn(formatter, "fetchVariants");
       const result = await formatter.fetchAPIData();
 
+      expect(fetchVariantsSpy).toHaveBeenCalled();
       expect(result).toEqual({
         textItemsMap: {
           project1: {

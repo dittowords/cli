@@ -1,5 +1,5 @@
 import fetchText from "../http/textItems";
-import { ExportComponentsResponse, ExportTextItemsResponse, PullQueryParams } from "../http/types";
+import { ExportComponentsResponse, ExportTextItemsResponse, PullQueryParams, Variant } from "../http/types";
 import fetchComponents from "../http/components";
 import BaseFormatter from "./shared/base";
 import { applyMixins } from "./shared";
@@ -23,8 +23,10 @@ type IOSStringsAPIData = {
 
 export default class IOSStringsFormatter extends applyMixins(
   BaseFormatter<IOSStringsOutputFile<{ variantId: string }>, IOSStringsAPIData>) {
+  private variants: { id: string }[] = [];
 
   protected async fetchAPIData() {
+    await this.fetchVariants();
     const textItemsMap = await this.fetchTextItemsMap();
     const componentsMap = await this.fetchComponentsMap();
 
@@ -64,6 +66,22 @@ export default class IOSStringsFormatter extends applyMixins(
   }
 
   /**
+   * Sets variants based on configuration
+   * - Fetches from API if "all" configured
+   * - Adds "base" variant by default if none configured
+   */
+  private async fetchVariants(): Promise<void> {
+    let variants: { id: string }[] = this.output.variants ?? this.projectConfig.variants ?? [];
+    if (variants.some((variant) => variant.id === 'all')) {
+      variants = await fetchVariants(this.meta);
+    } else if (variants.length === 0) {
+      variants = [{ id: 'base' }]
+    }
+
+    this.variants = variants;
+  }
+
+  /**
    * Fetches text item data via API for each configured project and variant
    * in this output
    * 
@@ -72,7 +90,6 @@ export default class IOSStringsFormatter extends applyMixins(
   private async fetchTextItemsMap(): Promise<TextItemsMap> {
     if (!this.projectConfig.projects && !this.output.projects) return {};
     let projects: { id: string }[] = this.output.projects ?? this.projectConfig.projects ?? [];
-    let variants: { id: string }[] = this.output.variants ?? this.projectConfig.variants ?? [];
 
     const result: TextItemsMap = {};
 
@@ -80,17 +97,10 @@ export default class IOSStringsFormatter extends applyMixins(
       projects = await fetchProjects(this.meta);
     }
 
-    // BP: do this prior to both textItems and components fetching so they can share
-    if (variants.some((variant) => variant.id === 'all')) {
-      variants = await fetchVariants(this.meta);
-    } else if (variants.length === 0) {
-      variants = [{ id: 'base' }]
-    }
-
     for (const project of projects) {
       result[project.id] = {};
 
-      for (const variant of variants) {
+      for (const variant of this.variants) {
         // map "base" to undefined, as by default export endpoint returns base variant
         const variantsParam = variant.id === 'base' ? undefined : [{ id: variant.id }]
         const params: PullQueryParams = { 
@@ -114,16 +124,9 @@ export default class IOSStringsFormatter extends applyMixins(
    */
   private async fetchComponentsMap(): Promise<ComponentsMap> {
     if (!this.projectConfig.components && !this.output.components) return {};
-    let variants: { id: string }[] = this.output.variants ?? this.projectConfig.variants ?? [];
     const result: ComponentsMap = {};
 
-    if (variants.some((variant) => variant.id === 'all')) {
-      variants = await fetchVariants(this.meta);
-    } else if (variants.length === 0) {
-      variants = [{ id: 'base' }]
-    }
-
-    for (const variant of variants) {
+    for (const variant of this.variants) {
       // map "base" to undefined, as by default export endpoint returns base variant
       const variantsParam = variant.id === 'base' ? undefined : [{ id: variant.id }]
       const params: PullQueryParams = { 

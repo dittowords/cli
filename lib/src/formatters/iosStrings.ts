@@ -31,6 +31,12 @@ export default class IOSStringsFormatter extends applyMixins(
     return { textItemsMap, componentsMap };
   }
 
+  /**
+   * For each project/variant permutation and its fetched .strings data,
+   * create a new file with the expected naming
+   * 
+   * @returns {OutputFile[]} List of Output Files
+   */
   protected transformAPIData(data: IOSStringsAPIData) {
     Object.entries(data.textItemsMap).forEach(([projectId, projectVariants]) => {
       Object.entries(projectVariants).forEach(([variantId, iosStringsFile]) => {
@@ -54,10 +60,7 @@ export default class IOSStringsFormatter extends applyMixins(
       });
     })
 
-    return [
-      ...Object.values(this.outputFiles),
-      this.variablesOutputFile,
-    ];
+    return Object.values(this.outputFiles);
   }
 
   /**
@@ -104,6 +107,7 @@ export default class IOSStringsFormatter extends applyMixins(
 
   /**
    * Fetches component data via API.
+   * If individual variants configured, fetch by each otherwise fetch for all
    * Skips the fetch request if components field is not specified in config.
    * 
    * @returns components data

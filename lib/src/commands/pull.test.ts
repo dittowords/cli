@@ -615,12 +615,14 @@ describe("pull command - end-to-end tests", () => {
     components?: Component[];
     variables?: any[];
   }) => {
+    /*
+    "this-is-a-ditto-text-item" = "No its not";
+
+    "this-is-a-text-layer-on-figma" = "This is a Ditto text item (LinkedNode)";
+
+    "update-preferences" = "Update preferences";
+  */
     mockHttpClient.get.mockImplementation((url: string, config?: any) => {
-      // if (url.includes("/v2/projects")) {
-      //   return Promise.resolve({
-      //     data: [{ id: "project-1" }, { id: "project-2" }],
-      //   });
-      // }
       if (url.includes("/v2/textItems/export")) {
         return Promise.resolve({
           data: textItems
@@ -641,14 +643,6 @@ describe("pull command - end-to-end tests", () => {
       return Promise.resolve({ data: [] });
     });
   };
-
-  /*
-    "this-is-a-ditto-text-item" = "No its not";
-
-    "this-is-a-text-layer-on-figma" = "This is a Ditto text item (LinkedNode)";
-
-    "update-preferences" = "Update preferences";
-  */
 
   describe("Output files - ios-strings", () => {
     it("should create output files for each project and variant returned from the API", async () => {

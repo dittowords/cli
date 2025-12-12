@@ -21,8 +21,6 @@ type IOSStringsAPIData = {
   variablesById: Record<string, Variable>;
 };
 
-type RequestType = "textItem" | "component";
-
 export default class IOSStringsFormatter extends applyMixins(
   BaseFormatter<IOSStringsOutputFile<{ variantId: string }>, IOSStringsAPIData>) {
 
@@ -62,10 +60,10 @@ export default class IOSStringsFormatter extends applyMixins(
 
 
   /**
-   * Fetches text item data via API.
-   * Skips the fetch request if projects field is not specified in config.
+   * Fetches text item data via API for each configured project and variant
+   * in this output
    * 
-   * @returns text items data
+   * @returns text items mapped to their respective variant and project
    */
   private async fetchTextItemsMap(): Promise<TextItemsMap> {
     if (!this.projectConfig.projects && !this.output.projects) return {};
@@ -110,8 +108,9 @@ export default class IOSStringsFormatter extends applyMixins(
    */
   private async fetchComponents() {
     if (!this.projectConfig.components && !this.output.components) return [];
-
-    return await fetchComponents(this.generateQueryParams("component"), this.meta);
+    const params = this.generateQueryParams("component");
+    console.log('params', params)
+    return await fetchComponents(params, this.meta);
   }
 
   private async fetchVariables() {

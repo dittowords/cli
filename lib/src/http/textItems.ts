@@ -5,8 +5,6 @@ import {
   PullQueryParams,
   ZTextItemsResponse,
   ZExportTextItemsResponse,
-  ExportTextItemsResponse,
-  TextItemsResponse,
 } from "./types";
 import getHttpClient from "./client";
 

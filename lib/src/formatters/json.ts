@@ -100,6 +100,10 @@ export default class JSONFormatter extends applyMixins(
       filters.variants = this.output.variants;
     }
 
+    if (this.output.statuses) {
+      filters.statuses = this.output.statuses;
+    }
+
     return filters;
   }
 
@@ -116,6 +120,10 @@ export default class JSONFormatter extends applyMixins(
 
     if (this.output.variants) {
       filters.variants = this.output.variants;
+    }
+
+    if (this.output.statuses) {
+      filters.statuses = this.output.statuses;
     }
 
     return filters;

@@ -36,8 +36,6 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
     this.meta = meta;
   }
 
-  // BP: this might not be supported for export, might need to keep old implementation
-  //.    at the json level, then use this for all the export ones
   private generateTextItemPullFilter() {
     let filters: PullFilters = {
       projects: this.projectConfig.projects,

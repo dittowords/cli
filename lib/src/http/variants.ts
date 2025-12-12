@@ -2,7 +2,6 @@ import { AxiosError } from "axios";
 import { ZVariantsResponse, CommandMetaFlags } from "./types";
 import getHttpClient from "./client";
 
-// BP: Add wrapper function to this and other HTTP requests
 export default async function fetchVariants(meta: CommandMetaFlags) {
   try {
     const httpClient = getHttpClient({ meta });

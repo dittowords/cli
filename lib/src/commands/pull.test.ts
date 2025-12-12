@@ -777,7 +777,7 @@ describe("pull command - end-to-end tests", () => {
         "project-1___variant-b.strings",
         "project-2___base.strings",
         "project-2___variant-a.strings",
-        "project-2___variant-b.strings", // BP: Should this not be here? Do we need to check output files to see if empty variant files for a project should be shown?
+        "project-2___variant-b.strings",
         "components___base.strings",
         "components___variant-a.strings",
         "components___variant-b.strings",

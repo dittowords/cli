@@ -4,3 +4,4 @@ ditto
 bin/
 .env
 coverage
+.DS_Store

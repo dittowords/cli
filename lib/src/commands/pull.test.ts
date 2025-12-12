@@ -781,7 +781,6 @@ describe("pull command - end-to-end tests", () => {
         "components___base.strings",
         "components___variant-a.strings",
         "components___variant-b.strings",
-        "variables.json",
       ]);
     });
   });

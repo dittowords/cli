@@ -18,7 +18,7 @@ export default class JSONFormatter extends applyMixins(
   BaseFormatter<JSONOutputFile<{ variantId: string }>, JSONAPIData>) {
 
   protected async fetchAPIData() {
-    const textItems = await this.fetchTextItems() as TextItemsResponse;
+    const textItems = await this.fetchTextItems();
     const components = await this.fetchComponents();
     const variables = await this.fetchVariables();
 
@@ -30,7 +30,7 @@ export default class JSONFormatter extends applyMixins(
     return { textItems, variablesById, components };
   }
 
-  protected async transformAPIData(data: JSONAPIData) {
+  protected transformAPIData(data: JSONAPIData) {
     for (let i = 0; i < data.textItems.length; i++) {
       const textItem = data.textItems[i];
       this.transformAPITextEntity(textItem, data.variablesById);
@@ -92,7 +92,7 @@ export default class JSONFormatter extends applyMixins(
   private async fetchTextItems() {
     if (!this.projectConfig.projects && !this.output.projects) return [];
 
-    return await fetchText(super.generateQueryParams("textItem"), this.meta);
+    return await fetchText<TextItemsResponse>(super.generateQueryParams("textItem"), this.meta);
   }
 
   /**
@@ -104,7 +104,7 @@ export default class JSONFormatter extends applyMixins(
   private async fetchComponents() {
     if (!this.projectConfig.components && !this.output.components) return [];
 
-    return await fetchComponents(super.generateQueryParams("component"), this.meta);
+    return await fetchComponents<ComponentsResponse>(super.generateQueryParams("component"), this.meta);
   }
 
   private async fetchVariables() {

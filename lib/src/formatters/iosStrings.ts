@@ -1,14 +1,15 @@
 import fetchText from "../http/textItems";
-import { ComponentsResponse, ExportTextItemsResponse, PullQueryParams } from "../http/types";
+import { ExportComponentsResponse, ExportTextItemsResponse, PullQueryParams } from "../http/types";
 import fetchComponents from "../http/components";
-import fetchVariables, { Variable } from "../http/variables";
 import BaseFormatter from "./shared/base";
-import OutputFile from "./shared/fileTypes/OutputFile";
 import { applyMixins } from "./shared";
 import fetchProjects from "../http/projects";
 import IOSStringsOutputFile from "./shared/fileTypes/IOSStringsOutputFile";
 import fetchVariants from "../http/variants";
 
+interface ComponentsMap {
+  [variantId: string]: ExportComponentsResponse
+}
 interface TextItemsMap {
   [projectId: string]: {
     [variantId: string]: ExportTextItemsResponse
@@ -17,8 +18,7 @@ interface TextItemsMap {
 
 type IOSStringsAPIData = {
   textItemsMap: TextItemsMap;
-  components: ComponentsResponse;
-  variablesById: Record<string, Variable>;
+  componentsMap: ComponentsMap;
 };
 
 export default class IOSStringsFormatter extends applyMixins(
@@ -26,18 +26,12 @@ export default class IOSStringsFormatter extends applyMixins(
 
   protected async fetchAPIData() {
     const textItemsMap = await this.fetchTextItemsMap();
-    const components = await this.fetchComponents();
-    const variables = await this.fetchVariables();
+    const componentsMap = await this.fetchComponentsMap();
 
-    const variablesById = variables.reduce((acc, variable) => {
-      acc[variable.id] = variable;
-      return acc;
-    }, {} as Record<string, Variable>);
-
-    return { textItemsMap, variablesById, components };
+    return { textItemsMap, componentsMap };
   }
 
-  protected async transformAPIData(data: IOSStringsAPIData) {
+  protected transformAPIData(data: IOSStringsAPIData) {
     Object.entries(data.textItemsMap).forEach(([projectId, projectVariants]) => {
       Object.entries(projectVariants).forEach(([variantId, iosStringsFile]) => {
         const fileName = `${projectId}___${variantId || "base"}`;
@@ -50,14 +44,21 @@ export default class IOSStringsFormatter extends applyMixins(
       });
     });
 
-    let results: OutputFile[] = [
+    Object.entries(data.componentsMap).forEach(([variantId, iosStringsFile]) => {
+      const fileName = `components___${variantId || "base"}`;
+      this.outputFiles[fileName] ??= new IOSStringsOutputFile({
+        filename: fileName,
+        path: this.outDir,
+        metadata: { variantId: variantId || "base" },
+        content: iosStringsFile
+      });
+    })
+
+    return [
       ...Object.values(this.outputFiles),
       this.variablesOutputFile,
-    ]
-
-    return results;
+    ];
   }
-
 
   /**
    * Fetches text item data via API for each configured project and variant
@@ -76,6 +77,7 @@ export default class IOSStringsFormatter extends applyMixins(
       projects = await fetchProjects(this.meta);
     }
 
+    // BP: do this prior to both textItems and components fetching so they can share
     if (variants.some((variant) => variant.id === 'all')) {
       variants = await fetchVariants(this.meta);
     } else if (variants.length === 0) {
@@ -106,14 +108,28 @@ export default class IOSStringsFormatter extends applyMixins(
    * 
    * @returns components data
    */
-  private async fetchComponents() {
-    if (!this.projectConfig.components && !this.output.components) return [];
-    const params = this.generateQueryParams("component");
-    console.log('params', params)
-    return await fetchComponents(params, this.meta);
-  }
+  private async fetchComponentsMap(): Promise<ComponentsMap> {
+    if (!this.projectConfig.components && !this.output.components) return {};
+    let variants: { id: string }[] = this.output.variants ?? this.projectConfig.variants ?? [];
+    const result: ComponentsMap = {};
 
-  private async fetchVariables() {
-    return await fetchVariables(this.meta);
+    if (variants.some((variant) => variant.id === 'all')) {
+      variants = await fetchVariants(this.meta);
+    } else if (variants.length === 0) {
+      variants = [{ id: 'base' }]
+    }
+
+    for (const variant of variants) {
+      // map "base" to undefined, as by default export endpoint returns base variant
+      const variantsParam = variant.id === 'base' ? undefined : [{ id: variant.id }]
+      const params: PullQueryParams = { 
+        ...super.generateQueryParams("component", { variants: variantsParam }),
+        format: 'ios-strings'
+      };
+      const iosStringsFile = await fetchComponents<ExportComponentsResponse>(params, this.meta);
+      result[variant.id] = iosStringsFile;
+    }
+
+    return result;
   }
 }

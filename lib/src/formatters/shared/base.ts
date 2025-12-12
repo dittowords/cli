@@ -105,7 +105,7 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
     return {} as APIDataType;
   }
 
-  protected async transformAPIData(data: APIDataType): Promise<OutputFile[]> {
+  protected transformAPIData(data: APIDataType): OutputFile[] {
     return [];
   }
 

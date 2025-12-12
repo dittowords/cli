@@ -59,6 +59,9 @@ export type Component = z.infer<typeof ZComponent>;
 export const ZComponentsResponse = z.array(ZComponent);
 export type ComponentsResponse = z.infer<typeof ZComponentsResponse>;
 
+export const ZExportComponentsResponse = z.string();
+export type ExportComponentsResponse = z.infer<typeof ZExportComponentsResponse>;
+
 // MARK - Projects
 
 const ZProject = z.object({

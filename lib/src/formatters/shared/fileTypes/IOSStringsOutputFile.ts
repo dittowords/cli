@@ -1,6 +1,5 @@
 import OutputFile from "./OutputFile";
 
-// BP: Is this MetadataType necessary?
 export default class IOSStringsOutputFile<MetadataType> extends OutputFile<
   string,
   MetadataType

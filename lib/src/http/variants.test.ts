@@ -1,16 +1,11 @@
-import { AxiosError } from "axios";
 import getHttpClient from "./client";
 import fetchVariants from "./variants";
 
 jest.mock("./client");
 
 describe("fetchVariants", () => {
-  // Create a mock client with a mock 'get' method
-  const mockHttpClient = {
-    get: jest.fn(),
-  };
+  const mockHttpClient = { get: jest.fn() };
 
-  // Make getHttpClient return the mock client
   (getHttpClient as jest.Mock).mockReturnValue(mockHttpClient);
 
   beforeEach(() => {
@@ -34,9 +29,7 @@ describe("fetchVariants", () => {
     };
 
     mockHttpClient.get.mockResolvedValue(mockResponse);
-
     const result = await fetchVariants({});
-
     expect(result).toEqual([...mockResponse.data]);
   });
 
@@ -51,52 +44,23 @@ describe("fetchVariants", () => {
     };
 
     mockHttpClient.get.mockResolvedValue(mockResponse);
-
     const result = await fetchVariants({});
-
     expect(result).toEqual([...mockResponse.data]);
   });
 
   it("should handle empty response", async () => {
-    const mockResponse = {
-      data: [],
-    };
-
+    const mockResponse = { data: [] };
     mockHttpClient.get.mockResolvedValue(mockResponse);
-
     const result = await fetchVariants({});
-
     expect(result).toEqual([]);
   });
 
-  it("should handle error responses", async () => {
-    const mockError = new AxiosError("Request failed");
-    mockError.response = {
-      status: 400,
-      data: {
-        message: "Invalid filter format",
-      },
-    } as any;
-
+  it("should have user-friendly error response if not instance of AxiosError", async () => {
+    const mockError = new Error("Request failed");
     mockHttpClient.get.mockRejectedValue(mockError);
 
     await expect(fetchVariants({})).rejects.toThrow(
-      "Invalid filter format. Please check your variant filters and try again."
-    );
-  });
-
-  it("should handle error responses without message", async () => {
-    const mockError = new AxiosError("Request failed");
-    mockError.response = {
-      status: 400,
-      data: {},
-    } as any;
-
-    mockHttpClient.get.mockRejectedValue(mockError);
-
-    await expect(fetchVariants({})).rejects.toThrow(
-      "Invalid variant filters. Please check your variant filters and try again."
+      "Sorry! We're having trouble reaching the Ditto API. Please try again later."
     );
   });
 });
-

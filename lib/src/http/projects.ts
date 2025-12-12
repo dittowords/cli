@@ -15,20 +15,6 @@ export default async function fetchProjects(meta: CommandMetaFlags) {
       );
     }
 
-    // Handle invalid filters
-    if (e.response?.status === 400) {
-      let errorMsgBase = "Invalid project filters";
-
-      if (e.response?.data?.message) errorMsgBase = e.response.data.message;
-
-      throw new Error(
-        `${errorMsgBase}. Please check your project filters and try again.`,
-        {
-          cause: e.response?.data,
-        }
-      );
-    }
-
     throw e;
   }
 }

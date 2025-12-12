@@ -12,7 +12,6 @@ import fetchProjects from "../http/projects";
 import fetchVariants from "../http/variants";
 import IOSStringsOutputFile from "./shared/fileTypes/IOSStringsOutputFile";
 
-// Mock HTTP functions
 jest.mock("../http/textItems");
 jest.mock("../http/components");
 jest.mock("../http/projects");
@@ -29,9 +28,9 @@ const mockFetchVariants = fetchVariants as jest.MockedFunction<
   typeof fetchVariants
 >;
 
+// fake test class to expose private methods
 // @ts-ignore
 class TestIOSStringsFormatter extends IOSStringsFormatter {
-  // Expose protected method for testing
   public async fetchAPIData() {
     return super.fetchAPIData();
   }
@@ -101,6 +100,10 @@ describe("IOSStringsFormatter", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
+
+  /***********************************************************
+   * fetchTextItemsMap
+   ***********************************************************/
 
   describe("fetchTextItemsMap", () => {
     it("should fetch text items for projects and variants configured at root level", async () => {
@@ -235,6 +238,9 @@ describe("IOSStringsFormatter", () => {
     });
   });
 
+  /***********************************************************
+   * fetchComponentsMap
+   ***********************************************************/
   describe("fetchComponentsMap", () => {
     it("should fetch components for variants configured at root level", async () => {
       const projectConfig = createMockProjectConfig({
@@ -337,6 +343,9 @@ describe("IOSStringsFormatter", () => {
     });
   });
 
+  /***********************************************************
+   * fetchAPIData
+   ***********************************************************/
   describe("fetchAPIData", () => {
     it("should fetchVariants and combine text items and components data", async () => {
       const projectConfig = createMockProjectConfig({
@@ -376,6 +385,9 @@ describe("IOSStringsFormatter", () => {
     });
   });
 
+  /***********************************************************
+   * transformAPIData
+   ***********************************************************/
   describe("transformAPIData", () => {
     it("should transform text items into IOSStringsOutputFile output files", () => {
       const projectConfig = createMockProjectConfig();

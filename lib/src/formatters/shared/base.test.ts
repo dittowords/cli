@@ -4,12 +4,9 @@ import { ProjectConfigYAML } from "../../services/projectConfig";
 import { CommandMetaFlags, PullFilters } from "../../http/types";
 import JSONOutputFile from "./fileTypes/JSONOutputFile";
 
-/**
- * Test subclass that exposes protected/private methods for testing
- */
+// fake test class to expose private methods
 // @ts-ignore
 class TestBaseFormatter extends BaseFormatter<JSONOutputFile, unknown> {
-  // Expose private methods for testing
   public generateTextItemPullFilter() {
     return super["generateTextItemPullFilter"]();
   }
@@ -18,7 +15,6 @@ class TestBaseFormatter extends BaseFormatter<JSONOutputFile, unknown> {
     return super["generateComponentPullFilter"]();
   }
 
-  // Expose protected method for testing
   public generateQueryParams(
     requestType: "textItem" | "component",
     filter: PullFilters = {}

@@ -7,9 +7,11 @@ import {
 } from "./types";
 import getHttpClient from "./client";
 
-function fetchComponentsWrapper<TResponse>(cb: () => Promise<TResponse>) {
+function fetchComponentsWrapper<TResponse>(
+  performRequest: () => Promise<TResponse>
+) {
   try {
-    return cb();
+    return performRequest();
   } catch (e: unknown) {
     if (!(e instanceof AxiosError)) {
       throw new Error(

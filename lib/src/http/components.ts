@@ -43,6 +43,7 @@ export default async function fetchComponents<TResponse>(
 ) {
   switch (params.format) {
     case "ios-strings":
+    case "ios-stringsdict":
       return fetchComponentsWrapper<TResponse>(async () => {
         const httpClient = getHttpClient({ meta });
         const response = await httpClient.get("/v2/components/export", {

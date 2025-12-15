@@ -12,7 +12,7 @@ export interface PullFilters {
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
   richText?: "html";
-  format?: "ios-strings" | undefined;
+  format?: "ios-strings" | "ios-stringsdict" | undefined;
 }
 
 const ZBaseTextEntity = z.object({
@@ -60,7 +60,9 @@ export const ZComponentsResponse = z.array(ZComponent);
 export type ComponentsResponse = z.infer<typeof ZComponentsResponse>;
 
 export const ZExportComponentsResponse = z.string();
-export type ExportComponentsResponse = z.infer<typeof ZExportComponentsResponse>;
+export type ExportComponentsResponse = z.infer<
+  typeof ZExportComponentsResponse
+>;
 
 // MARK - Projects
 

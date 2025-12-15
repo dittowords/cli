@@ -42,6 +42,7 @@ export default async function fetchText<TResponse>(
 ) {
   switch (params.format) {
     case "ios-strings":
+    case "ios-stringsdict":
       return fetchTextWrapper<TResponse>(async () => {
         const httpClient = getHttpClient({ meta });
         const response = await httpClient.get("/v2/textItems/export", {

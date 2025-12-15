@@ -42,7 +42,7 @@ class TestBaseExportFormatter extends BaseExportFormatter {
   }
 
   public transformAPIData(
-    data: Parameters<BaseExportFormatter<any>["transformAPIData"]>[0]
+    data: Parameters<BaseExportFormatter<any, any, any>["transformAPIData"]>[0]
   ) {
     return super.transformAPIData(data);
   }

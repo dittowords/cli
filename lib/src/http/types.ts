@@ -42,15 +42,21 @@ export type TextItem = z.infer<typeof ZTextItem>;
 export const ZTextItemsResponse = z.array(ZTextItem);
 export type TextItemsResponse = z.infer<typeof ZTextItemsResponse>;
 
-export const ZExportTextItemsStringResponse = z.string();
+const ZExportTextItemsStringResponse = z.string();
 export type ExportTextItemsStringResponse = z.infer<
   typeof ZExportTextItemsStringResponse
 >;
 
-export const ZExportTextItemsJSONResponse = z.record(z.string(), z.string());
+const ZExportTextItemsJSONResponse = z.record(z.string(), z.string());
 export type ExportTextItemsJSONResponse = z.infer<
   typeof ZExportTextItemsJSONResponse
 >;
+
+export const ZExportTextItemsResponse = z.union([
+  ZExportTextItemsStringResponse,
+  ZExportTextItemsJSONResponse,
+]);
+export type ExportTextItemsResponse = z.infer<typeof ZExportTextItemsResponse>;
 
 // MARK - Components
 
@@ -74,6 +80,13 @@ export type ExportComponentsJSONResponse = z.infer<
 export const ZExportComponentsStringResponse = z.string();
 export type ExportComponentsStringResponse = z.infer<
   typeof ZExportComponentsStringResponse
+>;
+export const ZExportComponentsResponse = z.union([
+  ZExportComponentsStringResponse,
+  ZExportComponentsJSONResponse,
+]);
+export type ExportComponentsResponse = z.infer<
+  typeof ZExportComponentsResponse
 >;
 
 // MARK - Projects

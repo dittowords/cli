@@ -1,10 +1,9 @@
 import { AxiosError } from "axios";
 import {
   ZComponentsResponse,
-  ZExportComponentsStringResponse,
   PullQueryParams,
   CommandMetaFlags,
-  ZExportComponentsJSONResponse,
+  ZExportComponentsResponse,
 } from "./types";
 import getHttpClient from "./client";
 
@@ -46,22 +45,13 @@ export default async function fetchComponents<TResponse>(
     case "android":
     case "ios-strings":
     case "ios-stringsdict":
-      return fetchComponentsWrapper<TResponse>(async () => {
-        const httpClient = getHttpClient({ meta });
-        const response = await httpClient.get("/v2/components/export", {
-          params,
-        });
-        return ZExportComponentsStringResponse.parse(
-          response.data
-        ) as TResponse;
-      });
     case "icu":
       return fetchComponentsWrapper<TResponse>(async () => {
         const httpClient = getHttpClient({ meta });
         const response = await httpClient.get("/v2/components/export", {
           params,
         });
-        return ZExportComponentsJSONResponse.parse(response.data) as TResponse;
+        return ZExportComponentsResponse.parse(response.data) as TResponse;
       });
     default:
       return fetchComponentsWrapper<TResponse>(async () => {

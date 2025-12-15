@@ -1,10 +1,8 @@
 import fetchText from "../../http/textItems";
 import {
-  ExportComponentsStringResponse,
-  ExportComponentsJSONResponse,
-  ExportTextItemsStringResponse,
   PullQueryParams,
-  ExportTextItemsJSONResponse,
+  ExportTextItemsResponse,
+  ExportComponentsResponse,
 } from "../../http/types";
 import fetchComponents from "../../http/components";
 import BaseFormatter from "./base";
@@ -13,15 +11,11 @@ import fetchVariants from "../../http/variants";
 import OutputFile from "./fileTypes/OutputFile";
 
 interface ComponentsMap {
-  [variantId: string]:
-    | ExportComponentsStringResponse
-    | ExportComponentsJSONResponse;
+  [variantId: string]: ExportComponentsResponse;
 }
 interface TextItemsMap {
   [projectId: string]: {
-    [variantId: string]:
-      | ExportTextItemsStringResponse
-      | ExportComponentsJSONResponse;
+    [variantId: string]: ExportTextItemsResponse;
   };
 }
 
@@ -44,12 +38,8 @@ export default class BaseExportFormatter<
   TOutputFile extends ExportOutputFile<{ variantId: string }>,
   // The response types below correspond to the file data returned from the export endpoint and what will ultimately be written directly to the /ditto directory
   // ios-strings, ios-stringsdict, and android formats are all strings while icu is { [developerId: string]: string } JSON Structure
-  TTextItemsResponse extends
-    | ExportTextItemsStringResponse
-    | ExportTextItemsJSONResponse,
-  TComponentsResponse extends
-    | ExportComponentsStringResponse
-    | ExportComponentsJSONResponse
+  TTextItemsResponse extends ExportTextItemsResponse,
+  TComponentsResponse extends ExportComponentsResponse
 > extends BaseFormatter<TOutputFile, ExportFormatAPIData> {
   protected exportFormat: PullQueryParams["format"];
   private variants: { id: string }[] = [];

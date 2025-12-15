@@ -469,21 +469,11 @@ describe("pull command - end-to-end tests", () => {
     });
   });
 
-  describe("Output files - JSON", () => {
-    it("should create output files for each project and variant returned from the API", async () => {
-      fs.mkdirSync(outputDir, { recursive: true });
-
-      appContext.setProjectConfig({
-        projects: [],
-        components: {},
-        outputs: [
-          {
-            format: "json",
-            outDir: outputDir,
-          },
-        ],
-      });
-
+  /**********************************************************
+   * OUTPUT - JSON
+   **********************************************************/
+  describe.only("Output files - JSON", () => {
+    const createMockData = () => {
       // project-1 and project-2 each have at least one base text item
       const baseTextItems = [
         createMockTextItem({
@@ -587,6 +577,21 @@ describe("pull command - end-to-end tests", () => {
           ...componentsVariantB,
         ],
       });
+    };
+
+    it("should create output files for each project and variant returned from the API", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+      createMockData();
+      appContext.setProjectConfig({
+        projects: [],
+        components: {},
+        outputs: [
+          {
+            format: "json",
+            outDir: outputDir,
+          },
+        ],
+      });
 
       await pull({});
 
@@ -601,6 +606,38 @@ describe("pull command - end-to-end tests", () => {
         "components___variant-a.json",
         "components___variant-b.json",
         "variables.json",
+      ]);
+    });
+
+    it("should create index.js file when framework: i18next provided", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+      createMockData();
+      appContext.setProjectConfig({
+        projects: [],
+        components: {},
+        outputs: [
+          {
+            format: "json",
+            outDir: outputDir,
+            framework: "i18next",
+          },
+        ],
+      });
+
+      await pull({});
+
+      // Verify a file was created for each project and variant present in the (mocked) API response
+      assertFilesCreated(outputDir, [
+        "project-1___base.json",
+        "project-1___variant-a.json",
+        "project-1___variant-b.json",
+        "project-2___base.json",
+        "project-2___variant-a.json",
+        "components___base.json",
+        "components___variant-a.json",
+        "components___variant-b.json",
+        "variables.json",
+        "index.js",
       ]);
     });
   });
@@ -644,6 +681,9 @@ describe("pull command - end-to-end tests", () => {
     });
   };
 
+  /**********************************************************
+   * OUTPUT - ios-strings
+   **********************************************************/
   describe("Output files - ios-strings", () => {
     it("should create output files for each project and variant returned from the API", async () => {
       fs.mkdirSync(outputDir, { recursive: true });

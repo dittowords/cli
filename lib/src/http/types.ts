@@ -12,7 +12,7 @@ export interface PullFilters {
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
   richText?: "html";
-  format?: "ios-strings" | "ios-stringsdict" | undefined;
+  format?: "ios-strings" | "ios-stringsdict" | "android" | undefined;
 }
 
 const ZBaseTextEntity = z.object({

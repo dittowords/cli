@@ -1,6 +1,7 @@
 import { CommandMetaFlags } from "../http/types";
 import { Output } from "../outputs";
 import { ProjectConfigYAML } from "../services/projectConfig";
+import AndroidXMLFormatter from "./android";
 import IOSStringsFormatter from "./iosStrings";
 import IOSStringsDictFormatter from "./iosStringsDict";
 import JSONFormatter from "./json";
@@ -11,6 +12,8 @@ export default function formatOutput(
   meta: CommandMetaFlags
 ) {
   switch (output.format) {
+    case "android":
+      return new AndroidXMLFormatter(output, projectConfig, meta).format();
     case "json":
       return new JSONFormatter(output, projectConfig, meta).format();
     case "ios-strings":

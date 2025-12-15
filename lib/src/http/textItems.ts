@@ -41,6 +41,7 @@ export default async function fetchText<TResponse>(
   meta: CommandMetaFlags
 ) {
   switch (params.format) {
+    case "android":
     case "ios-strings":
     case "ios-stringsdict":
       return fetchTextWrapper<TResponse>(async () => {

@@ -1,17 +1,18 @@
 import BaseExportFormatter from "./shared/baseExport";
-import IOSStringsDictOutputFile from "./shared/fileTypes/IOSStringsDictOutputFile";
+import AndroidOutputFile from "./shared/fileTypes/AndroidOutputFile";
 import { PullQueryParams } from "../http/types";
-export default class IOSStringsDictFormatter extends BaseExportFormatter<
-  IOSStringsDictOutputFile<{ variantId: string }>
+
+export default class AndroidXMLFormatter extends BaseExportFormatter<
+  AndroidOutputFile<{ variantId: string }>
 > {
-  protected exportFormat: PullQueryParams["format"] = "ios-stringsdict";
+  protected exportFormat: PullQueryParams["format"] = "android";
 
   protected createOutputFile(
     fileName: string,
     variantId: string,
     content: string
   ): void {
-    this.outputFiles[fileName] ??= new IOSStringsDictOutputFile({
+    this.outputFiles[fileName] ??= new AndroidOutputFile({
       filename: fileName,
       path: this.outDir,
       metadata: { variantId: variantId || "base" },

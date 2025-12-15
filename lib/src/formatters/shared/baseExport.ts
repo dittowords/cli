@@ -32,9 +32,10 @@ type ExportOutputFile<MetadataType extends { variantId: string }> = OutputFile<
 export default class BaseExportFormatter<
   TOutputFile extends ExportOutputFile<{ variantId: string }>
 > extends BaseFormatter<TOutputFile, ExportFormatAPIData> {
-  public exportFormat: PullQueryParams["format"];
+  protected exportFormat: PullQueryParams["format"];
   private variants: { id: string }[] = [];
 
+  // required by children
   protected createOutputFile(
     fileName: string,
     variantId: string,
@@ -59,18 +60,18 @@ export default class BaseExportFormatter<
     Object.entries(data.textItemsMap).forEach(
       ([projectId, projectVariants]) => {
         Object.entries(projectVariants).forEach(
-          ([variantId, iosStringsFile]) => {
+          ([variantId, textItemsFileContent]) => {
             const fileName = `${projectId}___${variantId || "base"}`;
-            this.createOutputFile(fileName, variantId, iosStringsFile);
+            this.createOutputFile(fileName, variantId, textItemsFileContent);
           }
         );
       }
     );
 
     Object.entries(data.componentsMap).forEach(
-      ([variantId, iosStringsFile]) => {
+      ([variantId, componentsFileContent]) => {
         const fileName = `components___${variantId || "base"}`;
-        this.createOutputFile(fileName, variantId, iosStringsFile);
+        this.createOutputFile(fileName, variantId, componentsFileContent);
       }
     );
 
@@ -125,11 +126,11 @@ export default class BaseExportFormatter<
           }),
           format: this.exportFormat,
         };
-        const iosStringsFile = await fetchText<ExportTextItemsResponse>(
+        const textItemsFileContent = await fetchText<ExportTextItemsResponse>(
           params,
           this.meta
         );
-        result[project.id][variant.id] = iosStringsFile;
+        result[project.id][variant.id] = textItemsFileContent;
       }
     }
 
@@ -155,44 +156,11 @@ export default class BaseExportFormatter<
         ...super.generateQueryParams("component", { variants: variantsParam }),
         format: this.exportFormat,
       };
-      const iosStringsFile = await fetchComponents<ExportComponentsResponse>(
-        params,
-        this.meta
-      );
-      result[variant.id] = iosStringsFile;
+      const componentsFileContent =
+        await fetchComponents<ExportComponentsResponse>(params, this.meta);
+      result[variant.id] = componentsFileContent;
     }
 
     return result;
   }
 }
-
-/*
-
-export default class BaseExportFormatter<TOutputFile extends OutputFile<unknown, unknown>> extends BaseFormatter<
-
-
-
-type ExportOutputFileConstructor<
-  MetadataType extends { variantId: string },
-  TOutputFile extends ExportOutputFile<MetadataType>
-> = new (config: {
-  filename: string;
-  path: string;
-  metadata: MetadataType;
-  content: string;
-}) => TOutputFile;
-
-  /**
-   * The export format to request from the API, e.g. "ios-strings" or "ios-stringsdict".
-   * Must be configured by subclasses.
-   */
-// protected abstract format: ExportFormat;
-
-/**
-   * The OutputFile constructor used when creating files in transformAPIData.
-   * Must be configured by subclasses.
-  // protected abstract OutputFileCtor: ExportOutputFileConstructor<
-  //   { variantId: string },
-  //   TOutputFile
-  // >;
-*/

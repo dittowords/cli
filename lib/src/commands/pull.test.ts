@@ -5,6 +5,7 @@ import appContext from "../utils/appContext";
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
+import validateXMLString from "../utils/validateXML";
 
 jest.mock("../http/client");
 
@@ -16,7 +17,9 @@ const mockHttpClient = {
 // Make getHttpClient return the mock client
 (getHttpClient as jest.Mock).mockReturnValue(mockHttpClient);
 
-// Test data factories
+/**********************************************************
+ * HELPERS
+ **********************************************************/
 const createMockTextItem = (overrides: Partial<TextItem> = {}) => ({
   id: "text-1",
   text: "Plain text content",
@@ -54,6 +57,108 @@ const createMockVariable = (overrides: any = {}) => ({
   ...overrides,
 });
 
+const createMockData = () => {
+  // project-1 and project-2 each have at least one base text item
+  const baseTextItems = [
+    createMockTextItem({
+      projectId: "project-1",
+      variantId: null,
+      id: "text-1",
+    }),
+    createMockTextItem({
+      projectId: "project-1",
+      variantId: null,
+      id: "text-2",
+    }),
+    createMockTextItem({
+      projectId: "project-2",
+      variantId: null,
+      id: "text-3",
+    }),
+  ];
+
+  // project-1 and project-2 each have a variant-a text item
+  const variantATextItems = [
+    createMockTextItem({
+      projectId: "project-1",
+      variantId: "variant-a",
+      id: "text-4",
+    }),
+    createMockTextItem({
+      projectId: "project-2",
+      variantId: "variant-a",
+      id: "text-5",
+    }),
+  ];
+
+  // Only project-1 has variant-b, so only project-1 should get a variant-b file
+  const variantBTextItems = [
+    createMockTextItem({
+      projectId: "project-1",
+      variantId: "variant-b",
+      id: "text-6",
+    }),
+    createMockTextItem({
+      projectId: "project-1",
+      variantId: "variant-b",
+      id: "text-7",
+    }),
+  ];
+
+  const componentsBase = [
+    createMockComponent({
+      id: "comp-1",
+      variantId: null,
+      folderId: null,
+    }),
+    createMockComponent({
+      id: "comp-2",
+      variantId: null,
+      folderId: "folder-1",
+    }),
+    createMockComponent({
+      id: "comp-3",
+      variantId: null,
+      folderId: "folder-2",
+    }),
+  ];
+
+  const componentsVariantA = [
+    createMockComponent({
+      id: "comp-4",
+      variantId: "variant-a",
+      folderId: null,
+    }),
+    createMockComponent({
+      id: "comp-5",
+      variantId: "variant-a",
+      folderId: "folder-1",
+    }),
+  ];
+
+  const componentsVariantB = [
+    createMockComponent({
+      id: "comp-6",
+      variantId: "variant-b",
+      folderId: null,
+    }),
+    createMockComponent({
+      id: "comp-7",
+      variantId: "variant-b",
+      folderId: "folder-1",
+    }),
+  ];
+
+  return {
+    textItems: [...baseTextItems, ...variantATextItems, ...variantBTextItems],
+    components: [
+      ...componentsBase,
+      ...componentsVariantA,
+      ...componentsVariantB,
+    ],
+  };
+};
+
 // Helper functions
 const setupMocks = ({
   textItems = [],
@@ -78,6 +183,33 @@ const setupMocks = ({
   });
 };
 
+const setupExportMocks = ({
+  textItems,
+  components,
+  variables = [],
+}: {
+  textItems: any;
+  components?: any;
+  variables?: any[];
+}) => {
+  mockHttpClient.get.mockImplementation((url: string, config?: any) => {
+    if (url.includes("/v2/textItems/export")) {
+      return Promise.resolve({
+        data: textItems,
+      });
+    }
+    if (url.includes("/v2/variables")) {
+      return Promise.resolve({ data: variables });
+    }
+    if (url.includes("/v2/components/export")) {
+      return Promise.resolve({
+        data: components,
+      });
+    }
+    return Promise.resolve({ data: [] });
+  });
+};
+
 const parseJsonFile = (filepath: string) => {
   const content = fs.readFileSync(filepath, "utf-8");
   return JSON.parse(content);
@@ -96,6 +228,10 @@ const assertFilesCreated = (outputDir: string, expectedFiles: string[]) => {
   const actualFiles = fs.readdirSync(outputDir).toSorted();
   expect(actualFiles).toEqual(expectedFiles.toSorted());
 };
+
+/**********************************************************
+ * E2E Tests
+ **********************************************************/
 
 describe("pull command - end-to-end tests", () => {
   // Create a temporary directory for tests
@@ -470,118 +606,24 @@ describe("pull command - end-to-end tests", () => {
   });
 
   /**********************************************************
-   * OUTPUT - JSON
+   * OUTPUT TESTS - JSON
    **********************************************************/
-  describe.only("Output files - JSON", () => {
-    const createMockData = () => {
-      // project-1 and project-2 each have at least one base text item
-      const baseTextItems = [
-        createMockTextItem({
-          projectId: "project-1",
-          variantId: null,
-          id: "text-1",
-        }),
-        createMockTextItem({
-          projectId: "project-1",
-          variantId: null,
-          id: "text-2",
-        }),
-        createMockTextItem({
-          projectId: "project-2",
-          variantId: null,
-          id: "text-3",
-        }),
-      ];
-
-      // project-1 and project-2 each have a variant-a text item
-      const variantATextItems = [
-        createMockTextItem({
-          projectId: "project-1",
-          variantId: "variant-a",
-          id: "text-4",
-        }),
-        createMockTextItem({
-          projectId: "project-2",
-          variantId: "variant-a",
-          id: "text-5",
-        }),
-      ];
-
-      // Only project-1 has variant-b, so only project-1 should get a variant-b file
-      const variantBTextItems = [
-        createMockTextItem({
-          projectId: "project-1",
-          variantId: "variant-b",
-          id: "text-6",
-        }),
-        createMockTextItem({
-          projectId: "project-1",
-          variantId: "variant-b",
-          id: "text-7",
-        }),
-      ];
-
-      const componentsBase = [
-        createMockComponent({
-          id: "comp-1",
-          variantId: null,
-          folderId: null,
-        }),
-        createMockComponent({
-          id: "comp-2",
-          variantId: null,
-          folderId: "folder-1",
-        }),
-        createMockComponent({
-          id: "comp-3",
-          variantId: null,
-          folderId: "folder-2",
-        }),
-      ];
-
-      const componentsVariantA = [
-        createMockComponent({
-          id: "comp-4",
-          variantId: "variant-a",
-          folderId: null,
-        }),
-        createMockComponent({
-          id: "comp-5",
-          variantId: "variant-a",
-          folderId: "folder-1",
-        }),
-      ];
-
-      const componentsVariantB = [
-        createMockComponent({
-          id: "comp-6",
-          variantId: "variant-b",
-          folderId: null,
-        }),
-        createMockComponent({
-          id: "comp-7",
-          variantId: "variant-b",
-          folderId: "folder-1",
-        }),
-      ];
-
-      setupMocks({
-        textItems: [
-          ...baseTextItems,
-          ...variantATextItems,
-          ...variantBTextItems,
-        ],
-        components: [
-          ...componentsBase,
-          ...componentsVariantA,
-          ...componentsVariantB,
-        ],
-      });
-    };
+  describe("Output files - JSON", () => {
+    const expectedJSONFiles = [
+      "project-1___base.json",
+      "project-1___variant-a.json",
+      "project-1___variant-b.json",
+      "project-2___base.json",
+      "project-2___variant-a.json",
+      "components___base.json",
+      "components___variant-a.json",
+      "components___variant-b.json",
+      "variables.json",
+    ];
 
     it("should create output files for each project and variant returned from the API", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
-      createMockData();
+      setupMocks(createMockData());
       appContext.setProjectConfig({
         projects: [],
         components: {},
@@ -596,22 +638,13 @@ describe("pull command - end-to-end tests", () => {
       await pull({});
 
       // Verify a file was created for each project and variant present in the (mocked) API response
-      assertFilesCreated(outputDir, [
-        "project-1___base.json",
-        "project-1___variant-a.json",
-        "project-1___variant-b.json",
-        "project-2___base.json",
-        "project-2___variant-a.json",
-        "components___base.json",
-        "components___variant-a.json",
-        "components___variant-b.json",
-        "variables.json",
-      ]);
+      assertFilesCreated(outputDir, expectedJSONFiles);
     });
 
     it("should create index.js file when framework: i18next provided", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
-      createMockData();
+      setupMocks(createMockData());
+
       appContext.setProjectConfig({
         projects: [],
         components: {},
@@ -626,66 +659,36 @@ describe("pull command - end-to-end tests", () => {
 
       await pull({});
 
-      // Verify a file was created for each project and variant present in the (mocked) API response
-      assertFilesCreated(outputDir, [
-        "project-1___base.json",
-        "project-1___variant-a.json",
-        "project-1___variant-b.json",
-        "project-2___base.json",
-        "project-2___variant-a.json",
-        "components___base.json",
-        "components___variant-a.json",
-        "components___variant-b.json",
-        "variables.json",
-        "index.js",
-      ]);
+      assertFilesCreated(outputDir, [...expectedJSONFiles, "index.js"]);
+    });
+
+    it("should create index.js file when framework: vue-18n provided", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+      setupMocks(createMockData());
+
+      appContext.setProjectConfig({
+        projects: [],
+        components: {},
+        outputs: [
+          {
+            format: "json",
+            outDir: outputDir,
+            framework: "i18next",
+          },
+        ],
+      });
+
+      await pull({});
+
+      assertFilesCreated(outputDir, [...expectedJSONFiles, "index.js"]);
     });
   });
 
-  // Helper functions
-  const setupIosStringsMocks = ({
-    textItems = [],
-    components = [],
-    variables = [],
-  }: {
-    textItems: TextItem[];
-    components?: Component[];
-    variables?: any[];
-  }) => {
-    /*
-    "this-is-a-ditto-text-item" = "No its not";
-
-    "this-is-a-text-layer-on-figma" = "This is a Ditto text item (LinkedNode)";
-
-    "update-preferences" = "Update preferences";
-  */
-    mockHttpClient.get.mockImplementation((url: string, config?: any) => {
-      if (url.includes("/v2/textItems/export")) {
-        return Promise.resolve({
-          data: textItems
-            .map((textItem) => `"${textItem.id}" = "${textItem.text}"`)
-            .join("\n\n"),
-        });
-      }
-      if (url.includes("/v2/variables")) {
-        return Promise.resolve({ data: variables });
-      }
-      if (url.includes("/v2/components/export")) {
-        return Promise.resolve({
-          data: components
-            .map((component) => `"${component.id}" = "${component.text}"`)
-            .join("\n\n"),
-        });
-      }
-      return Promise.resolve({ data: [] });
-    });
-  };
-
   /**********************************************************
-   * OUTPUT - ios-strings
+   * OUTPUT TESTS - ios-strings
    **********************************************************/
   describe("Output files - ios-strings", () => {
-    it("should create output files for each project and variant returned from the API", async () => {
+    it("should create correct output files for each project and variant returned from the API", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
 
       appContext.setProjectConfig({
@@ -703,109 +706,22 @@ describe("pull command - end-to-end tests", () => {
           },
         ],
       });
+      // create exports like so
+      /*
+        "this-is-a-ditto-text-item" = "No its not";
 
-      // project-1 and project-2 each have at least one base text item
-      const baseTextItems = [
-        createMockTextItem({
-          projectId: "project-1",
-          variantId: null,
-          id: "text-1",
-        }),
-        createMockTextItem({
-          projectId: "project-1",
-          variantId: null,
-          id: "text-2",
-        }),
-        createMockTextItem({
-          projectId: "project-2",
-          variantId: null,
-          id: "text-3",
-        }),
-      ];
+        "this-is-a-text-layer-on-figma" = "This is a Ditto text item (LinkedNode)";
 
-      // project-1 and project-2 each have a variant-a text item
-      const variantATextItems = [
-        createMockTextItem({
-          projectId: "project-1",
-          variantId: "variant-a",
-          id: "text-4",
-        }),
-        createMockTextItem({
-          projectId: "project-2",
-          variantId: "variant-a",
-          id: "text-5",
-        }),
-      ];
-
-      // Only project-1 has variant-b, so only project-1 should get a variant-b file
-      const variantBTextItems = [
-        createMockTextItem({
-          projectId: "project-1",
-          variantId: "variant-b",
-          id: "text-6",
-        }),
-        createMockTextItem({
-          projectId: "project-1",
-          variantId: "variant-b",
-          id: "text-7",
-        }),
-      ];
-
-      const componentsBase = [
-        createMockComponent({
-          id: "comp-1",
-          variantId: null,
-          folderId: null,
-        }),
-        createMockComponent({
-          id: "comp-2",
-          variantId: null,
-          folderId: "folder-1",
-        }),
-        createMockComponent({
-          id: "comp-3",
-          variantId: null,
-          folderId: "folder-2",
-        }),
-      ];
-
-      const componentsVariantA = [
-        createMockComponent({
-          id: "comp-4",
-          variantId: "variant-a",
-          folderId: null,
-        }),
-        createMockComponent({
-          id: "comp-5",
-          variantId: "variant-a",
-          folderId: "folder-1",
-        }),
-      ];
-
-      const componentsVariantB = [
-        createMockComponent({
-          id: "comp-6",
-          variantId: "variant-b",
-          folderId: null,
-        }),
-        createMockComponent({
-          id: "comp-7",
-          variantId: "variant-b",
-          folderId: "folder-1",
-        }),
-      ];
-
-      setupIosStringsMocks({
-        textItems: [
-          ...baseTextItems,
-          ...variantATextItems,
-          ...variantBTextItems,
-        ],
-        components: [
-          ...componentsBase,
-          ...componentsVariantA,
-          ...componentsVariantB,
-        ],
+        "update-preferences" = "Update preferences";
+      */
+      const { textItems, components } = createMockData();
+      setupExportMocks({
+        textItems: textItems
+          .map((textItem) => `"${textItem.id}" = "${textItem.text}"`)
+          .join("\n\n"),
+        components: components
+          .map((component) => `"${component.id}" = "${component.text}"`)
+          .join("\n\n"),
       });
 
       await pull({});
@@ -821,6 +737,108 @@ describe("pull command - end-to-end tests", () => {
         "components___base.strings",
         "components___variant-a.strings",
         "components___variant-b.strings",
+      ]);
+    });
+  });
+
+  /**********************************************************
+   * OUTPUT TESTS - ios-strings
+   **********************************************************/
+  describe("Output files - ios-stringsdict", () => {
+    it("should create correct output files for each project and variant returned from the API", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      appContext.setProjectConfig({
+        components: {},
+        outputs: [
+          {
+            format: "ios-stringsdict",
+            outDir: outputDir,
+            projects: [{ id: "project-1" }, { id: "project-2" }],
+            variants: [
+              { id: "base" },
+              { id: "variant-a" },
+              { id: "variant-b" },
+            ],
+          },
+        ],
+      });
+      const { textItems, components } = createMockData();
+      setupExportMocks({
+        // Todo: once we have plurals let's make some real mock data here
+        textItems: textItems.join("\n"),
+        components: components.join("\n"),
+      });
+
+      await pull({});
+
+      // Verify a file was created for each project and variant present in the (mocked) API response
+      assertFilesCreated(outputDir, [
+        "project-1___base.stringsdict",
+        "project-1___variant-a.stringsdict",
+        "project-1___variant-b.stringsdict",
+        "project-2___base.stringsdict",
+        "project-2___variant-a.stringsdict",
+        "project-2___variant-b.stringsdict",
+        "components___base.stringsdict",
+        "components___variant-a.stringsdict",
+        "components___variant-b.stringsdict",
+      ]);
+    });
+  });
+
+  /**********************************************************
+   * OUTPUT TESTS - ios-strings
+   **********************************************************/
+  describe("Output files - Android XML", () => {
+    it("should create correct output files for each project and variant returned from the API", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      appContext.setProjectConfig({
+        components: {},
+        outputs: [
+          {
+            format: "android",
+            outDir: outputDir,
+            projects: [{ id: "project-1" }, { id: "project-2" }],
+            variants: [
+              { id: "base" },
+              { id: "variant-a" },
+              { id: "variant-b" },
+            ],
+          },
+        ],
+      });
+
+      const { textItems, components } = createMockData();
+      setupExportMocks({
+        textItems: textItems
+          .map(
+            (ti) =>
+              `<string name="${ti.id}" ditto_api_id="${ti.id}">${ti.text}</string>`
+          )
+          .join("\n"),
+        components: components
+          .map(
+            (cmp) =>
+              `<string name="${cmp.id}" ditto_api_id="${cmp.id}">${cmp.text}</string>`
+          )
+          .join("\n"),
+      });
+
+      await pull({});
+
+      // Verify a file was created for each project and variant present in the (mocked) API response
+      assertFilesCreated(outputDir, [
+        "project-1___base.xml",
+        "project-1___variant-a.xml",
+        "project-1___variant-b.xml",
+        "project-2___base.xml",
+        "project-2___variant-a.xml",
+        "project-2___variant-b.xml",
+        "components___base.xml",
+        "components___variant-a.xml",
+        "components___variant-b.xml",
       ]);
     });
   });

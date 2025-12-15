@@ -91,8 +91,8 @@ export default class JSONFormatter extends applyMixins(
    */
   private async fetchTextItems() {
     if (!this.projectConfig.projects && !this.output.projects) return [];
-
-    return await fetchText<TextItemsResponse>(super.generateQueryParams("textItem"), this.meta);
+    const filters = super.generateTextItemPullFilter();
+    return await fetchText<TextItemsResponse>(super.generateQueryParams(filters), this.meta);
   }
 
   /**
@@ -103,8 +103,8 @@ export default class JSONFormatter extends applyMixins(
    */
   private async fetchComponents() {
     if (!this.projectConfig.components && !this.output.components) return [];
-
-    return await fetchComponents<ComponentsResponse>(super.generateQueryParams("component"), this.meta);
+    const filters = super.generateComponentPullFilter();
+    return await fetchComponents<ComponentsResponse>(super.generateQueryParams(filters), this.meta);
   }
 
   private async fetchVariables() {

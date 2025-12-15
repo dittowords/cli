@@ -36,7 +36,7 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
     this.meta = meta;
   }
 
-  private generateTextItemPullFilter() {
+  protected generateTextItemPullFilter() {
     let filters: PullFilters = {
       projects: this.projectConfig.projects,
       variants: this.projectConfig.variants,
@@ -53,7 +53,7 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
     return filters;
   }
 
-  private generateComponentPullFilter() {
+  protected generateComponentPullFilter() {
     let filters: PullFilters = {
       ...(this.projectConfig.components?.folders && {
         folders: this.projectConfig.components.folders,
@@ -74,18 +74,11 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
 
   /**
    * Returns the query parameters for the fetchText API request
+   * todo: this should just take in filters and stringify them
    */
-  protected generateQueryParams(
-    requestType: RequestType,
-    filter: PullFilters = {}
-  ): PullQueryParams {
-    const baseFilter =
-      requestType === "textItem"
-        ? this.generateTextItemPullFilter()
-        : this.generateComponentPullFilter();
-
+  protected generateQueryParams(filters: PullFilters = {}): PullQueryParams {
     let params: PullQueryParams = {
-      filter: JSON.stringify({ ...baseFilter, ...filter }),
+      filter: JSON.stringify(filters),
     };
 
     if (this.projectConfig.richText) {

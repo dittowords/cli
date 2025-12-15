@@ -120,7 +120,7 @@ export default class BaseExportFormatter<
         const variantsParam =
           variant.id === "base" ? undefined : [{ id: variant.id }];
         const params: PullQueryParams = {
-          ...super.generateQueryParams("textItem", {
+          ...super.generateQueryParams({
             projects: [{ id: project.id }],
             variants: variantsParam,
           }),
@@ -152,8 +152,13 @@ export default class BaseExportFormatter<
       // map "base" to undefined, as by default export endpoint returns base variant
       const variantsParam =
         variant.id === "base" ? undefined : [{ id: variant.id }];
+      const folderFilters = super.generateComponentPullFilter().folders;
       const params: PullQueryParams = {
-        ...super.generateQueryParams("component", { variants: variantsParam }),
+        // gets folders from base component pull filters, overwrites variants with just this iteration's variant
+        ...super.generateQueryParams({
+          folders: folderFilters,
+          variants: variantsParam,
+        }),
         format: this.exportFormat,
       };
       const componentsFileContent =

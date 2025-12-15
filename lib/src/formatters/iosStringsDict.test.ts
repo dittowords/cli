@@ -1,11 +1,11 @@
-import IOSStringsOutputFile from "./shared/fileTypes/IOSStringsOutputFile";
+import IOSStringsDictFormatter from "./iosStringsDict";
+import IOSStringsDictOutputFile from "./shared/fileTypes/IOSStringsDictOutputFile";
 import { Output } from "../outputs";
 import { ProjectConfigYAML } from "../services/projectConfig";
 import { CommandMetaFlags } from "../http/types";
-import IOSStringsFormatter from "./iosStrings";
 
 // @ts-ignore
-class TestIOSStringsFormatter extends IOSStringsFormatter {
+class TestIOSStringsDictFormatter extends IOSStringsDictFormatter {
   public createOutputFilePublic(
     fileName: string,
     variantId: string,
@@ -26,10 +26,10 @@ class TestIOSStringsFormatter extends IOSStringsFormatter {
   }
 }
 
-describe("IOSStringsFormatter", () => {
+describe("IOSStringsDictFormatter", () => {
   // @ts-ignore
   const createMockOutput = (overrides: Partial<Output> = {}): Output => ({
-    format: "ios-strings",
+    format: "ios-stringsdict",
     ...overrides,
   });
 
@@ -43,7 +43,8 @@ describe("IOSStringsFormatter", () => {
     },
     outputs: [
       {
-        format: "ios-strings",
+        // Minimal valid output config for this formatter
+        format: "ios-stringsdict",
       } as any,
     ],
     ...overrides,
@@ -51,22 +52,22 @@ describe("IOSStringsFormatter", () => {
 
   const createMockMeta = (): CommandMetaFlags => ({});
 
-  it("has export format of ios-strings", () => {
+  it("has export format of ios-stringsdict", () => {
     const output = createMockOutput({ outDir: "/test/output" });
     const projectConfig = createMockProjectConfig();
-    const formatter = new TestIOSStringsFormatter(
+    const formatter = new TestIOSStringsDictFormatter(
       output,
       projectConfig,
       createMockMeta()
     );
 
-    expect(formatter.getExportFormat()).toBe("ios-strings");
+    expect(formatter.getExportFormat()).toBe("ios-stringsdict");
   });
 
-  it("creates IOSStringsOutputFile with correct metadata and content", () => {
+  it("creates IOSStringsDictOutputFile with correct metadata and content", () => {
     const output = createMockOutput({ outDir: "/test/output" });
     const projectConfig = createMockProjectConfig();
-    const formatter = new TestIOSStringsFormatter(
+    const formatter = new TestIOSStringsDictFormatter(
       output,
       projectConfig,
       createMockMeta()
@@ -79,13 +80,13 @@ describe("IOSStringsFormatter", () => {
     formatter.createOutputFilePublic(fileName, variantId, content);
 
     const files = formatter.getOutputFiles();
-    const file = files[fileName] as IOSStringsOutputFile<{
+    const file = files[fileName] as IOSStringsDictOutputFile<{
       variantId: string;
     }>;
 
-    expect(file).toBeInstanceOf(IOSStringsOutputFile);
+    expect(file).toBeInstanceOf(IOSStringsDictOutputFile);
     expect(file.fullPath).toBe(
-      "/test/output/cli-testing-project___spanish.strings"
+      "/test/output/cli-testing-project___spanish.stringsdict"
     );
     expect(file.metadata).toEqual({ variantId: "spanish" });
     expect(file.content).toBe("file-content");
@@ -94,7 +95,7 @@ describe("IOSStringsFormatter", () => {
   it("defaults variantId metadata to 'base' when variantId is falsy", () => {
     const output = createMockOutput({ outDir: "/test/output" });
     const projectConfig = createMockProjectConfig();
-    const formatter = new TestIOSStringsFormatter(
+    const formatter = new TestIOSStringsDictFormatter(
       output,
       projectConfig,
       createMockMeta()
@@ -106,7 +107,7 @@ describe("IOSStringsFormatter", () => {
     formatter.createOutputFilePublic(fileName, "" as any, content);
 
     const files = formatter.getOutputFiles();
-    const file = files[fileName] as IOSStringsOutputFile<{
+    const file = files[fileName] as IOSStringsDictOutputFile<{
       variantId: string;
     }>;
 

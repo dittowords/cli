@@ -1,11 +1,11 @@
-import IOSStringsOutputFile from "./shared/fileTypes/IOSStringsOutputFile";
+import AndroidOutputFile from "./shared/fileTypes/AndroidOutputFile";
 import { Output } from "../outputs";
 import { ProjectConfigYAML } from "../services/projectConfig";
 import { CommandMetaFlags } from "../http/types";
-import IOSStringsFormatter from "./iosStrings";
+import AndroidXMLFormatter from "./android";
 
 // @ts-ignore
-class TestIOSStringsFormatter extends IOSStringsFormatter {
+class TestAndroidXMLFormatter extends AndroidXMLFormatter {
   public createOutputFilePublic(
     fileName: string,
     variantId: string,
@@ -26,10 +26,10 @@ class TestIOSStringsFormatter extends IOSStringsFormatter {
   }
 }
 
-describe("IOSStringsFormatter", () => {
+describe("AndroidXMLFormatter", () => {
   // @ts-ignore
   const createMockOutput = (overrides: Partial<Output> = {}): Output => ({
-    format: "ios-strings",
+    format: "android",
     ...overrides,
   });
 
@@ -43,7 +43,7 @@ describe("IOSStringsFormatter", () => {
     },
     outputs: [
       {
-        format: "ios-strings",
+        format: "android",
       } as any,
     ],
     ...overrides,
@@ -51,22 +51,22 @@ describe("IOSStringsFormatter", () => {
 
   const createMockMeta = (): CommandMetaFlags => ({});
 
-  it("has export format of ios-strings", () => {
+  it("has export format of android", () => {
     const output = createMockOutput({ outDir: "/test/output" });
     const projectConfig = createMockProjectConfig();
-    const formatter = new TestIOSStringsFormatter(
+    const formatter = new TestAndroidXMLFormatter(
       output,
       projectConfig,
       createMockMeta()
     );
 
-    expect(formatter.getExportFormat()).toBe("ios-strings");
+    expect(formatter.getExportFormat()).toBe("android");
   });
 
-  it("creates IOSStringsOutputFile with correct metadata and content", () => {
+  it("creates AndroidOutputFile with correct metadata and content", () => {
     const output = createMockOutput({ outDir: "/test/output" });
     const projectConfig = createMockProjectConfig();
-    const formatter = new TestIOSStringsFormatter(
+    const formatter = new TestAndroidXMLFormatter(
       output,
       projectConfig,
       createMockMeta()
@@ -79,13 +79,13 @@ describe("IOSStringsFormatter", () => {
     formatter.createOutputFilePublic(fileName, variantId, content);
 
     const files = formatter.getOutputFiles();
-    const file = files[fileName] as IOSStringsOutputFile<{
+    const file = files[fileName] as AndroidOutputFile<{
       variantId: string;
     }>;
 
-    expect(file).toBeInstanceOf(IOSStringsOutputFile);
+    expect(file).toBeInstanceOf(AndroidOutputFile);
     expect(file.fullPath).toBe(
-      "/test/output/cli-testing-project___spanish.strings"
+      "/test/output/cli-testing-project___spanish.xml"
     );
     expect(file.metadata).toEqual({ variantId: "spanish" });
     expect(file.content).toBe("file-content");
@@ -94,7 +94,7 @@ describe("IOSStringsFormatter", () => {
   it("defaults variantId metadata to 'base' when variantId is falsy", () => {
     const output = createMockOutput({ outDir: "/test/output" });
     const projectConfig = createMockProjectConfig();
-    const formatter = new TestIOSStringsFormatter(
+    const formatter = new TestAndroidXMLFormatter(
       output,
       projectConfig,
       createMockMeta()
@@ -106,7 +106,7 @@ describe("IOSStringsFormatter", () => {
     formatter.createOutputFilePublic(fileName, "" as any, content);
 
     const files = formatter.getOutputFiles();
-    const file = files[fileName] as IOSStringsOutputFile<{
+    const file = files[fileName] as AndroidOutputFile<{
       variantId: string;
     }>;
 

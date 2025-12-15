@@ -1,8 +1,10 @@
 import fetchText from "../../http/textItems";
 import {
-  ExportComponentsResponse,
-  ExportTextItemsResponse,
+  ExportComponentsStringResponse,
+  ExportComponentsJSONResponse,
+  ExportTextItemsStringResponse,
   PullQueryParams,
+  ExportTextItemsJSONResponse,
 } from "../../http/types";
 import fetchComponents from "../../http/components";
 import BaseFormatter from "./base";
@@ -11,11 +13,15 @@ import fetchVariants from "../../http/variants";
 import OutputFile from "./fileTypes/OutputFile";
 
 interface ComponentsMap {
-  [variantId: string]: ExportComponentsResponse;
+  [variantId: string]:
+    | ExportComponentsStringResponse
+    | ExportComponentsJSONResponse;
 }
 interface TextItemsMap {
   [projectId: string]: {
-    [variantId: string]: ExportTextItemsResponse;
+    [variantId: string]:
+      | ExportTextItemsStringResponse
+      | ExportComponentsJSONResponse;
   };
 }
 
@@ -25,12 +31,25 @@ type ExportFormatAPIData = {
 };
 
 type ExportOutputFile<MetadataType extends { variantId: string }> = OutputFile<
-  string,
+  string | Record<string, unknown>,
   MetadataType
 >;
 
+/**
+ * Base Class for File Formats That Leverage API /v2/components/export and /v2/textItems/export endpoints
+ * These file formats fetch their file data directly from the API and write to files, as they are unable
+ * to perform any manipulation on the data itself
+ */
 export default class BaseExportFormatter<
-  TOutputFile extends ExportOutputFile<{ variantId: string }>
+  TOutputFile extends ExportOutputFile<{ variantId: string }>,
+  // The response types below correspond to the file data returned from the export endpoint and what will ultimately be written directly to the /ditto directory
+  // ios-strings, ios-stringsdict, and android formats are all strings while icu is { [developerId: string]: string } JSON Structure
+  TTextItemsResponse extends
+    | ExportTextItemsStringResponse
+    | ExportTextItemsJSONResponse,
+  TComponentsResponse extends
+    | ExportComponentsStringResponse
+    | ExportComponentsJSONResponse
 > extends BaseFormatter<TOutputFile, ExportFormatAPIData> {
   protected exportFormat: PullQueryParams["format"];
   private variants: { id: string }[] = [];
@@ -39,7 +58,7 @@ export default class BaseExportFormatter<
   protected createOutputFile(
     fileName: string,
     variantId: string,
-    content: string
+    content: string | Record<string, unknown>
   ): void {}
 
   protected async fetchAPIData() {
@@ -126,7 +145,7 @@ export default class BaseExportFormatter<
           }),
           format: this.exportFormat,
         };
-        const textItemsFileContent = await fetchText<ExportTextItemsResponse>(
+        const textItemsFileContent = await fetchText<TTextItemsResponse>(
           params,
           this.meta
         );
@@ -161,8 +180,10 @@ export default class BaseExportFormatter<
         }),
         format: this.exportFormat,
       };
-      const componentsFileContent =
-        await fetchComponents<ExportComponentsResponse>(params, this.meta);
+      const componentsFileContent = await fetchComponents<TComponentsResponse>(
+        params,
+        this.meta
+      );
       result[variant.id] = componentsFileContent;
     }
 

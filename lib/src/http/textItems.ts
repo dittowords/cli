@@ -4,7 +4,8 @@ import {
   CommandMetaFlags,
   PullQueryParams,
   ZTextItemsResponse,
-  ZExportTextItemsResponse,
+  ZExportTextItemsJSONResponse,
+  ZExportTextItemsStringResponse,
 } from "./types";
 import getHttpClient from "./client";
 
@@ -49,7 +50,15 @@ export default async function fetchText<TResponse>(
         const response = await httpClient.get("/v2/textItems/export", {
           params,
         });
-        return ZExportTextItemsResponse.parse(response.data) as TResponse;
+        return ZExportTextItemsStringResponse.parse(response.data) as TResponse;
+      });
+    case "icu":
+      return fetchTextWrapper<TResponse>(async () => {
+        const httpClient = getHttpClient({ meta });
+        const response = await httpClient.get("/v2/textItems/export", {
+          params,
+        });
+        return ZExportTextItemsJSONResponse.parse(response.data) as TResponse;
       });
     default:
       return fetchTextWrapper<TResponse>(async () => {

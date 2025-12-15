@@ -2,6 +2,7 @@ import { CommandMetaFlags } from "../http/types";
 import { Output } from "../outputs";
 import { ProjectConfigYAML } from "../services/projectConfig";
 import AndroidXMLFormatter from "./android";
+import ICUFormatter from "./icu";
 import IOSStringsFormatter from "./iosStrings";
 import IOSStringsDictFormatter from "./iosStringsDict";
 import JSONFormatter from "./json";
@@ -20,6 +21,8 @@ export default function formatOutput(
       return new IOSStringsFormatter(output, projectConfig, meta).format();
     case "ios-stringsdict":
       return new IOSStringsDictFormatter(output, projectConfig, meta).format();
+    case "icu":
+      return new ICUFormatter(output, projectConfig, meta).format();
     default:
       throw new Error(`Unsupported output format: ${output}`);
   }

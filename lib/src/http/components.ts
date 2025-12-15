@@ -1,9 +1,10 @@
 import { AxiosError } from "axios";
 import {
   ZComponentsResponse,
-  ZExportComponentsResponse,
+  ZExportComponentsStringResponse,
   PullQueryParams,
   CommandMetaFlags,
+  ZExportComponentsJSONResponse,
 } from "./types";
 import getHttpClient from "./client";
 
@@ -50,7 +51,17 @@ export default async function fetchComponents<TResponse>(
         const response = await httpClient.get("/v2/components/export", {
           params,
         });
-        return ZExportComponentsResponse.parse(response.data) as TResponse;
+        return ZExportComponentsStringResponse.parse(
+          response.data
+        ) as TResponse;
+      });
+    case "icu":
+      return fetchComponentsWrapper<TResponse>(async () => {
+        const httpClient = getHttpClient({ meta });
+        const response = await httpClient.get("/v2/components/export", {
+          params,
+        });
+        return ZExportComponentsJSONResponse.parse(response.data) as TResponse;
       });
     default:
       return fetchComponentsWrapper<TResponse>(async () => {

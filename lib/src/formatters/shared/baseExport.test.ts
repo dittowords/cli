@@ -3,7 +3,7 @@ import { ProjectConfigYAML } from "../../services/projectConfig";
 import { CommandMetaFlags } from "../../http/types";
 import {
   ExportTextItemsResponse,
-  ExportComponentsResponse,
+  ExportComponentsStringResponse,
 } from "../../http/types";
 import fetchText from "../../http/textItems";
 import fetchComponents from "../../http/components";
@@ -96,7 +96,7 @@ describe("BaseExportFormatter", () => {
     "update-preferences" = "Update preferences";
   `;
 
-  const createMockComponentsContent = (): ExportComponentsResponse =>
+  const createMockComponentsContent = (): ExportComponentsStringResponse =>
     `
     "continue" = "Continue";
 

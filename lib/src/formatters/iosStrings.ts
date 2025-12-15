@@ -1,8 +1,14 @@
 import BaseExportFormatter from "./shared/baseExport";
 import IOSStringsOutputFile from "./shared/fileTypes/IOSStringsOutputFile";
-import { PullQueryParams } from "../http/types";
+import {
+  ExportComponentsStringResponse,
+  ExportTextItemsStringResponse,
+  PullQueryParams,
+} from "../http/types";
 export default class IOSStringsFormatter extends BaseExportFormatter<
-  IOSStringsOutputFile<{ variantId: string }>
+  IOSStringsOutputFile<{ variantId: string }>,
+  ExportTextItemsStringResponse,
+  ExportComponentsStringResponse
 > {
   protected exportFormat: PullQueryParams["format"] = "ios-strings";
 

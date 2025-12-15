@@ -34,22 +34,21 @@ type ExportOutputFile<MetadataType extends { variantId: string }> = OutputFile<
  * These file formats fetch their file data directly from the API and write to files, as they are unable
  * to perform any manipulation on the data itself
  */
-export default class BaseExportFormatter<
+export default abstract class BaseExportFormatter<
   TOutputFile extends ExportOutputFile<{ variantId: string }>,
   // The response types below correspond to the file data returned from the export endpoint and what will ultimately be written directly to the /ditto directory
   // ios-strings, ios-stringsdict, and android formats are all strings while icu is { [developerId: string]: string } JSON Structure
   TTextItemsResponse extends ExportTextItemsResponse,
   TComponentsResponse extends ExportComponentsResponse
 > extends BaseFormatter<TOutputFile, ExportFormatAPIData> {
-  protected exportFormat: PullQueryParams["format"];
+  protected abstract exportFormat: PullQueryParams["format"];
   private variants: { id: string }[] = [];
 
-  // required by children
-  protected createOutputFile(
+  protected abstract createOutputFile(
     fileName: string,
     variantId: string,
     content: string | Record<string, unknown>
-  ): void {}
+  ): void;
 
   protected async fetchAPIData() {
     await this.fetchVariants();

@@ -73,7 +73,6 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
 
   /**
    * Returns the query parameters for the fetchText API request
-   * todo: this should just take in filters and stringify them
    */
   protected generateQueryParams(filters: PullFilters = {}): PullQueryParams {
     let params: PullQueryParams = {

@@ -11,7 +11,6 @@ import {
   PullQueryParams,
 } from "../../http/types";
 
-type RequestType = "textItem" | "component";
 export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
   protected output: Output;
   protected projectConfig: ProjectConfigYAML;

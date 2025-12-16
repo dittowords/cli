@@ -31,8 +31,8 @@ type ExportOutputFile<MetadataType extends { variantId: string }> = OutputFile<
 
 /**
  * Base Class for File Formats That Leverage API /v2/components/export and /v2/textItems/export endpoints
- * These file formats fetch their file data directly from the API and write to files, as they are unable
- * to perform any manipulation on the data itself
+ * These file formats fetch their file data directly from the API and write to files, as unlike in the case of
+ * default /v2/textItems + /v2/components JSON, we cannot or do not want to perform any manipulation on the data itself
  */
 export default abstract class BaseExportFormatter<
   TOutputFile extends ExportOutputFile<{ variantId: string }>,

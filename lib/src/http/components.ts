@@ -1,23 +1,18 @@
 import { AxiosError } from "axios";
 import {
   ZComponentsResponse,
+  ZExportComponentsResponse,
   PullQueryParams,
   CommandMetaFlags,
 } from "./types";
 import getHttpClient from "./client";
 
-export default async function fetchComponents(
-  params: PullQueryParams,
-  meta: CommandMetaFlags
+function fetchComponentsWrapper<TResponse>(
+  performRequest: () => Promise<TResponse>
 ) {
   try {
-    const httpClient = getHttpClient({ meta });
-    const response = await httpClient.get("/v2/components", {
-      params,
-    });
-
-    return ZComponentsResponse.parse(response.data);
-  } catch (e) {
+    return performRequest();
+  } catch (e: unknown) {
     if (!(e instanceof AxiosError)) {
       throw new Error(
         "Sorry! We're having trouble reaching the Ditto API. Please try again later."
@@ -39,5 +34,29 @@ export default async function fetchComponents(
     }
 
     throw e;
+  }
+}
+
+export default async function fetchComponents<TResponse>(
+  params: PullQueryParams,
+  meta: CommandMetaFlags
+) {
+  switch (params.format) {
+    case "ios-strings":
+      return fetchComponentsWrapper<TResponse>(async () => {
+        const httpClient = getHttpClient({ meta });
+        const response = await httpClient.get("/v2/components/export", {
+          params,
+        });
+        return ZExportComponentsResponse.parse(response.data) as TResponse;
+      });
+    default:
+      return fetchComponentsWrapper<TResponse>(async () => {
+        const httpClient = getHttpClient({ meta });
+        const response = await httpClient.get("/v2/components", {
+          params,
+        });
+        return ZComponentsResponse.parse(response.data) as TResponse;
+      });
   }
 }

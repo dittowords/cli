@@ -14,10 +14,8 @@ type JSONAPIData = {
   variablesById: Record<string, Variable>;
 };
 
-type RequestType = "textItem" | "component";
-
 export default class JSONFormatter extends applyMixins(
-  BaseFormatter<JSONAPIData>) {
+  BaseFormatter<JSONOutputFile<{ variantId: string }>, JSONAPIData>) {
 
   protected async fetchAPIData() {
     const textItems = await this.fetchTextItems();
@@ -32,7 +30,7 @@ export default class JSONFormatter extends applyMixins(
     return { textItems, variablesById, components };
   }
 
-  protected async transformAPIData(data: JSONAPIData) {
+  protected transformAPIData(data: JSONAPIData) {
     for (let i = 0; i < data.textItems.length; i++) {
       const textItem = data.textItems[i];
       this.transformAPITextEntity(textItem, data.variablesById);
@@ -44,13 +42,13 @@ export default class JSONFormatter extends applyMixins(
     }
 
     let results: OutputFile[] = [
-      ...Object.values(this.outputJsonFiles),
+      ...Object.values(this.outputFiles),
       this.variablesOutputFile,
     ]
 
     if (this.output.framework) {
       // process framework
-      results.push(...getFrameworkProcessor(this.output).process(this.outputJsonFiles));
+      results.push(...getFrameworkProcessor(this.output).process(this.outputFiles));
     }
 
     return results;
@@ -64,7 +62,7 @@ export default class JSONFormatter extends applyMixins(
   private transformAPITextEntity(textEntity: TextItem | Component, variablesById: Record<string, Variable>) {
     const fileName = isTextItem(textEntity) ? `${textEntity.projectId}___${textEntity.variantId || "base"}` : `components___${textEntity.variantId || "base"}`;
 
-    this.outputJsonFiles[fileName] ??= new JSONOutputFile({
+    this.outputFiles[fileName] ??= new JSONOutputFile({
       filename: fileName,
       path: this.outDir,
       metadata: { variantId: textEntity.variantId || "base" },
@@ -78,67 +76,11 @@ export default class JSONFormatter extends applyMixins(
       ? textEntity.richText 
       : textEntity.text;
 
-    this.outputJsonFiles[fileName].content[textEntity.id] = textValue;
+    this.outputFiles[fileName].content[textEntity.id] = textValue;
     for (const variableId of textEntity.variableIds) {
       const variable = variablesById[variableId];
       this.variablesOutputFile.content[variableId] = variable.data;
     }
-  }
-
-  private generateTextItemPullFilter() {
-    let filters: PullFilters = {
-      projects: this.projectConfig.projects,
-      variants: this.projectConfig.variants,
-    };
-
-    if (this.output.projects) {
-      filters.projects = this.output.projects;
-    }
-
-    if (this.output.variants) {
-      filters.variants = this.output.variants;
-    }
-
-    return filters;
-  }
-
-  private generateComponentPullFilter() {
-    let filters: PullFilters = {
-      ...(this.projectConfig.components?.folders && { folders: this.projectConfig.components.folders }),
-      variants: this.projectConfig.variants,
-    };
-
-    if (this.output.components) {
-      filters.folders = this.output.components?.folders;
-    }
-
-    if (this.output.variants) {
-      filters.variants = this.output.variants;
-    }
-
-    return filters;
-  }
-
-  /**
-   * Returns the query parameters for the fetchText API request
-   */
-  private generateQueryParams(requestType: RequestType) {
-    const filter = requestType === "textItem" ? this.generateTextItemPullFilter() : this.generateComponentPullFilter();
-
-    let params: PullQueryParams = {
-      filter: JSON.stringify(filter),
-    };
-
-    if (this.projectConfig.richText) {
-      params.richText = this.projectConfig.richText;
-    }
-
-    if (this.output.richText) {
-      params.richText = this.output.richText;
-    }
-
-
-    return params;
   }
 
   /**
@@ -150,7 +92,7 @@ export default class JSONFormatter extends applyMixins(
   private async fetchTextItems() {
     if (!this.projectConfig.projects && !this.output.projects) return [];
 
-    return await fetchText(this.generateQueryParams("textItem"), this.meta);
+    return await fetchText<TextItemsResponse>(super.generateQueryParams("textItem"), this.meta);
   }
 
   /**
@@ -162,7 +104,7 @@ export default class JSONFormatter extends applyMixins(
   private async fetchComponents() {
     if (!this.projectConfig.components && !this.output.components) return [];
 
-    return await fetchComponents(this.generateQueryParams("component"), this.meta);
+    return await fetchComponents<ComponentsResponse>(super.generateQueryParams("component"), this.meta);
   }
 
   private async fetchVariables() {

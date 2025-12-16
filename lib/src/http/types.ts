@@ -12,6 +12,7 @@ export interface PullFilters {
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
   richText?: "html";
+  format?: "ios-strings" | undefined;
 }
 
 const ZBaseTextEntity = z.object({
@@ -41,6 +42,9 @@ export type TextItem = z.infer<typeof ZTextItem>;
 export const ZTextItemsResponse = z.array(ZTextItem);
 export type TextItemsResponse = z.infer<typeof ZTextItemsResponse>;
 
+export const ZExportTextItemsResponse = z.string();
+export type ExportTextItemsResponse = z.infer<typeof ZExportTextItemsResponse>;
+
 // MARK - Components
 
 const ZComponent = ZBaseTextEntity.extend({
@@ -54,6 +58,40 @@ export type Component = z.infer<typeof ZComponent>;
 
 export const ZComponentsResponse = z.array(ZComponent);
 export type ComponentsResponse = z.infer<typeof ZComponentsResponse>;
+
+export const ZExportComponentsResponse = z.string();
+export type ExportComponentsResponse = z.infer<typeof ZExportComponentsResponse>;
+
+// MARK - Projects
+
+const ZProject = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+/**
+ * Represents a single project, as returned from the /v2/projects endpoint
+ */
+export type Project = z.infer<typeof ZProject>;
+
+export const ZProjectsResponse = z.array(ZProject);
+export type ProjectsResponse = z.infer<typeof ZProjectsResponse>;
+
+// MARK - Variants
+
+const ZVariant = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+});
+
+/**
+ * Represents a single variant, as returned from the /v2/variants endpoint
+ */
+export type Variant = z.infer<typeof ZVariant>;
+
+export const ZVariantsResponse = z.array(ZVariant);
+export type VariantsResponse = z.infer<typeof ZVariantsResponse>;
 
 /**
  * Contains metadata attached to CLI commands via -m or --meta flag

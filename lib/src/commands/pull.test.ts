@@ -469,7 +469,7 @@ describe("pull command - end-to-end tests", () => {
     });
   });
 
-  describe("Output files", () => {
+  describe("Output files - JSON", () => {
     it("should create output files for each project and variant returned from the API", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
 
@@ -601,6 +601,186 @@ describe("pull command - end-to-end tests", () => {
         "components___variant-a.json",
         "components___variant-b.json",
         "variables.json",
+      ]);
+    });
+  });
+
+  // Helper functions
+  const setupIosStringsMocks = ({
+    textItems = [],
+    components = [],
+    variables = [],
+  }: {
+    textItems: TextItem[];
+    components?: Component[];
+    variables?: any[];
+  }) => {
+    /*
+    "this-is-a-ditto-text-item" = "No its not";
+
+    "this-is-a-text-layer-on-figma" = "This is a Ditto text item (LinkedNode)";
+
+    "update-preferences" = "Update preferences";
+  */
+    mockHttpClient.get.mockImplementation((url: string, config?: any) => {
+      if (url.includes("/v2/textItems/export")) {
+        return Promise.resolve({
+          data: textItems
+            .map((textItem) => `"${textItem.id}" = "${textItem.text}"`)
+            .join("\n\n"),
+        });
+      }
+      if (url.includes("/v2/variables")) {
+        return Promise.resolve({ data: variables });
+      }
+      if (url.includes("/v2/components/export")) {
+        return Promise.resolve({
+          data: components
+            .map((component) => `"${component.id}" = "${component.text}"`)
+            .join("\n\n"),
+        });
+      }
+      return Promise.resolve({ data: [] });
+    });
+  };
+
+  describe("Output files - ios-strings", () => {
+    it("should create output files for each project and variant returned from the API", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      appContext.setProjectConfig({
+        components: {},
+        outputs: [
+          {
+            format: "ios-strings",
+            outDir: outputDir,
+            projects: [{ id: "project-1" }, { id: "project-2" }],
+            variants: [
+              { id: "base" },
+              { id: "variant-a" },
+              { id: "variant-b" },
+            ],
+          },
+        ],
+      });
+
+      // project-1 and project-2 each have at least one base text item
+      const baseTextItems = [
+        createMockTextItem({
+          projectId: "project-1",
+          variantId: null,
+          id: "text-1",
+        }),
+        createMockTextItem({
+          projectId: "project-1",
+          variantId: null,
+          id: "text-2",
+        }),
+        createMockTextItem({
+          projectId: "project-2",
+          variantId: null,
+          id: "text-3",
+        }),
+      ];
+
+      // project-1 and project-2 each have a variant-a text item
+      const variantATextItems = [
+        createMockTextItem({
+          projectId: "project-1",
+          variantId: "variant-a",
+          id: "text-4",
+        }),
+        createMockTextItem({
+          projectId: "project-2",
+          variantId: "variant-a",
+          id: "text-5",
+        }),
+      ];
+
+      // Only project-1 has variant-b, so only project-1 should get a variant-b file
+      const variantBTextItems = [
+        createMockTextItem({
+          projectId: "project-1",
+          variantId: "variant-b",
+          id: "text-6",
+        }),
+        createMockTextItem({
+          projectId: "project-1",
+          variantId: "variant-b",
+          id: "text-7",
+        }),
+      ];
+
+      const componentsBase = [
+        createMockComponent({
+          id: "comp-1",
+          variantId: null,
+          folderId: null,
+        }),
+        createMockComponent({
+          id: "comp-2",
+          variantId: null,
+          folderId: "folder-1",
+        }),
+        createMockComponent({
+          id: "comp-3",
+          variantId: null,
+          folderId: "folder-2",
+        }),
+      ];
+
+      const componentsVariantA = [
+        createMockComponent({
+          id: "comp-4",
+          variantId: "variant-a",
+          folderId: null,
+        }),
+        createMockComponent({
+          id: "comp-5",
+          variantId: "variant-a",
+          folderId: "folder-1",
+        }),
+      ];
+
+      const componentsVariantB = [
+        createMockComponent({
+          id: "comp-6",
+          variantId: "variant-b",
+          folderId: null,
+        }),
+        createMockComponent({
+          id: "comp-7",
+          variantId: "variant-b",
+          folderId: "folder-1",
+        }),
+      ];
+
+      setupIosStringsMocks({
+        textItems: [
+          ...baseTextItems,
+          ...variantATextItems,
+          ...variantBTextItems,
+        ],
+        components: [
+          ...componentsBase,
+          ...componentsVariantA,
+          ...componentsVariantB,
+        ],
+      });
+
+      await pull({});
+
+      // Verify a file was created for each project and variant present in the (mocked) API response
+      assertFilesCreated(outputDir, [
+        "project-1___base.strings",
+        "project-1___variant-a.strings",
+        "project-1___variant-b.strings",
+        "project-2___base.strings",
+        "project-2___variant-a.strings",
+        "project-2___variant-b.strings",
+        "components___base.strings",
+        "components___variant-a.strings",
+        "components___variant-b.strings",
       ]);
     });
   });

@@ -7,12 +7,15 @@ export interface PullFilters {
     excludeNestedFolders?: boolean;
   }[];
   variants?: { id: string }[];
+  statuses?: ITextStatus[];
 }
 
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
   richText?: "html";
 }
+export const ZTextStatus = z.enum(["NONE", "WIP", "REVIEW", "FINAL"]);
+export type ITextStatus = z.infer<typeof ZTextStatus>;
 
 const ZBaseTextEntity = z.object({
   id: z.string(),

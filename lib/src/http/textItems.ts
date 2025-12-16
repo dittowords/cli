@@ -7,9 +7,27 @@ import {
 } from "./types";
 import getHttpClient from "./client";
 
-function fetchTextWrapper<TResponse>(cb: () => Promise<TResponse>) {
+export default async function fetchText<TResponse>(
+  params: PullQueryParams,
+  meta: CommandMetaFlags
+) {
   try {
-    return cb();
+    const httpClient = getHttpClient({ meta });
+    switch (params.format) {
+      case "android":
+      case "ios-strings":
+      case "ios-stringsdict":
+      case "icu":
+        const exportResponse = await httpClient.get("/v2/textItems/export", {
+          params,
+        });
+        return ZExportTextItemsResponse.parse(exportResponse.data) as TResponse;
+      default:
+        const defaultResponse = await httpClient.get("/v2/textItems", {
+          params,
+        });
+        return ZTextItemsResponse.parse(defaultResponse.data) as TResponse;
+    }
   } catch (e: unknown) {
     if (!(e instanceof AxiosError)) {
       throw new Error(
@@ -32,30 +50,5 @@ function fetchTextWrapper<TResponse>(cb: () => Promise<TResponse>) {
     }
 
     throw e;
-  }
-}
-
-export default async function fetchText<TResponse>(
-  params: PullQueryParams,
-  meta: CommandMetaFlags
-) {
-  switch (params.format) {
-    case "android":
-    case "ios-strings":
-    case "ios-stringsdict":
-    case "icu":
-      return fetchTextWrapper<TResponse>(async () => {
-        const httpClient = getHttpClient({ meta });
-        const response = await httpClient.get("/v2/textItems/export", {
-          params,
-        });
-        return ZExportTextItemsResponse.parse(response.data) as TResponse;
-      });
-    default:
-      return fetchTextWrapper<TResponse>(async () => {
-        const httpClient = getHttpClient({ meta });
-        const response = await httpClient.get("/v2/textItems", { params });
-        return ZTextItemsResponse.parse(response.data) as TResponse;
-      });
   }
 }

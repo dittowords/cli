@@ -34,9 +34,7 @@ class TestBaseExportFormatter extends BaseExportFormatter {
     fileName: string,
     variantId: string,
     content: string
-  ) {
-    return super.createOutputFile(fileName, variantId, content);
-  }
+  ) {}
   public async fetchAPIData() {
     return super.fetchAPIData();
   }

@@ -6,13 +6,20 @@ import { z } from "zod";
  */
 export const ZBaseOutputFilters = z.object({
   projects: z.array(z.object({ id: z.string() })).optional(),
-  components: z.object({ 
-    folders: z.array(z.object({ 
-      id: z.string(),
-      excludeNestedFolders: z.boolean().optional(),
-    })).optional(),
-  }).optional(),
+  components: z
+    .object({
+      folders: z
+        .array(
+          z.object({
+            id: z.string(),
+            excludeNestedFolders: z.boolean().optional(),
+          })
+        )
+        .optional(),
+    })
+    .optional(),
   variants: z.array(z.object({ id: z.string() })).optional(),
   outDir: z.string().optional(),
   richText: z.union([z.literal("html"), z.literal(false)]).optional(),
+  iosLocales: z.array(z.record(z.string(), z.string())).optional(),
 });

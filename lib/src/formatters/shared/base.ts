@@ -104,7 +104,7 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
     await this.writeFiles(files);
   }
 
-  private async writeFiles(files: OutputFile[]): Promise<void> {
+  protected async writeFiles(files: OutputFile[]): Promise<void> {
     await Promise.all(
       files.map((file) =>
         writeFile(file.fullPath, file.formattedContent).then(() => {

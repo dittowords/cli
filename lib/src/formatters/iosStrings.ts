@@ -5,6 +5,7 @@ import {
   ExportTextItemsStringResponse,
   PullQueryParams,
 } from "../http/types";
+
 export default class IOSStringsFormatter extends BaseExportFormatter<
   IOSStringsOutputFile<{ variantId: string }>,
   ExportTextItemsStringResponse,
@@ -17,9 +18,18 @@ export default class IOSStringsFormatter extends BaseExportFormatter<
     variantId: string,
     content: string
   ): void {
+    let path = this.outDir;
+    if (this.projectConfig.iosLocales) {
+      const locale = this.projectConfig.iosLocales.find(
+        (localePair) => localePair[variantId]
+      );
+      if (locale) {
+        path = path.concat(`/${locale[variantId]}.lproj`);
+      }
+    }
     this.outputFiles[fileName] ??= new IOSStringsOutputFile({
       filename: fileName,
-      path: this.outDir,
+      path: path,
       metadata: { variantId: variantId || "base" },
       content: content,
     });

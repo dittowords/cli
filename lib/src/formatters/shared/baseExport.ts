@@ -52,8 +52,10 @@ export default abstract class BaseExportFormatter<
 
   protected async fetchAPIData() {
     await this.fetchVariants();
-    const textItemsMap = await this.fetchTextItemsMap();
-    const componentsMap = await this.fetchComponentsMap();
+    const [textItemsMap, componentsMap] = await Promise.all([
+      this.fetchTextItemsMap(),
+      this.fetchComponentsMap(),
+    ]);
 
     return { textItemsMap, componentsMap };
   }
@@ -120,6 +122,8 @@ export default abstract class BaseExportFormatter<
       projects = await fetchProjects(this.meta);
     }
 
+    const fetchFileContentRequests = [];
+
     for (const project of projects) {
       result[project.id] = {};
 
@@ -134,13 +138,17 @@ export default abstract class BaseExportFormatter<
           }),
           format: this.exportFormat,
         };
-        const textItemsFileContent = await fetchText<TTextItemsResponse>(
+        const addVariantToProjectMap = fetchText<TTextItemsResponse>(
           params,
           this.meta
-        );
-        result[project.id][variant.id] = textItemsFileContent;
+        ).then((textItemsFileContent) => {
+          result[project.id][variant.id] = textItemsFileContent;
+        });
+        fetchFileContentRequests.push(addVariantToProjectMap);
       }
     }
+
+    await Promise.all(fetchFileContentRequests);
 
     return result;
   }
@@ -156,6 +164,8 @@ export default abstract class BaseExportFormatter<
     if (!this.projectConfig.components && !this.output.components) return {};
     const result: ComponentsMap = {};
 
+    const fetchFileContentRequests = [];
+
     for (const variant of this.variants) {
       // map "base" to undefined, as by default export endpoint returns base variant
       const variantsParam =
@@ -169,11 +179,13 @@ export default abstract class BaseExportFormatter<
         }),
         format: this.exportFormat,
       };
-      const componentsFileContent = await fetchComponents<TComponentsResponse>(
+      const addVariantToMap = fetchComponents<TComponentsResponse>(
         params,
         this.meta
-      );
-      result[variant.id] = componentsFileContent;
+      ).then((componentsFileContent) => {
+        result[variant.id] = componentsFileContent;
+      });
+      fetchFileContentRequests.push(addVariantToMap);
     }
 
     return result;

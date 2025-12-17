@@ -15,11 +15,8 @@ class TestBaseFormatter extends BaseFormatter<JSONOutputFile, unknown> {
     return super["generateComponentPullFilter"]();
   }
 
-  public generateQueryParams(
-    requestType: "textItem" | "component",
-    filter: PullFilters = {}
-  ) {
-    return super.generateQueryParams(requestType, filter);
+  public generateQueryParams(filters: PullFilters = {}) {
+    return super.generateQueryParams(filters);
   }
 }
 
@@ -292,7 +289,7 @@ describe("BaseFormatter", () => {
    ***********************************************************/
 
   describe("generateQueryParams", () => {
-    it("should generate query params for RequestType: textItem", () => {
+    it("should generate query params for provided text item filters", () => {
       const projectConfig = createMockProjectConfig({
         projects: [{ id: "project1" }],
         variants: [{ id: "variant1" }],
@@ -304,9 +301,12 @@ describe("BaseFormatter", () => {
         createMockMeta()
       );
 
-      const params = formatter.generateQueryParams("textItem");
+      const params = formatter.generateQueryParams(
+        formatter.generateTextItemPullFilter()
+      );
 
       expect(params.filter).toBeDefined();
+      expect(params.filter).toEqual(expect.any(String));
       const parsedFilter = JSON.parse(params.filter);
       expect(parsedFilter).toEqual({
         projects: [{ id: "project1" }],
@@ -315,7 +315,7 @@ describe("BaseFormatter", () => {
       expect(params.richText).toBeUndefined();
     });
 
-    it("should generate query params for RequestType: component", () => {
+    it("should generate query params with provided component filters", () => {
       const projectConfig = createMockProjectConfig({
         components: {
           folders: [{ id: "folder1" }],
@@ -329,7 +329,9 @@ describe("BaseFormatter", () => {
         createMockMeta()
       );
 
-      const params = formatter.generateQueryParams("component");
+      const params = formatter.generateQueryParams(
+        formatter.generateComponentPullFilter()
+      );
 
       expect(params.filter).toBeDefined();
       const parsedFilter = JSON.parse(params.filter);
@@ -338,34 +340,6 @@ describe("BaseFormatter", () => {
         variants: [{ id: "variant1" }],
       });
       expect(params.richText).toBeUndefined();
-    });
-
-    it("should merge additional filter with base filter", () => {
-      const projectConfig = createMockProjectConfig({
-        projects: [{ id: "project1" }],
-        variants: [{ id: "variant1" }],
-      });
-      const output = createMockOutput();
-      const formatter = new TestBaseFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const additionalFilter: PullFilters = {
-        projects: [{ id: "project2" }],
-      };
-      const params = formatter.generateQueryParams(
-        "textItem",
-        additionalFilter
-      );
-
-      expect(params.filter).toBeDefined();
-      const parsedFilter = JSON.parse(params.filter);
-      expect(parsedFilter).toEqual({
-        projects: [{ id: "project2" }], // Additional filter overrides base
-        variants: [{ id: "variant1" }],
-      });
     });
 
     it("should include richText from projectConfig when set", () => {
@@ -380,7 +354,9 @@ describe("BaseFormatter", () => {
         createMockMeta()
       );
 
-      const params = formatter.generateQueryParams("textItem");
+      const params = formatter.generateQueryParams(
+        formatter.generateTextItemPullFilter()
+      );
 
       expect(params.richText).toBe("html");
     });
@@ -399,7 +375,7 @@ describe("BaseFormatter", () => {
         createMockMeta()
       );
 
-      const params = formatter.generateQueryParams("textItem");
+      const params = formatter.generateQueryParams();
 
       expect(params.richText).toBe("html");
     });
@@ -417,31 +393,9 @@ describe("BaseFormatter", () => {
         createMockMeta()
       );
 
-      const params = formatter.generateQueryParams("textItem");
+      const params = formatter.generateQueryParams();
 
       expect(params.richText).toBe("html");
-    });
-
-    it("should handle empty filter object", () => {
-      const projectConfig = createMockProjectConfig({
-        projects: [{ id: "project1" }],
-        variants: [{ id: "variant1" }],
-      });
-      const output = createMockOutput();
-      const formatter = new TestBaseFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const params = formatter.generateQueryParams("textItem", undefined);
-
-      expect(params.filter).toBeDefined();
-      const parsedFilter = JSON.parse(params.filter);
-      expect(parsedFilter).toEqual({
-        projects: [{ id: "project1" }],
-        variants: [{ id: "variant1" }],
-      });
     });
   });
 });

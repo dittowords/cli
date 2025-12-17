@@ -12,7 +12,7 @@ export interface PullFilters {
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
   richText?: "html";
-  format?: "ios-strings" | undefined;
+  format?: "ios-strings" | "ios-stringsdict" | "android" | "icu" | undefined;
 }
 
 const ZBaseTextEntity = z.object({
@@ -42,7 +42,20 @@ export type TextItem = z.infer<typeof ZTextItem>;
 export const ZTextItemsResponse = z.array(ZTextItem);
 export type TextItemsResponse = z.infer<typeof ZTextItemsResponse>;
 
-export const ZExportTextItemsResponse = z.string();
+const ZExportTextItemsStringResponse = z.string();
+export type ExportTextItemsStringResponse = z.infer<
+  typeof ZExportTextItemsStringResponse
+>;
+
+const ZExportTextItemsJSONResponse = z.record(z.string(), z.string());
+export type ExportTextItemsJSONResponse = z.infer<
+  typeof ZExportTextItemsJSONResponse
+>;
+
+export const ZExportTextItemsResponse = z.union([
+  ZExportTextItemsStringResponse,
+  ZExportTextItemsJSONResponse,
+]);
 export type ExportTextItemsResponse = z.infer<typeof ZExportTextItemsResponse>;
 
 // MARK - Components
@@ -59,8 +72,22 @@ export type Component = z.infer<typeof ZComponent>;
 export const ZComponentsResponse = z.array(ZComponent);
 export type ComponentsResponse = z.infer<typeof ZComponentsResponse>;
 
-export const ZExportComponentsResponse = z.string();
-export type ExportComponentsResponse = z.infer<typeof ZExportComponentsResponse>;
+export const ZExportComponentsJSONResponse = z.record(z.string(), z.string());
+export type ExportComponentsJSONResponse = z.infer<
+  typeof ZExportTextItemsJSONResponse
+>;
+
+export const ZExportComponentsStringResponse = z.string();
+export type ExportComponentsStringResponse = z.infer<
+  typeof ZExportComponentsStringResponse
+>;
+export const ZExportComponentsResponse = z.union([
+  ZExportComponentsStringResponse,
+  ZExportComponentsJSONResponse,
+]);
+export type ExportComponentsResponse = z.infer<
+  typeof ZExportComponentsResponse
+>;
 
 // MARK - Projects
 

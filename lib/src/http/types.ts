@@ -8,12 +8,6 @@ export interface PullFilters {
   }[];
   variants?: { id: string }[];
 }
-
-export interface SwiftFileGenerationFilters
-  extends Omit<PullFilters, "variants"> {
-  localeByVariantId: Record<string, string>;
-}
-
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
   richText?: "html";

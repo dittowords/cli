@@ -9,12 +9,21 @@ import fetchText from "../../http/textItems";
 import fetchComponents from "../../http/components";
 import fetchProjects from "../../http/projects";
 import fetchVariants from "../../http/variants";
+import generateSwiftDriver from "../../http/cli";
+import appContext from "../../utils/appContext";
 import BaseExportFormatter from "./baseExport";
 
 jest.mock("../../http/textItems");
 jest.mock("../../http/components");
 jest.mock("../../http/projects");
 jest.mock("../../http/variants");
+jest.mock("../../http/cli");
+jest.mock("../../utils/appContext", () => ({
+  __esModule: true,
+  default: {
+    outDir: "/mock/app/context/outDir",
+  },
+}));
 
 const mockFetchText = fetchText as jest.MockedFunction<typeof fetchText>;
 const mockFetchComponents = fetchComponents as jest.MockedFunction<
@@ -25,6 +34,9 @@ const mockFetchProjects = fetchProjects as jest.MockedFunction<
 >;
 const mockFetchVariants = fetchVariants as jest.MockedFunction<
   typeof fetchVariants
+>;
+const mockGenerateSwiftDriver = generateSwiftDriver as jest.MockedFunction<
+  typeof generateSwiftDriver
 >;
 
 // fake test class to expose private methods
@@ -56,6 +68,14 @@ class TestBaseExportFormatter extends BaseExportFormatter {
 
   public async fetchComponentsMap() {
     return super["fetchComponentsMap"]();
+  }
+
+  public getLocalesPath(variantId: string) {
+    return super.getLocalesPath(variantId);
+  }
+
+  public async getSwiftDriverFile() {
+    return super.getSwiftDriverFile();
   }
 }
 
@@ -435,6 +455,244 @@ describe("BaseExportFormatter", () => {
         `project1___variant1`,
         "variant1",
         mockTextContent
+      );
+    });
+  });
+
+  /***********************************************************
+   * getLocalesPath
+   ***********************************************************/
+  describe("getLocalesPath", () => {
+    it("should return output outDir when iosLocales is not configured", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: undefined,
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getLocalesPath("base");
+
+      expect(result).toBe("/test/output");
+    });
+
+    it("should return locale path when iosLocales is configured and variantId matches", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: [{ base: "en" }, { variant1: "es" }, { variant2: "fr" }],
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getLocalesPath("variant1");
+
+      expect(result).toBe("/mock/app/context/outDir/es.lproj");
+    });
+
+    it("should return output's outDir when iosLocales is configured but variantId does not exist in iosLocales map", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: [{ base: "en" }, { variant1: "es" }],
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getLocalesPath("variant2");
+
+      expect(result).toBe("/test/output");
+    });
+
+    it("should return locale path for base variant when configured", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: [{ base: "en" }, { variant1: "es" }],
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getLocalesPath("base");
+
+      expect(result).toBe("/mock/app/context/outDir/en.lproj");
+    });
+  });
+
+  /***********************************************************
+   * getSwiftDriverFile
+   ***********************************************************/
+  describe("getSwiftDriverFile", () => {
+    it("should generate Swift driver file with components folders from projectConfig", async () => {
+      const projectConfig = createMockProjectConfig({
+        components: {
+          folders: [{ id: "folder1" }, { id: "folder2" }],
+        },
+        projects: [{ id: "project1" }],
+      });
+      const output = createMockOutput();
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const mockSwiftDriver = "import Foundation\nclass Ditto { }";
+      mockGenerateSwiftDriver.mockResolvedValue(mockSwiftDriver);
+
+      const result = await formatter.getSwiftDriverFile();
+
+      expect(mockGenerateSwiftDriver).toHaveBeenCalledWith(
+        {
+          components: {
+            folders: [{ id: "folder1" }, { id: "folder2" }],
+          },
+          projects: [{ id: "project1" }],
+        },
+        {}
+      );
+      expect(result.filename).toBe("Ditto");
+      expect(result.path).toBe("/mock/app/context/outDir");
+      expect(result.content).toBe(mockSwiftDriver);
+    });
+
+    it("should generate Swift driver file with components folders from output", async () => {
+      const projectConfig = createMockProjectConfig({
+        components: {
+          folders: [{ id: "config-folder" }],
+        },
+      });
+      const output = createMockOutput({
+        components: {
+          folders: [{ id: "output-folder1" }, { id: "output-folder2" }],
+        },
+      });
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const mockSwiftDriver = "import Foundation\nclass Ditto { }";
+      mockGenerateSwiftDriver.mockResolvedValue(mockSwiftDriver);
+
+      const result = await formatter.getSwiftDriverFile();
+
+      expect(mockGenerateSwiftDriver).toHaveBeenCalledWith(
+        {
+          components: {
+            folders: [{ id: "output-folder1" }, { id: "output-folder2" }],
+          },
+          projects: [],
+        },
+        {}
+      );
+      expect(result.filename).toBe("Ditto");
+      expect(result.path).toBe("/mock/app/context/outDir");
+      expect(result.content).toBe(mockSwiftDriver);
+    });
+
+    it("should generate Swift driver file with projects from output", async () => {
+      const projectConfig = createMockProjectConfig({
+        projects: [{ id: "config-project" }],
+        components: undefined,
+      });
+      const output = createMockOutput({
+        projects: [{ id: "output-project1" }, { id: "output-project2" }],
+      });
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const mockSwiftDriver = "import Foundation\nclass Ditto { }";
+      mockGenerateSwiftDriver.mockResolvedValue(mockSwiftDriver);
+
+      const result = await formatter.getSwiftDriverFile();
+
+      expect(mockGenerateSwiftDriver).toHaveBeenCalledWith(
+        {
+          projects: [{ id: "output-project1" }, { id: "output-project2" }],
+        },
+        {}
+      );
+      expect(result.filename).toBe("Ditto");
+      expect(result.path).toBe("/mock/app/context/outDir");
+    });
+
+    it("should generate Swift driver file with empty projects array when not configured", async () => {
+      const projectConfig = createMockProjectConfig({
+        projects: [],
+        components: {
+          folders: [],
+        },
+      });
+      const output = createMockOutput();
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const mockSwiftDriver = "import Foundation\nclass Ditto { }";
+      mockGenerateSwiftDriver.mockResolvedValue(mockSwiftDriver);
+
+      const result = await formatter.getSwiftDriverFile();
+
+      expect(mockGenerateSwiftDriver).toHaveBeenCalledWith(
+        {
+          projects: [],
+          components: {
+            folders: [],
+          },
+        },
+        {}
+      );
+      expect(result.filename).toBe("Ditto");
+      expect(result.path).toBe("/mock/app/context/outDir");
+    });
+
+    it("should not include components in filters when components not configured", async () => {
+      const projectConfig = createMockProjectConfig({
+        components: undefined,
+        projects: [{ id: "project1" }],
+      });
+      const output = createMockOutput();
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const mockSwiftDriver = "import Foundation\nclass Ditto { }";
+      mockGenerateSwiftDriver.mockResolvedValue(mockSwiftDriver);
+
+      await formatter.getSwiftDriverFile();
+
+      expect(mockGenerateSwiftDriver).toHaveBeenCalledWith(
+        {
+          projects: [{ id: "project1" }],
+        },
+        {}
       );
     });
   });

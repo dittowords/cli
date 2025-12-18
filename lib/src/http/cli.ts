@@ -1,18 +1,14 @@
 import { AxiosError } from "axios";
-import { ZProjectsResponse, CommandMetaFlags } from "./types";
+import { CommandMetaFlags, IExportSwiftFileRequest } from "./types";
 import getHttpClient from "./client";
-import { ProjectConfigYAML } from "../services/projectConfig";
 
 export default async function generateSwiftDriver(
-  projectConfig: ProjectConfigYAML,
+  params: IExportSwiftFileRequest,
   meta: CommandMetaFlags
 ) {
   try {
     const httpClient = getHttpClient({ meta });
-    const response = await httpClient.post(
-      "/v2/cli/swiftDriver",
-      projectConfig
-    );
+    const response = await httpClient.post("/v2/cli/swiftDriver", params);
 
     return response.data;
   } catch (e) {

@@ -9,6 +9,9 @@ import BaseFormatter from "./base";
 import fetchProjects from "../../http/projects";
 import fetchVariants from "../../http/variants";
 import OutputFile from "./fileTypes/OutputFile";
+import appContext from "../../utils/appContext";
+import generateSwiftDriver from "../../http/cli";
+import SwiftOutputFile from "./fileTypes/SwiftFile";
 
 interface ComponentsMap {
   [variantId: string]: ExportComponentsResponse;
@@ -189,5 +192,46 @@ export default abstract class BaseExportFormatter<
     }
 
     return result;
+  }
+
+  /*************************************************
+   * IOS Specific
+   *************************************************/
+
+  /**
+   * If config.iosLocales configured, writes .strings files to root project outDir instead of the specific output
+   * This is because with both .strings and .stringsdict configured the locale files can get "overwritten" as far as
+   * the Ditto.swift file is concerned. We need to have all .strings and .stringsdict files in one directory
+   *
+   * Any variants not-configured in the iosLocales will get written to the output's outDir as expected (if that output outDir is configured)
+   */
+  protected getLocalesPath(variantId: string) {
+    let path = this.outDir;
+    if (this.projectConfig.iosLocales) {
+      const locale = this.projectConfig.iosLocales.find(
+        (localePair) => localePair[variantId]
+      );
+      if (locale) {
+        path = `${appContext.outDir}/${locale[variantId]}.lproj`;
+      }
+    }
+    return path;
+  }
+
+  protected async getSwiftDriverFile(): Promise<SwiftOutputFile> {
+    const folders =
+      this.output.components?.folders ?? this.projectConfig.components?.folders;
+
+    const filters = {
+      ...(folders && { components: { folders } }),
+      projects: this.output.projects || this.projectConfig.projects || [],
+    };
+
+    const swiftDriver = await generateSwiftDriver(filters, this.meta);
+    return new SwiftOutputFile({
+      filename: "Ditto",
+      path: appContext.outDir,
+      content: swiftDriver,
+    });
   }
 }

@@ -17,7 +17,7 @@ export default async function fetchComponents<TResponse>(
       case "android":
       case "ios-strings":
       case "ios-stringsdict":
-      case "icu":
+      case "json_icu":
         const exportResponse = await httpClient.get("/v2/components/export", {
           params,
         });

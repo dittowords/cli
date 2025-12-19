@@ -40,7 +40,7 @@ type ExportOutputFile<MetadataType extends { variantId: string }> = OutputFile<
 export default abstract class BaseExportFormatter<
   TOutputFile extends ExportOutputFile<{ variantId: string }>,
   // The response types below correspond to the file data returned from the export endpoint and what will ultimately be written directly to the /ditto directory
-  // ios-strings, ios-stringsdict, and android formats are all strings while icu is { [developerId: string]: string } JSON Structure
+  // ios-strings, ios-stringsdict, and android formats are all strings while json_icu is { [developerId: string]: string } JSON Structure
   TTextItemsResponse extends ExportTextItemsResponse,
   TComponentsResponse extends ExportComponentsResponse
 > extends BaseFormatter<TOutputFile, ExportFormatAPIData> {

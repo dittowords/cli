@@ -6,12 +6,12 @@ import {
   PullQueryParams,
 } from "../http/types";
 
-export default class ICUFormatter extends BaseExportFormatter<
+export default class JSONICUFormatter extends BaseExportFormatter<
   ICUOutputFile<{ variantId: string }>,
   ExportTextItemsJSONResponse,
   ExportComponentsJSONResponse
 > {
-  protected exportFormat: PullQueryParams["format"] = "icu";
+  protected exportFormat: PullQueryParams["format"] = "json_icu";
 
   protected createOutputFile(
     fileName: string,

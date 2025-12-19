@@ -12,7 +12,12 @@ export interface PullQueryParams {
   filter: string; // Stringified PullFilters
   richText?: "html";
   variantId?: string; // undefined for base
-  format?: "ios-strings" | "ios-stringsdict" | "android" | "icu" | undefined;
+  format?:
+    | "ios-strings"
+    | "ios-stringsdict"
+    | "android"
+    | "json_icu"
+    | undefined;
 }
 
 const ZBaseTextEntity = z.object({

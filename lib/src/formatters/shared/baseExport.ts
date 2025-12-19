@@ -132,13 +132,12 @@ export default abstract class BaseExportFormatter<
 
       for (const variant of this.variants) {
         // map "base" to undefined, as by default export endpoint returns base variant
-        const variantsParam =
-          variant.id === "base" ? undefined : [{ id: variant.id }];
+        const variantId = variant.id === "base" ? undefined : variant.id;
         const params: PullQueryParams = {
           ...super.generateQueryParams({
             projects: [{ id: project.id }],
-            variants: variantsParam,
           }),
+          variantId,
           format: this.exportFormat,
         };
         const addVariantToProjectMap = fetchText<TTextItemsResponse>(
@@ -171,15 +170,14 @@ export default abstract class BaseExportFormatter<
 
     for (const variant of this.variants) {
       // map "base" to undefined, as by default export endpoint returns base variant
-      const variantsParam =
-        variant.id === "base" ? undefined : [{ id: variant.id }];
+      const variantId = variant.id === "base" ? undefined : variant.id;
       const folderFilters = super.generateComponentPullFilter().folders;
       const params: PullQueryParams = {
         // gets folders from base component pull filters, overwrites variants with just this iteration's variant
         ...super.generateQueryParams({
           folders: folderFilters,
-          variants: variantsParam,
         }),
+        variantId,
         format: this.exportFormat,
       };
       const addVariantToMap = fetchComponents<TComponentsResponse>(

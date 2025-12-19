@@ -11,6 +11,7 @@ export interface PullFilters {
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
   richText?: "html";
+  variantId?: string; // undefined for base
   format?: "ios-strings" | "ios-stringsdict" | "android" | "icu" | undefined;
 }
 

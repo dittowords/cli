@@ -12,7 +12,8 @@ export default function formatOutput(
   projectConfig: ProjectConfigYAML,
   meta: CommandMetaFlags
 ) {
-  switch (output.format) {
+  const format = output.format;
+  switch (format) {
     case "json":
       return new JSONFormatter(output, projectConfig, meta).format();
     case "android":
@@ -24,6 +25,6 @@ export default function formatOutput(
     case "json_icu":
       return new JSONICUFormatter(output, projectConfig, meta).format();
     default:
-      throw new Error(`Unsupported output format: ${output}`);
+      throw new Error(`Unsupported output format: ${format}`);
   }
 }

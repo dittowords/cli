@@ -82,7 +82,7 @@ export type ComponentsResponse = z.infer<typeof ZComponentsResponse>;
 
 export const ZExportComponentsJSONResponse = z.record(z.string(), z.string());
 export type ExportComponentsJSONResponse = z.infer<
-  typeof ZExportTextItemsJSONResponse
+  typeof ZExportComponentsJSONResponse
 >;
 
 export const ZExportComponentsStringResponse = z.string();

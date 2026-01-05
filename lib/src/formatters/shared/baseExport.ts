@@ -192,6 +192,7 @@ export default abstract class BaseExportFormatter<
       fetchFileContentRequests.push(addVariantToMap);
     }
 
+    await Promise.all(fetchFileContentRequests);
     return result;
   }
 

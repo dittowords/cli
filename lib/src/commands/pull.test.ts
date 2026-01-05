@@ -214,7 +214,7 @@ const setupSwiftDriverMocks = () => {
   mockHttpClient.post.mockImplementation((url: string, config?: any) => {
     if (url.includes("/v2/cli/swiftDriver")) {
       return Promise.resolve({
-        data: "LKJSDF",
+        data: "import SwiftUI",
       });
     }
     return Promise.resolve({ data: [] });

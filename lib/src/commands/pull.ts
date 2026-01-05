@@ -23,7 +23,6 @@ export const pull = async (meta: CommandMetaFlags) => {
       meta,
       appContext.projectConfig
     );
-    console.log("writing file swift...", swiftDriverFile);
     await writeFile(swiftDriverFile.fullPath, swiftDriverFile.formattedContent);
     logger.writeLine(
       `Successfully saved to ${logger.info(swiftDriverFile.fullPath)}`

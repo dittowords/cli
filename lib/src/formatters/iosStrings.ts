@@ -5,7 +5,6 @@ import {
   ExportTextItemsStringResponse,
   PullQueryParams,
 } from "../http/types";
-import OutputFile from "./shared/fileTypes/OutputFile";
 
 export default class IOSStringsFormatter extends BaseExportFormatter<
   IOSStringsOutputFile<{ variantId: string }>,
@@ -25,13 +24,5 @@ export default class IOSStringsFormatter extends BaseExportFormatter<
       metadata: { variantId: variantId || "base" },
       content: content,
     });
-  }
-
-  protected async writeFiles(files: OutputFile[]): Promise<void> {
-    if (this.projectConfig.iosLocales) {
-      const swiftDriverFile = await this.getSwiftDriverFile();
-      files.push(swiftDriverFile);
-    }
-    await super.writeFiles(files);
   }
 }

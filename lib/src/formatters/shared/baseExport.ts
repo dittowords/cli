@@ -36,8 +36,8 @@ type ExportOutputFile<MetadataType extends { variantId: string }> = OutputFile<
 
 /**
  * Base Class for File Formats That Leverage API /v2/components/export and /v2/textItems/export endpoints
- * These file formats fetch their file data directly from the API and write to files, as unlike in the case of
- * default /v2/textItems + /v2/components JSON, we cannot or do not want to perform any manipulation on the data itself
+ * These file formats fetch their file data directly from the API and write to files, unlike in the case of
+ * default /v2/textItems + /v2/components JSON, we cannot perform any manipulation on the data itself
  */
 export default abstract class BaseExportFormatter<
   TOutputFile extends ExportOutputFile<{ variantId: string }>,
@@ -66,8 +66,8 @@ export default abstract class BaseExportFormatter<
   }
 
   /**
-   * For each project/variant permutation and its fetched .strings data,
-   * create a new file with the expected naming
+   * For each project/variant permutation and its fetched file data,
+   * create a new file with the expected project/variant name
    *
    * @returns {OutputFile[]} List of Output Files
    */
@@ -217,21 +217,5 @@ export default abstract class BaseExportFormatter<
       }
     }
     return path;
-  }
-
-  protected async getSwiftDriverFile(): Promise<SwiftOutputFile> {
-    const folders =
-      this.output.components?.folders ?? this.projectConfig.components?.folders;
-
-    const filters = {
-      ...(folders && { components: { folders } }),
-      projects: this.output.projects || this.projectConfig.projects || [],
-    };
-
-    const swiftDriver = await generateSwiftDriver(filters, this.meta);
-    return new SwiftOutputFile({
-      path: appContext.outDir,
-      content: swiftDriver,
-    });
   }
 }

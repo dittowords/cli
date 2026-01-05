@@ -10,7 +10,6 @@ import fetchComponents from "../../http/components";
 import fetchProjects from "../../http/projects";
 import fetchVariants from "../../http/variants";
 import generateSwiftDriver from "../../http/cli";
-import appContext from "../../utils/appContext";
 import BaseExportFormatter from "./baseExport";
 
 jest.mock("../../http/textItems");

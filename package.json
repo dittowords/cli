@@ -8,8 +8,7 @@
     "prepublishOnly": "ENV=production node esbuild.mjs && sentry-cli sourcemaps inject ./bin && npx sentry-cli sourcemaps upload ./bin --release=\"$(cat package.json | jq -r '.version')\"",
     "prepare": "husky install",
     "start": "node esbuild.mjs && node --enable-source-maps --require dotenv/config bin/ditto.js",
-    "sync": "node esbuild.mjs && node --enable-source-maps --require dotenv/config bin/ditto.js pull",
-    "sync-legacy": "node esbuild.mjs && node --enable-source-maps --require dotenv/config bin/ditto.js --legacy pull"
+    "sync": "node esbuild.mjs && node --enable-source-maps --require dotenv/config bin/ditto.js pull"
   },
   "repository": {
     "type": "git",

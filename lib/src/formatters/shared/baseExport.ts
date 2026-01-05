@@ -11,7 +11,9 @@ import fetchVariants from "../../http/variants";
 import OutputFile from "./fileTypes/OutputFile";
 import appContext from "../../utils/appContext";
 import generateSwiftDriver from "../../http/cli";
-import SwiftOutputFile from "./fileTypes/SwiftFile";
+import SwiftOutputFile from "./fileTypes/SwiftOutputFile";
+
+const BASE_VARIANT_ID = "base";
 
 interface ComponentsMap {
   [variantId: string]: ExportComponentsResponse;
@@ -74,7 +76,7 @@ export default abstract class BaseExportFormatter<
       ([projectId, projectVariants]) => {
         Object.entries(projectVariants).forEach(
           ([variantId, textItemsFileContent]) => {
-            const fileName = `${projectId}___${variantId || "base"}`;
+            const fileName = `${projectId}___${variantId || BASE_VARIANT_ID}`;
             this.createOutputFile(fileName, variantId, textItemsFileContent);
           }
         );
@@ -83,7 +85,7 @@ export default abstract class BaseExportFormatter<
 
     Object.entries(data.componentsMap).forEach(
       ([variantId, componentsFileContent]) => {
-        const fileName = `components___${variantId || "base"}`;
+        const fileName = `components___${variantId || BASE_VARIANT_ID}`;
         this.createOutputFile(fileName, variantId, componentsFileContent);
       }
     );
@@ -102,7 +104,7 @@ export default abstract class BaseExportFormatter<
     if (variants.some((variant) => variant.id === "all")) {
       variants = await fetchVariants(this.meta);
     } else if (variants.length === 0) {
-      variants = [{ id: "base" }];
+      variants = [{ id: BASE_VARIANT_ID }];
     }
 
     this.variants = variants;
@@ -132,7 +134,8 @@ export default abstract class BaseExportFormatter<
 
       for (const variant of this.variants) {
         // map "base" to undefined, as by default export endpoint returns base variant
-        const variantId = variant.id === "base" ? undefined : variant.id;
+        const variantId =
+          variant.id === BASE_VARIANT_ID ? undefined : variant.id;
         const params: PullQueryParams = {
           ...super.generateQueryParams({
             projects: [{ id: project.id }],
@@ -170,7 +173,7 @@ export default abstract class BaseExportFormatter<
 
     for (const variant of this.variants) {
       // map "base" to undefined, as by default export endpoint returns base variant
-      const variantId = variant.id === "base" ? undefined : variant.id;
+      const variantId = variant.id === BASE_VARIANT_ID ? undefined : variant.id;
       const folderFilters = super.generateComponentPullFilter().folders;
       const params: PullQueryParams = {
         // gets folders from base component pull filters, overwrites variants with just this iteration's variant
@@ -227,7 +230,6 @@ export default abstract class BaseExportFormatter<
 
     const swiftDriver = await generateSwiftDriver(filters, this.meta);
     return new SwiftOutputFile({
-      filename: "Ditto",
       path: appContext.outDir,
       content: swiftDriver,
     });

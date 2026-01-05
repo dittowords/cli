@@ -1,9 +1,9 @@
 import OutputFile from "./OutputFile";
 
 export default class SwiftOutputFile extends OutputFile<string, {}> {
-  constructor(config: { filename: string; path: string; content?: string }) {
+  constructor(config: { filename?: string; path: string; content?: string }) {
     super({
-      filename: config.filename,
+      filename: config.filename || "Ditto",
       path: config.path,
       extension: "swift",
       content: config.content ?? "",

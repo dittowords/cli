@@ -32,6 +32,6 @@ export default class IOSStringsFormatter extends BaseExportFormatter<
       const swiftDriverFile = await this.getSwiftDriverFile();
       files.push(swiftDriverFile);
     }
-    await super.writeFiles([...files]);
+    await super.writeFiles(files);
   }
 }

@@ -475,6 +475,23 @@ describe("BaseExportFormatter", () => {
       expect(result).toBe("/test/output");
     });
 
+    it("should return output outDir when iosLocales is empty array", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: undefined,
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getLocalesPath("base");
+
+      expect(result).toBe("/test/output");
+    });
+
     it("should return locale path when iosLocales is configured and variantId matches", () => {
       const projectConfig = createMockProjectConfig({
         iosLocales: [{ base: "en" }, { variant1: "es" }, { variant2: "fr" }],

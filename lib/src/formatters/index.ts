@@ -13,10 +13,10 @@ export default function formatOutput(
   meta: CommandMetaFlags
 ) {
   switch (output.format) {
-    case "android":
-      return new AndroidXMLFormatter(output, projectConfig, meta).format();
     case "json":
       return new JSONFormatter(output, projectConfig, meta).format();
+    case "android":
+      return new AndroidXMLFormatter(output, projectConfig, meta).format();
     case "ios-strings":
       return new IOSStringsFormatter(output, projectConfig, meta).format();
     case "ios-stringsdict":

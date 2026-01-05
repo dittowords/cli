@@ -12,13 +12,13 @@ export const pull = async (meta: CommandMetaFlags) => {
   const hasIOSFormat = appContext.selectedProjectConfigOutputs.some((output) =>
     IOS_FORMATS.has(output.format)
   );
-  const shouldGenerateIOSBundles = hasIOSFormat && hasIOSLocales;
+  const shouldGenerateSwiftFile = hasIOSFormat && hasIOSLocales;
 
   for (const output of appContext.selectedProjectConfigOutputs) {
     await formatOutput(output, appContext.projectConfig, meta);
   }
 
-  if (shouldGenerateIOSBundles) {
+  if (shouldGenerateSwiftFile) {
     const swiftDriverFile = await getSwiftDriverFile(
       meta,
       appContext.projectConfig

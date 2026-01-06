@@ -4,6 +4,13 @@ import { Output } from "../outputs";
 import { ProjectConfigYAML } from "../services/projectConfig";
 import { CommandMetaFlags } from "../http/types";
 
+jest.mock("../utils/appContext", () => ({
+  __esModule: true,
+  default: {
+    outDir: "/mock/app/context/outDir",
+  },
+}));
+
 // @ts-ignore
 class TestIOSStringsDictFormatter extends IOSStringsDictFormatter {
   public createOutputFilePublic(
@@ -23,6 +30,11 @@ class TestIOSStringsDictFormatter extends IOSStringsDictFormatter {
   public getOutputFiles() {
     // @ts-ignore
     return this.outputFiles;
+  }
+
+  public getLocalesPath(variantId: string) {
+    // @ts-ignore
+    return super.getLocalesPath(variantId);
   }
 }
 
@@ -113,5 +125,92 @@ describe("IOSStringsDictFormatter", () => {
 
     expect(file.metadata).toEqual({ variantId: "base" });
     expect(file.content).toBe("base-content");
+  });
+
+  describe("getLocalesPath", () => {
+    it("should return output outDir when iosLocales is not configured", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: undefined,
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestIOSStringsDictFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getLocalesPath("base");
+
+      expect(result).toBe("/test/output");
+    });
+
+    it("should return output outDir when iosLocales is empty array", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: undefined,
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestIOSStringsDictFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getLocalesPath("base");
+
+      expect(result).toBe("/test/output");
+    });
+
+    it("should return locale path when iosLocales is configured and variantId matches", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: [{ base: "en" }, { variant1: "es" }, { variant2: "fr" }],
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestIOSStringsDictFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getLocalesPath("variant1");
+
+      expect(result).toBe("/mock/app/context/outDir/es.lproj");
+    });
+
+    it("should return output's outDir when iosLocales is configured but variantId does not exist in iosLocales map", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: [{ base: "en" }, { variant1: "es" }],
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestIOSStringsDictFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getLocalesPath("variant2");
+
+      expect(result).toBe("/test/output");
+    });
+
+    it("should return locale path for base variant when configured", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: [{ base: "en" }, { variant1: "es" }],
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestIOSStringsDictFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getLocalesPath("base");
+
+      expect(result).toBe("/mock/app/context/outDir/en.lproj");
+    });
   });
 });

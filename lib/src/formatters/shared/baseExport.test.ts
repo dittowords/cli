@@ -68,10 +68,6 @@ class TestBaseExportFormatter extends BaseExportFormatter {
   public async fetchComponentsMap() {
     return super["fetchComponentsMap"]();
   }
-
-  public getLocalesPath(variantId: string) {
-    return super.getLocalesPath(variantId);
-  }
 }
 
 describe("BaseExportFormatter", () => {
@@ -451,96 +447,6 @@ describe("BaseExportFormatter", () => {
         "variant1",
         mockTextContent
       );
-    });
-  });
-
-  /***********************************************************
-   * getLocalesPath
-   ***********************************************************/
-  describe("getLocalesPath", () => {
-    it("should return output outDir when iosLocales is not configured", () => {
-      const projectConfig = createMockProjectConfig({
-        iosLocales: undefined,
-      });
-      const output = createMockOutput({ outDir: "/test/output" });
-      // @ts-ignore
-      const formatter = new TestBaseExportFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const result = formatter.getLocalesPath("base");
-
-      expect(result).toBe("/test/output");
-    });
-
-    it("should return output outDir when iosLocales is empty array", () => {
-      const projectConfig = createMockProjectConfig({
-        iosLocales: undefined,
-      });
-      const output = createMockOutput({ outDir: "/test/output" });
-      // @ts-ignore
-      const formatter = new TestBaseExportFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const result = formatter.getLocalesPath("base");
-
-      expect(result).toBe("/test/output");
-    });
-
-    it("should return locale path when iosLocales is configured and variantId matches", () => {
-      const projectConfig = createMockProjectConfig({
-        iosLocales: [{ base: "en" }, { variant1: "es" }, { variant2: "fr" }],
-      });
-      const output = createMockOutput({ outDir: "/test/output" });
-      // @ts-ignore
-      const formatter = new TestBaseExportFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const result = formatter.getLocalesPath("variant1");
-
-      expect(result).toBe("/mock/app/context/outDir/es.lproj");
-    });
-
-    it("should return output's outDir when iosLocales is configured but variantId does not exist in iosLocales map", () => {
-      const projectConfig = createMockProjectConfig({
-        iosLocales: [{ base: "en" }, { variant1: "es" }],
-      });
-      const output = createMockOutput({ outDir: "/test/output" });
-      // @ts-ignore
-      const formatter = new TestBaseExportFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const result = formatter.getLocalesPath("variant2");
-
-      expect(result).toBe("/test/output");
-    });
-
-    it("should return locale path for base variant when configured", () => {
-      const projectConfig = createMockProjectConfig({
-        iosLocales: [{ base: "en" }, { variant1: "es" }],
-      });
-      const output = createMockOutput({ outDir: "/test/output" });
-      // @ts-ignore
-      const formatter = new TestBaseExportFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const result = formatter.getLocalesPath("base");
-
-      expect(result).toBe("/mock/app/context/outDir/en.lproj");
     });
   });
 });

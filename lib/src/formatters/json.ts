@@ -7,6 +7,7 @@ import OutputFile from "./shared/fileTypes/OutputFile";
 import JSONOutputFile from "./shared/fileTypes/JSONOutputFile";
 import { applyMixins } from "./shared";
 import { getFrameworkProcessor } from "./frameworks/json";
+import { BASE_VARIANT_ID } from "../utils/constants";
 
 type JSONAPIData = {
   textItems: TextItemsResponse;
@@ -60,12 +61,12 @@ export default class JSONFormatter extends applyMixins(
    * @param variablesById Mapping of devID <> variable data returned from API response.
    */
   private transformAPITextEntity(textEntity: TextItem | Component, variablesById: Record<string, Variable>) {
-    const fileName = isTextItem(textEntity) ? `${textEntity.projectId}___${textEntity.variantId || "base"}` : `components___${textEntity.variantId || "base"}`;
+    const fileName = isTextItem(textEntity) ? `${textEntity.projectId}___${textEntity.variantId || BASE_VARIANT_ID}` : `components___${textEntity.variantId || BASE_VARIANT_ID}`;
 
     this.outputFiles[fileName] ??= new JSONOutputFile({
       filename: fileName,
       path: this.outDir,
-      metadata: { variantId: textEntity.variantId || "base" },
+      metadata: { variantId: textEntity.variantId || BASE_VARIANT_ID },
     });
     
     // Use richText if available and configured, otherwise use text

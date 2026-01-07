@@ -1,15 +1,10 @@
 import BaseExportFormatter from "./shared/baseExport";
 import ICUOutputFile from "./shared/fileTypes/ICUOutputFile";
-import {
-  ExportComponentsJSONResponse,
-  ExportTextItemsJSONResponse,
-  PullQueryParams,
-} from "../http/types";
+import { PullQueryParams } from "../http/types";
+import { BASE_VARIANT_ID } from "../utils/constants";
 
 export default class JSONICUFormatter extends BaseExportFormatter<
-  ICUOutputFile<{ variantId: string }>,
-  ExportTextItemsJSONResponse,
-  ExportComponentsJSONResponse
+  ICUOutputFile<{ variantId: string }>
 > {
   protected exportFormat: PullQueryParams["format"] = "json_icu";
 
@@ -22,7 +17,7 @@ export default class JSONICUFormatter extends BaseExportFormatter<
     this.outputFiles[fileName] ??= new ICUOutputFile({
       filename: fileName,
       path: this.outDir,
-      metadata: { variantId: variantId || "base" },
+      metadata: { variantId: variantId || BASE_VARIANT_ID },
       content: content,
     });
   }

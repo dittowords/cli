@@ -143,6 +143,7 @@ export default abstract class BaseExportFormatter<
         const params: PullQueryParams = {
           ...super.generateQueryParams({
             projects: [{ id: project.id }],
+            statuses: this.output.statuses ?? this.projectConfig.statuses,
           }),
           variantId,
           format: this.exportFormat,
@@ -182,6 +183,7 @@ export default abstract class BaseExportFormatter<
         // gets folders from base component pull filters, overwrites variants with just this iteration's variant
         ...super.generateQueryParams({
           folders: folderFilters,
+          statuses: this.output.statuses ?? this.projectConfig.statuses,
         }),
         variantId,
         format: this.exportFormat,

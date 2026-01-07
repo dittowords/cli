@@ -1,38 +1,71 @@
-import httpClient from "./client";
 import { AxiosError } from "axios";
-import { CommandMetaFlags, PullQueryParams, ZTextItemsResponse } from "./types";
+import {
+  CommandMetaFlags,
+  PullQueryParams,
+  ZTextItemsResponse,
+  ZExportTextItemsResponse,
+} from "./types";
 import getHttpClient from "./client";
 
-export default async function fetchText(
+const handleError = (
+  e: unknown,
+  msgBase: string,
+  msgDescription: string
+): Error => {
+  if (!(e instanceof AxiosError)) {
+    return new Error(
+      "Sorry! We're having trouble reaching the Ditto API. Please try again later."
+    );
+  }
+
+  // Handle invalid filters
+  if (e.response?.status === 400) {
+    let errorMsgBase = msgBase;
+
+    if (e.response?.data?.message) errorMsgBase = e.response.data.message;
+
+    return new Error(`${errorMsgBase}. ${msgDescription}`, {
+      cause: e.response?.data,
+    });
+  }
+
+  return e;
+};
+
+export async function fetchTextItems(
   params: PullQueryParams,
   meta: CommandMetaFlags
 ) {
   try {
     const httpClient = getHttpClient({ meta });
-    const response = await httpClient.get("/v2/textItems", { params });
-
-    return ZTextItemsResponse.parse(response.data);
+    const defaultResponse = await httpClient.get("/v2/textItems", {
+      params,
+    });
+    return ZTextItemsResponse.parse(defaultResponse.data);
   } catch (e: unknown) {
-    if (!(e instanceof AxiosError)) {
-      throw new Error(
-        "Sorry! We're having trouble reaching the Ditto API. Please try again later."
-      );
-    }
+    throw handleError(
+      e,
+      "Invalid project filters",
+      "Please check your project filters and try again."
+    );
+  }
+}
 
-    // Handle invalid filters
-    if (e.response?.status === 400) {
-      let errorMsgBase = "Invalid project filters";
-
-      if (e.response?.data?.message) errorMsgBase = e.response.data.message;
-
-      throw new Error(
-        `${errorMsgBase}. Please check your project filters and try again.`,
-        {
-          cause: e.response?.data,
-        }
-      );
-    }
-
-    throw e;
+export async function exportTextItems(
+  params: PullQueryParams,
+  meta: CommandMetaFlags
+) {
+  try {
+    const httpClient = getHttpClient({ meta });
+    const exportResponse = await httpClient.get("/v2/textItems/export", {
+      params,
+    });
+    return ZExportTextItemsResponse.parse(exportResponse.data);
+  } catch (e: unknown) {
+    throw handleError(
+      e,
+      "Invalid params",
+      "Please check your request parameters and try again."
+    );
   }
 }

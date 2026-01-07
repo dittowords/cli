@@ -42,6 +42,7 @@ The default file looks like this:
 ```yml
 projects: []
 variants: []
+statuses: []
 components:
   folders: []
 outputs:

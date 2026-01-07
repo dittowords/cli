@@ -39,6 +39,7 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
     let filters: PullFilters = {
       projects: this.projectConfig.projects,
       variants: this.projectConfig.variants,
+      statuses: this.projectConfig.statuses,
     };
 
     if (this.output.projects) {
@@ -47,6 +48,10 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
 
     if (this.output.variants) {
       filters.variants = this.output.variants;
+    }
+
+    if (this.output.statuses) {
+      filters.statuses = this.output.statuses;
     }
 
     return filters;
@@ -58,6 +63,7 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
         folders: this.projectConfig.components.folders,
       }),
       variants: this.projectConfig.variants,
+      statuses: this.projectConfig.statuses,
     };
 
     if (this.output.components) {
@@ -66,6 +72,10 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
 
     if (this.output.variants) {
       filters.variants = this.output.variants;
+    }
+
+    if (this.output.statuses) {
+      filters.statuses = this.output.statuses;
     }
 
     return filters;

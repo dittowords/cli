@@ -5,8 +5,8 @@ import {
   ExportTextItemsResponse,
   ExportComponentsStringResponse,
 } from "../../http/types";
-import fetchText from "../../http/textItems";
-import fetchComponents from "../../http/components";
+import { exportTextItems } from "../../http/textItems";
+import { exportComponents } from "../../http/components";
 import fetchProjects from "../../http/projects";
 import fetchVariants from "../../http/variants";
 import generateSwiftDriver from "../../http/cli";
@@ -24,9 +24,11 @@ jest.mock("../../utils/appContext", () => ({
   },
 }));
 
-const mockFetchText = fetchText as jest.MockedFunction<typeof fetchText>;
-const mockFetchComponents = fetchComponents as jest.MockedFunction<
-  typeof fetchComponents
+const mockExportTextItems = exportTextItems as jest.MockedFunction<
+  typeof exportTextItems
+>;
+const mockExportComponents = exportComponents as jest.MockedFunction<
+  typeof exportComponents
 >;
 const mockFetchProjects = fetchProjects as jest.MockedFunction<
   typeof fetchProjects
@@ -135,7 +137,7 @@ describe("BaseExportFormatter", () => {
       );
 
       const mockContent = createMockIOSStringsContent();
-      mockFetchText.mockResolvedValue(mockContent);
+      mockExportTextItems.mockResolvedValue(mockContent);
 
       await formatter.fetchVariants();
       const result = await formatter.fetchTextItemsMap();
@@ -174,7 +176,7 @@ describe("BaseExportFormatter", () => {
       const mockContent = createMockIOSStringsContent();
 
       mockFetchProjects.mockResolvedValue(mockProjects);
-      mockFetchText.mockResolvedValue(mockContent);
+      mockExportTextItems.mockResolvedValue(mockContent);
 
       await formatter.fetchVariants();
       const result = await formatter.fetchTextItemsMap();
@@ -216,7 +218,7 @@ describe("BaseExportFormatter", () => {
       const mockContent = createMockIOSStringsContent();
 
       mockFetchVariants.mockResolvedValue(mockVariants);
-      mockFetchText.mockResolvedValue(mockContent);
+      mockExportTextItems.mockResolvedValue(mockContent);
 
       await formatter.fetchVariants();
       const result = await formatter.fetchTextItemsMap();
@@ -244,7 +246,7 @@ describe("BaseExportFormatter", () => {
       );
 
       const mockContent = createMockIOSStringsContent();
-      mockFetchText.mockResolvedValue(mockContent);
+      mockExportTextItems.mockResolvedValue(mockContent);
 
       await formatter.fetchVariants();
       const result = await formatter.fetchTextItemsMap();
@@ -277,7 +279,7 @@ describe("BaseExportFormatter", () => {
       );
 
       const mockContent = createMockComponentsContent();
-      mockFetchComponents.mockResolvedValue(mockContent);
+      mockExportComponents.mockResolvedValue(mockContent);
 
       await formatter.fetchVariants();
       const result = await formatter.fetchComponentsMap();
@@ -287,7 +289,7 @@ describe("BaseExportFormatter", () => {
         base: mockContent,
       });
 
-      expect(mockFetchComponents).toHaveBeenCalledTimes(2);
+      expect(mockExportComponents).toHaveBeenCalledTimes(2);
     });
 
     it("should fetch variants from API when 'all' is specified", async () => {
@@ -312,7 +314,7 @@ describe("BaseExportFormatter", () => {
       const mockContent = createMockComponentsContent();
 
       mockFetchVariants.mockResolvedValue(mockVariants);
-      mockFetchComponents.mockResolvedValue(mockContent);
+      mockExportComponents.mockResolvedValue(mockContent);
 
       await formatter.fetchVariants();
       const result = await formatter.fetchComponentsMap();
@@ -337,7 +339,7 @@ describe("BaseExportFormatter", () => {
       );
 
       const mockContent = createMockComponentsContent();
-      mockFetchComponents.mockResolvedValue(mockContent);
+      mockExportComponents.mockResolvedValue(mockContent);
 
       await formatter.fetchVariants();
       const result = await formatter.fetchComponentsMap();
@@ -362,7 +364,7 @@ describe("BaseExportFormatter", () => {
       const result = await formatter.fetchComponentsMap();
 
       expect(result).toEqual({});
-      expect(mockFetchComponents).not.toHaveBeenCalled();
+      expect(mockExportComponents).not.toHaveBeenCalled();
     });
   });
 
@@ -389,8 +391,8 @@ describe("BaseExportFormatter", () => {
       const mockTextContent = createMockIOSStringsContent();
       const mockComponentsContent = createMockComponentsContent();
 
-      mockFetchText.mockResolvedValue(mockTextContent);
-      mockFetchComponents.mockResolvedValue(mockComponentsContent);
+      mockExportTextItems.mockResolvedValue(mockTextContent);
+      mockExportComponents.mockResolvedValue(mockComponentsContent);
 
       const fetchVariantsSpy = jest.spyOn(formatter, "fetchVariants");
       const result = await formatter.fetchAPIData();

@@ -1,6 +1,6 @@
-import fetchText from "../http/textItems";
-import { Component, ComponentsResponse, isTextItem, PullFilters, PullQueryParams, TextItem, TextItemsResponse } from "../http/types";
-import fetchComponents from "../http/components";
+import { fetchTextItems } from "../http/textItems";
+import { Component, ComponentsResponse, isTextItem, TextItem, TextItemsResponse } from "../http/types";
+import { fetchComponents } from "../http/components";
 import fetchVariables, { Variable } from "../http/variables";
 import BaseFormatter from "./shared/base";
 import OutputFile from "./shared/fileTypes/OutputFile";
@@ -92,7 +92,7 @@ export default class JSONFormatter extends applyMixins(
   private async fetchTextItems() {
     if (!this.projectConfig.projects && !this.output.projects) return [];
     const filters = super.generateTextItemPullFilter();
-    return await fetchText<TextItemsResponse>(super.generateQueryParams(filters), this.meta);
+    return await fetchTextItems(super.generateQueryParams(filters), this.meta);
   }
 
   /**
@@ -104,7 +104,7 @@ export default class JSONFormatter extends applyMixins(
   private async fetchComponents() {
     if (!this.projectConfig.components && !this.output.components) return [];
     const filters = super.generateComponentPullFilter();
-    return await fetchComponents<ComponentsResponse>(super.generateQueryParams(filters), this.meta);
+    return await fetchComponents(super.generateQueryParams(filters), this.meta);
   }
 
   private async fetchVariables() {

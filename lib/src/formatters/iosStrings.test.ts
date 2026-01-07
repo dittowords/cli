@@ -14,12 +14,13 @@ jest.mock("../utils/appContext", () => ({
 // @ts-ignore
 class TestIOSStringsFormatter extends IOSStringsFormatter {
   public createOutputFilePublic(
+    filePrefix: string,
     fileName: string,
     variantId: string,
     content: string
   ) {
     // @ts-ignore
-    return super.createOutputFile(fileName, variantId, content);
+    return super.createOutputFile(filePrefix, fileName, variantId, content);
   }
 
   public getExportFormat() {
@@ -35,6 +36,11 @@ class TestIOSStringsFormatter extends IOSStringsFormatter {
   public getLocalesPath(variantId: string) {
     // @ts-ignore
     return super.getLocalesPath(variantId);
+  }
+
+  public getVariantLocale(variantId: string) {
+    // @ts-ignore
+    return super.getVariantLocale(variantId);
   }
 }
 
@@ -84,11 +90,12 @@ describe("IOSStringsFormatter", () => {
       createMockMeta()
     );
 
-    const fileName = "cli-testing-project___spanish";
+    const filePrefix = "cli-testing-project";
+    const fileName = `${filePrefix}___spanish`;
     const variantId = "spanish";
     const content = "file-content";
 
-    formatter.createOutputFilePublic(fileName, variantId, content);
+    formatter.createOutputFilePublic(filePrefix, fileName, variantId, content);
 
     const files = formatter.getOutputFiles();
     const file = files[fileName] as IOSStringsOutputFile<{
@@ -112,10 +119,11 @@ describe("IOSStringsFormatter", () => {
       createMockMeta()
     );
 
-    const fileName = "cli-testing-project___base";
+    const filePrefix = "cli-testing-project";
+    const fileName = `${filePrefix}___base`;
     const content = "base-content";
 
-    formatter.createOutputFilePublic(fileName, "" as any, content);
+    formatter.createOutputFilePublic(filePrefix, fileName, "" as any, content);
 
     const files = formatter.getOutputFiles();
     const file = files[fileName] as IOSStringsOutputFile<{
@@ -124,6 +132,59 @@ describe("IOSStringsFormatter", () => {
 
     expect(file.metadata).toEqual({ variantId: "base" });
     expect(file.content).toBe("base-content");
+  });
+
+  describe("getVariantLocale", () => {
+    it("should return undefined when iosLocales is not configured", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: undefined,
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestIOSStringsFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getVariantLocale("base");
+
+      expect(result).toBe(undefined);
+    });
+
+    it("should return undefined when iosLocales is configured but variant doesn't have match", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: [{ base: "en" }, { spanish: "es" }],
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestIOSStringsFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getVariantLocale("japanese");
+
+      expect(result).toBe(undefined);
+    });
+
+    it("should return matching locale when iosLocales is configured and variant has a match", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: [{ base: "en" }, { spanish: "es" }],
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestIOSStringsFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const result = formatter.getVariantLocale("spanish");
+
+      expect(result).toEqual({ spanish: "es" });
+    });
   });
 
   describe("getLocalesPath", () => {

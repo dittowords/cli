@@ -47,6 +47,7 @@ export default abstract class BaseExportFormatter<
   private variants: { id: string }[] = [];
 
   protected abstract createOutputFile(
+    filePrefix: string,
     fileName: string,
     variantId: string,
     content: string | Record<string, unknown>
@@ -74,7 +75,12 @@ export default abstract class BaseExportFormatter<
         Object.entries(projectVariants).forEach(
           ([variantId, textItemsFileContent]) => {
             const fileName = `${projectId}___${variantId || BASE_VARIANT_ID}`;
-            this.createOutputFile(fileName, variantId, textItemsFileContent);
+            this.createOutputFile(
+              projectId,
+              fileName,
+              variantId,
+              textItemsFileContent
+            );
           }
         );
       }
@@ -82,8 +88,14 @@ export default abstract class BaseExportFormatter<
 
     Object.entries(data.componentsMap).forEach(
       ([variantId, componentsFileContent]) => {
-        const fileName = `components___${variantId || BASE_VARIANT_ID}`;
-        this.createOutputFile(fileName, variantId, componentsFileContent);
+        const filePrefix = "components";
+        const fileName = `${filePrefix}___${variantId || BASE_VARIANT_ID}`;
+        this.createOutputFile(
+          filePrefix,
+          fileName,
+          variantId,
+          componentsFileContent
+        );
       }
     );
 

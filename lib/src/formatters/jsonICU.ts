@@ -14,6 +14,7 @@ export default class JSONICUFormatter extends BaseExportFormatter<
   protected exportFormat: PullQueryParams["format"] = "json_icu";
 
   protected createOutputFile(
+    _filePrefix: string,
     fileName: string,
     variantId: string,
     content: Record<string, unknown>

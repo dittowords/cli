@@ -7,12 +7,13 @@ import AndroidXMLFormatter from "./android";
 // @ts-ignore
 class TestAndroidXMLFormatter extends AndroidXMLFormatter {
   public createOutputFilePublic(
+    filePrefix: string,
     fileName: string,
     variantId: string,
     content: string
   ) {
     // @ts-ignore
-    return super.createOutputFile(fileName, variantId, content);
+    return super.createOutputFile(filePrefix, fileName, variantId, content);
   }
 
   public getExportFormat() {
@@ -72,11 +73,12 @@ describe("AndroidXMLFormatter", () => {
       createMockMeta()
     );
 
-    const fileName = "cli-testing-project___spanish";
+    const projectId = "cli-testing-project";
+    const fileName = `${projectId}___spanish`;
     const variantId = "spanish";
     const content = "file-content";
 
-    formatter.createOutputFilePublic(fileName, variantId, content);
+    formatter.createOutputFilePublic(projectId, fileName, variantId, content);
 
     const files = formatter.getOutputFiles();
     const file = files[fileName] as AndroidOutputFile<{
@@ -100,10 +102,11 @@ describe("AndroidXMLFormatter", () => {
       createMockMeta()
     );
 
-    const fileName = "cli-testing-project___base";
+    const filePrefix = "cli-testing-project";
+    const fileName = `${filePrefix}___base`;
     const content = "base-content";
 
-    formatter.createOutputFilePublic(fileName, "" as any, content);
+    formatter.createOutputFilePublic(filePrefix, fileName, "" as any, content);
 
     const files = formatter.getOutputFiles();
     const file = files[fileName] as AndroidOutputFile<{

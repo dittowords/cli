@@ -16,16 +16,29 @@ export default class IOSStringsFormatter extends BaseExportFormatter<
   protected exportFormat: PullQueryParams["format"] = "ios-strings";
 
   protected createOutputFile(
+    filePrefix: string,
     fileName: string,
     variantId: string,
     content: string
   ): void {
+    const matchingLocale = this.getVariantLocale(variantId);
     this.outputFiles[fileName] ??= new IOSStringsOutputFile({
-      filename: fileName,
+      filename: matchingLocale ? filePrefix : fileName, // don't append "___<variantId>"" when in locale directory
       path: this.getLocalesPath(variantId),
       metadata: { variantId: variantId || "base" },
       content: content,
     });
+  }
+
+  private getVariantLocale(
+    variantId: string
+  ): Record<string, string> | undefined {
+    if (this.projectConfig.iosLocales) {
+      return this.projectConfig.iosLocales.find(
+        (localePair) => localePair[variantId]
+      );
+    }
+    return undefined;
   }
 
   /**
@@ -37,13 +50,9 @@ export default class IOSStringsFormatter extends BaseExportFormatter<
    */
   private getLocalesPath(variantId: string) {
     let path = this.outDir;
-    if (this.projectConfig.iosLocales) {
-      const locale = this.projectConfig.iosLocales.find(
-        (localePair) => localePair[variantId]
-      );
-      if (locale) {
-        path = `${appContext.outDir}/${locale[variantId]}.lproj`;
-      }
+    const variantLocale = this.getVariantLocale(variantId);
+    if (variantLocale) {
+      path = `${appContext.outDir}/${variantLocale[variantId]}.lproj`;
     }
     return path;
   }

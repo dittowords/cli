@@ -438,11 +438,13 @@ describe("BaseExportFormatter", () => {
       formatter.transformAPIData(data);
       expect(createOutputSpy).toHaveBeenCalledTimes(2);
       expect(createOutputSpy).toHaveBeenCalledWith(
+        "project1",
         `project1___base`,
         "base",
         mockTextContent
       );
       expect(createOutputSpy).toHaveBeenCalledWith(
+        "project1",
         `project1___variant1`,
         "variant1",
         mockTextContent

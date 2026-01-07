@@ -9,12 +9,20 @@ import fetchText from "../../http/textItems";
 import fetchComponents from "../../http/components";
 import fetchProjects from "../../http/projects";
 import fetchVariants from "../../http/variants";
+import generateSwiftDriver from "../../http/cli";
 import BaseExportFormatter from "./baseExport";
 
 jest.mock("../../http/textItems");
 jest.mock("../../http/components");
 jest.mock("../../http/projects");
 jest.mock("../../http/variants");
+jest.mock("../../http/cli");
+jest.mock("../../utils/appContext", () => ({
+  __esModule: true,
+  default: {
+    outDir: "/mock/app/context/outDir",
+  },
+}));
 
 const mockFetchText = fetchText as jest.MockedFunction<typeof fetchText>;
 const mockFetchComponents = fetchComponents as jest.MockedFunction<
@@ -25,6 +33,9 @@ const mockFetchProjects = fetchProjects as jest.MockedFunction<
 >;
 const mockFetchVariants = fetchVariants as jest.MockedFunction<
   typeof fetchVariants
+>;
+const mockGenerateSwiftDriver = generateSwiftDriver as jest.MockedFunction<
+  typeof generateSwiftDriver
 >;
 
 // fake test class to expose private methods
@@ -427,11 +438,13 @@ describe("BaseExportFormatter", () => {
       formatter.transformAPIData(data);
       expect(createOutputSpy).toHaveBeenCalledTimes(2);
       expect(createOutputSpy).toHaveBeenCalledWith(
+        "project1",
         `project1___base`,
         "base",
         mockTextContent
       );
       expect(createOutputSpy).toHaveBeenCalledWith(
+        "project1",
         `project1___variant1`,
         "variant1",
         mockTextContent

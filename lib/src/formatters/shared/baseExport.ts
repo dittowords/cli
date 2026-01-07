@@ -10,6 +10,8 @@ import fetchProjects from "../../http/projects";
 import fetchVariants from "../../http/variants";
 import OutputFile from "./fileTypes/OutputFile";
 
+const BASE_VARIANT_ID = "base";
+
 interface ComponentsMap {
   [variantId: string]: ExportComponentsResponse;
 }
@@ -31,13 +33,13 @@ type ExportOutputFile<MetadataType extends { variantId: string }> = OutputFile<
 
 /**
  * Base Class for File Formats That Leverage API /v2/components/export and /v2/textItems/export endpoints
- * These file formats fetch their file data directly from the API and write to files, as unlike in the case of
- * default /v2/textItems + /v2/components JSON, we cannot or do not want to perform any manipulation on the data itself
+ * These file formats fetch their file data directly from the API and write to files, unlike in the case of
+ * default /v2/textItems + /v2/components JSON, we cannot perform any manipulation on the data itself
  */
 export default abstract class BaseExportFormatter<
   TOutputFile extends ExportOutputFile<{ variantId: string }>,
   // The response types below correspond to the file data returned from the export endpoint and what will ultimately be written directly to the /ditto directory
-  // ios-strings, ios-stringsdict, and android formats are all strings while icu is { [developerId: string]: string } JSON Structure
+  // ios-strings, ios-stringsdict, and android formats are all strings while json_icu is { [developerId: string]: string } JSON Structure
   TTextItemsResponse extends ExportTextItemsResponse,
   TComponentsResponse extends ExportComponentsResponse
 > extends BaseFormatter<TOutputFile, ExportFormatAPIData> {
@@ -45,6 +47,7 @@ export default abstract class BaseExportFormatter<
   private variants: { id: string }[] = [];
 
   protected abstract createOutputFile(
+    filePrefix: string,
     fileName: string,
     variantId: string,
     content: string | Record<string, unknown>
@@ -61,8 +64,8 @@ export default abstract class BaseExportFormatter<
   }
 
   /**
-   * For each project/variant permutation and its fetched .strings data,
-   * create a new file with the expected naming
+   * For each project/variant permutation and its fetched file data,
+   * create a new file with the expected project/variant name
    *
    * @returns {OutputFile[]} List of Output Files
    */
@@ -71,8 +74,13 @@ export default abstract class BaseExportFormatter<
       ([projectId, projectVariants]) => {
         Object.entries(projectVariants).forEach(
           ([variantId, textItemsFileContent]) => {
-            const fileName = `${projectId}___${variantId || "base"}`;
-            this.createOutputFile(fileName, variantId, textItemsFileContent);
+            const fileName = `${projectId}___${variantId || BASE_VARIANT_ID}`;
+            this.createOutputFile(
+              projectId,
+              fileName,
+              variantId,
+              textItemsFileContent
+            );
           }
         );
       }
@@ -80,8 +88,14 @@ export default abstract class BaseExportFormatter<
 
     Object.entries(data.componentsMap).forEach(
       ([variantId, componentsFileContent]) => {
-        const fileName = `components___${variantId || "base"}`;
-        this.createOutputFile(fileName, variantId, componentsFileContent);
+        const filePrefix = "components";
+        const fileName = `${filePrefix}___${variantId || BASE_VARIANT_ID}`;
+        this.createOutputFile(
+          filePrefix,
+          fileName,
+          variantId,
+          componentsFileContent
+        );
       }
     );
 
@@ -99,7 +113,7 @@ export default abstract class BaseExportFormatter<
     if (variants.some((variant) => variant.id === "all")) {
       variants = await fetchVariants(this.meta);
     } else if (variants.length === 0) {
-      variants = [{ id: "base" }];
+      variants = [{ id: BASE_VARIANT_ID }];
     }
 
     this.variants = variants;
@@ -129,13 +143,13 @@ export default abstract class BaseExportFormatter<
 
       for (const variant of this.variants) {
         // map "base" to undefined, as by default export endpoint returns base variant
-        const variantsParam =
-          variant.id === "base" ? undefined : [{ id: variant.id }];
+        const variantId =
+          variant.id === BASE_VARIANT_ID ? undefined : variant.id;
         const params: PullQueryParams = {
           ...super.generateQueryParams({
             projects: [{ id: project.id }],
-            variants: variantsParam,
           }),
+          variantId,
           format: this.exportFormat,
         };
         const addVariantToProjectMap = fetchText<TTextItemsResponse>(
@@ -168,15 +182,14 @@ export default abstract class BaseExportFormatter<
 
     for (const variant of this.variants) {
       // map "base" to undefined, as by default export endpoint returns base variant
-      const variantsParam =
-        variant.id === "base" ? undefined : [{ id: variant.id }];
+      const variantId = variant.id === BASE_VARIANT_ID ? undefined : variant.id;
       const folderFilters = super.generateComponentPullFilter().folders;
       const params: PullQueryParams = {
         // gets folders from base component pull filters, overwrites variants with just this iteration's variant
         ...super.generateQueryParams({
           folders: folderFilters,
-          variants: variantsParam,
         }),
+        variantId,
         format: this.exportFormat,
       };
       const addVariantToMap = fetchComponents<TComponentsResponse>(
@@ -188,6 +201,7 @@ export default abstract class BaseExportFormatter<
       fetchFileContentRequests.push(addVariantToMap);
     }
 
+    await Promise.all(fetchFileContentRequests);
     return result;
   }
 }

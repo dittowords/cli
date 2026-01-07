@@ -17,7 +17,7 @@ export default async function fetchText<TResponse>(
       case "android":
       case "ios-strings":
       case "ios-stringsdict":
-      case "icu":
+      case "json_icu":
         const exportResponse = await httpClient.get("/v2/textItems/export", {
           params,
         });

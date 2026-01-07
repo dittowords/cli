@@ -5,13 +5,13 @@ import appContext from "../utils/appContext";
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
-import validateXMLString from "../utils/validateXML";
 
 jest.mock("../http/client");
 
 // Create a mock client with a mock 'get' method
 const mockHttpClient = {
   get: jest.fn(),
+  post: jest.fn(),
 };
 
 // Make getHttpClient return the mock client
@@ -204,6 +204,17 @@ const setupExportMocks = ({
     if (url.includes("/v2/components/export")) {
       return Promise.resolve({
         data: components,
+      });
+    }
+    return Promise.resolve({ data: [] });
+  });
+};
+
+const setupSwiftDriverMocks = () => {
+  mockHttpClient.post.mockImplementation((url: string, config?: any) => {
+    if (url.includes("/v2/cli/swiftDriver")) {
+      return Promise.resolve({
+        data: "import SwiftUI",
       });
     }
     return Promise.resolve({ data: [] });
@@ -602,6 +613,96 @@ describe("pull command - end-to-end tests", () => {
 
       // Components endpoint should not be called if not provided as source field
       expect(mockHttpClient.get).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("iosLocales Feature", () => {
+    let outputOutDir: string;
+
+    beforeEach(() => {
+      outputOutDir = path.join(testDir, "output-outDir");
+    });
+
+    it("should not add swift file to directory if iosLocales is not configured", async () => {
+      fs.mkdirSync(outputOutDir, { recursive: true });
+      setupMocks(createMockData());
+
+      appContext.setProjectConfig({
+        projects: [{ id: "project-1" }, { id: "project-2" }],
+        iosLocales: [{ spanish: "es" }],
+        outputs: [
+          {
+            format: "json",
+            outDir: outputOutDir,
+          },
+        ],
+      });
+
+      await pull({});
+
+      const actualFiles = fs.readdirSync(outputOutDir).toSorted();
+      expect(actualFiles.some((file) => file.includes(".swift"))).toEqual(
+        false
+      );
+    });
+
+    it("should not add swift file to directory if iosLocales configured but no iOS output provided", async () => {
+      fs.mkdirSync(outputOutDir, { recursive: true });
+      setupMocks(createMockData());
+
+      appContext.setProjectConfig({
+        projects: [{ id: "project-1" }, { id: "project-2" }],
+        iosLocales: [{ spanish: "es" }],
+        outputs: [
+          {
+            format: "json",
+            outDir: outputOutDir,
+          },
+        ],
+      });
+
+      await pull({});
+
+      const actualFiles = fs.readdirSync(outputOutDir).toSorted();
+      expect(actualFiles.some((file) => file.includes(".swift"))).toEqual(
+        false
+      );
+    });
+
+    it("should add swift file to root directory if iosLocales is configured and an iOS output is provided", async () => {
+      fs.mkdirSync(outputOutDir, { recursive: true });
+      const { textItems, components } = createMockData();
+      setupExportMocks({
+        textItems: textItems
+          .map((textItem) => `"${textItem.id}" = "${textItem.text}"`)
+          .join("\n\n"),
+        components: components
+          .map((component) => `"${component.id}" = "${component.text}"`)
+          .join("\n\n"),
+      });
+      setupSwiftDriverMocks();
+
+      appContext.setProjectConfig({
+        projects: [{ id: "project-1" }, { id: "project-2" }],
+        iosLocales: [{ spanish: "es" }],
+        outputs: [
+          {
+            format: "ios-strings",
+            outDir: outputOutDir,
+          },
+        ],
+      });
+
+      await pull({});
+
+      const actualFiles = fs.readdirSync("ditto").toSorted();
+      expect(actualFiles.some((file) => file.includes(".swift"))).toBe(true);
+
+      // should not be in output-specific dir
+      const outputDirFiles = fs.readdirSync(outputOutDir).toSorted();
+      expect(outputDirFiles.some((file) => file.includes(".swift"))).toBe(
+        false
+      );
     });
   });
 

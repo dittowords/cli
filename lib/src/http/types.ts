@@ -8,11 +8,16 @@ export interface PullFilters {
   }[];
   variants?: { id: string }[];
 }
-
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
   richText?: "html";
-  format?: "ios-strings" | "ios-stringsdict" | "android" | "icu" | undefined;
+  variantId?: string; // undefined for base
+  format?:
+    | "ios-strings"
+    | "ios-stringsdict"
+    | "android"
+    | "json_icu"
+    | undefined;
 }
 
 const ZBaseTextEntity = z.object({
@@ -29,6 +34,9 @@ const ZBaseTextEntity = z.object({
 const ZTextItem = ZBaseTextEntity.extend({
   projectId: z.string(),
 });
+
+export const TEXT_ITEM_STATUSES = ["NONE", "WIP", "REVIEW", "FINAL"] as const;
+export const ZTextItemStatus = z.enum(TEXT_ITEM_STATUSES);
 
 export function isTextItem(item: TextItem | Component): item is TextItem {
   return "projectId" in item;
@@ -74,7 +82,7 @@ export type ComponentsResponse = z.infer<typeof ZComponentsResponse>;
 
 export const ZExportComponentsJSONResponse = z.record(z.string(), z.string());
 export type ExportComponentsJSONResponse = z.infer<
-  typeof ZExportTextItemsJSONResponse
+  typeof ZExportComponentsJSONResponse
 >;
 
 export const ZExportComponentsStringResponse = z.string();
@@ -128,3 +136,22 @@ export type CommandMetaFlags = {
   githubActionRequest?: string; // Set to "true" if the request is from our GitHub Action
   [key: string]: string | undefined; // Allow other arbitrary key-value pairs, but none of these values are used for anything at the moment
 };
+
+// MARK - IOS
+
+const ZFolderParam = z.object({
+  id: z.string(),
+  excludeNestedFolders: z.boolean().optional(),
+});
+
+export const ZExportSwiftFileRequest = z.object({
+  projects: z.array(z.object({ id: z.string() })).optional(),
+  components: z
+    .object({
+      folders: z.array(ZFolderParam).optional(),
+    })
+    .optional(),
+  statuses: z.array(ZTextItemStatus).optional(),
+});
+
+export type IExportSwiftFileRequest = z.infer<typeof ZExportSwiftFileRequest>;

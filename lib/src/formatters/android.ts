@@ -14,6 +14,7 @@ export default class AndroidXMLFormatter extends BaseExportFormatter<
   protected exportFormat: PullQueryParams["format"] = "android";
 
   protected createOutputFile(
+    _filePrefix: string,
     fileName: string,
     variantId: string,
     content: string

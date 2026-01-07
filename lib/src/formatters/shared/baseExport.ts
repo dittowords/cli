@@ -9,8 +9,7 @@ import BaseFormatter from "./base";
 import fetchProjects from "../../http/projects";
 import fetchVariants from "../../http/variants";
 import OutputFile from "./fileTypes/OutputFile";
-
-const BASE_VARIANT_ID = "base";
+import { BASE_VARIANT_ID } from "../../utils/constants";
 
 interface ComponentsMap {
   [variantId: string]: ExportComponentsResponse;
@@ -37,11 +36,7 @@ type ExportOutputFile<MetadataType extends { variantId: string }> = OutputFile<
  * default /v2/textItems + /v2/components JSON, we cannot perform any manipulation on the data itself
  */
 export default abstract class BaseExportFormatter<
-  TOutputFile extends ExportOutputFile<{ variantId: string }>,
-  // The response types below correspond to the file data returned from the export endpoint and what will ultimately be written directly to the /ditto directory
-  // ios-strings, ios-stringsdict, and android formats are all strings while json_icu is { [developerId: string]: string } JSON Structure
-  TTextItemsResponse extends ExportTextItemsResponse,
-  TComponentsResponse extends ExportComponentsResponse
+  TOutputFile extends ExportOutputFile<{ variantId: string }>
 > extends BaseFormatter<TOutputFile, ExportFormatAPIData> {
   protected abstract exportFormat: PullQueryParams["format"];
   private variants: { id: string }[] = [];

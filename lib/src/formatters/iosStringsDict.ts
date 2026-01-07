@@ -1,15 +1,10 @@
 import BaseExportFormatter from "./shared/baseExport";
 import IOSStringsDictOutputFile from "./shared/fileTypes/IOSStringsDictOutputFile";
-import {
-  ExportComponentsStringResponse,
-  ExportTextItemsStringResponse,
-  PullQueryParams,
-} from "../http/types";
+import { PullQueryParams } from "../http/types";
 import appContext from "../utils/appContext";
+import { BASE_VARIANT_ID } from "../utils/constants";
 export default class IOSStringsDictFormatter extends BaseExportFormatter<
-  IOSStringsDictOutputFile<{ variantId: string }>,
-  ExportTextItemsStringResponse,
-  ExportComponentsStringResponse
+  IOSStringsDictOutputFile<{ variantId: string }>
 > {
   protected exportFormat: PullQueryParams["format"] = "ios-stringsdict";
 
@@ -23,7 +18,7 @@ export default class IOSStringsDictFormatter extends BaseExportFormatter<
     this.outputFiles[fileName] ??= new IOSStringsDictOutputFile({
       filename: matchingLocale ? filePrefix : fileName, // don't append "___<variantId>"" when in locale directory
       path: this.getLocalesPath(variantId),
-      metadata: { variantId: variantId || "base" },
+      metadata: { variantId: variantId || BASE_VARIANT_ID },
       content: content,
     });
   }

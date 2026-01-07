@@ -7,6 +7,7 @@ export interface PullFilters {
     excludeNestedFolders?: boolean;
   }[];
   variants?: { id: string }[];
+  statuses?: ITextStatus[];
 }
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
@@ -19,6 +20,8 @@ export interface PullQueryParams {
     | "json_icu"
     | undefined;
 }
+export const ZTextStatus = z.enum(["NONE", "WIP", "REVIEW", "FINAL"]);
+export type ITextStatus = z.infer<typeof ZTextStatus>;
 
 const ZBaseTextEntity = z.object({
   id: z.string(),
@@ -34,9 +37,6 @@ const ZBaseTextEntity = z.object({
 const ZTextItem = ZBaseTextEntity.extend({
   projectId: z.string(),
 });
-
-export const TEXT_ITEM_STATUSES = ["NONE", "WIP", "REVIEW", "FINAL"] as const;
-export const ZTextItemStatus = z.enum(TEXT_ITEM_STATUSES);
 
 export function isTextItem(item: TextItem | Component): item is TextItem {
   return "projectId" in item;
@@ -151,7 +151,7 @@ export const ZExportSwiftFileRequest = z.object({
       folders: z.array(ZFolderParam).optional(),
     })
     .optional(),
-  statuses: z.array(ZTextItemStatus).optional(),
+  statuses: z.array(ZTextStatus).optional(),
 });
 
 export type IExportSwiftFileRequest = z.infer<typeof ZExportSwiftFileRequest>;

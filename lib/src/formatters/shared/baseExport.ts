@@ -1,10 +1,10 @@
-import fetchText from "../../http/textItems";
 import {
   PullQueryParams,
   ExportTextItemsResponse,
   ExportComponentsResponse,
 } from "../../http/types";
-import fetchComponents from "../../http/components";
+import { exportTextItems } from "../../http/textItems";
+import { exportComponents } from "../../http/components";
 import BaseFormatter from "./base";
 import fetchProjects from "../../http/projects";
 import fetchVariants from "../../http/variants";
@@ -152,12 +152,11 @@ export default abstract class BaseExportFormatter<
           variantId,
           format: this.exportFormat,
         };
-        const addVariantToProjectMap = fetchText<TTextItemsResponse>(
-          params,
-          this.meta
-        ).then((textItemsFileContent) => {
-          result[project.id][variant.id] = textItemsFileContent;
-        });
+        const addVariantToProjectMap = exportTextItems(params, this.meta).then(
+          (textItemsFileContent) => {
+            result[project.id][variant.id] = textItemsFileContent;
+          }
+        );
         fetchFileContentRequests.push(addVariantToProjectMap);
       }
     }
@@ -192,12 +191,11 @@ export default abstract class BaseExportFormatter<
         variantId,
         format: this.exportFormat,
       };
-      const addVariantToMap = fetchComponents<TComponentsResponse>(
-        params,
-        this.meta
-      ).then((componentsFileContent) => {
-        result[variant.id] = componentsFileContent;
-      });
+      const addVariantToMap = exportComponents(params, this.meta).then(
+        (componentsFileContent) => {
+          result[variant.id] = componentsFileContent;
+        }
+      );
       fetchFileContentRequests.push(addVariantToMap);
     }
 

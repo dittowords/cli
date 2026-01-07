@@ -43,7 +43,7 @@ describe("fetchComponents", () => {
           id: "text1",
           text: "Plain text",
           richText: "<p>Rich <strong>HTML</strong> text</p>",
-          status: "active",
+          status: "FINAL",
           notes: "Test note",
           tags: ["tag1"],
           variableIds: ["var1"],
@@ -72,7 +72,7 @@ describe("fetchComponents", () => {
         {
           id: "text1",
           text: "Plain text only",
-          status: "active",
+          status: "FINAL",
           notes: "",
           tags: [],
           variableIds: [],

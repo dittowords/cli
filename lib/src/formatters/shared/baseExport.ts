@@ -107,6 +107,7 @@ export default abstract class BaseExportFormatter<
       this.output.variants ?? this.projectConfig.variants ?? [];
     if (variants.some((variant) => variant.id === "all")) {
       variants = await fetchVariants(this.meta);
+      variants.push({ id: BASE_VARIANT_ID });
     } else if (variants.length === 0) {
       variants = [{ id: BASE_VARIANT_ID }];
     }
@@ -143,7 +144,7 @@ export default abstract class BaseExportFormatter<
         const params: PullQueryParams = {
           ...super.generateQueryParams({
             projects: [{ id: project.id }],
-            statuses: this.output.statuses ?? this.projectConfig.statuses,
+            statuses: super.generateTextItemPullFilter().statuses,
           }),
           variantId,
           format: this.exportFormat,
@@ -178,13 +179,10 @@ export default abstract class BaseExportFormatter<
     for (const variant of this.variants) {
       // map "base" to undefined, as by default export endpoint returns base variant
       const variantId = variant.id === BASE_VARIANT_ID ? undefined : variant.id;
-      const folderFilters = super.generateComponentPullFilter().folders;
+      const { folders, statuses } = super.generateComponentPullFilter();
       const params: PullQueryParams = {
         // gets folders from base component pull filters, overwrites variants with just this iteration's variant
-        ...super.generateQueryParams({
-          folders: folderFilters,
-          statuses: this.output.statuses ?? this.projectConfig.statuses,
-        }),
+        ...super.generateQueryParams({ folders, statuses }),
         variantId,
         format: this.exportFormat,
       };

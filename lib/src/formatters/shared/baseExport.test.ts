@@ -119,6 +119,105 @@ describe("BaseExportFormatter", () => {
   });
 
   /***********************************************************
+   * fetchVariants
+   ***********************************************************/
+  describe("fetchVariants", () => {
+    it("should fetch all variants and include base variant if id: all provided", async () => {
+      const output = createMockOutput();
+      const projectConfig = createMockProjectConfig({
+        projects: [{ id: "project1" }, { id: "project2" }],
+        variants: [{ id: "all" }],
+      });
+
+      const mockVariants = [
+        { id: "variant1", name: "Variant 1" },
+        { id: "variant2", name: "Variant 2" },
+      ];
+      mockFetchVariants.mockResolvedValue(mockVariants);
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+      await formatter.fetchVariants();
+      expect(formatter.variants).toEqual([
+        { id: "variant1", name: "Variant 1" },
+        { id: "variant2", name: "Variant 2" },
+        { id: "base" },
+      ]);
+    });
+
+    it("should set only base variant if variants empty", async () => {
+      const output = createMockOutput();
+      const projectConfig = createMockProjectConfig({
+        projects: [{ id: "project1" }, { id: "project2" }],
+        variants: [],
+      });
+
+      const mockVariants = [
+        { id: "variant1", name: "Variant 1" },
+        { id: "variant2", name: "Variant 2" },
+      ];
+      mockFetchVariants.mockResolvedValue(mockVariants);
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+      await formatter.fetchVariants();
+      expect(formatter.variants).toEqual([{ id: "base" }]);
+    });
+
+    it("should prioritize outputs configured in output config", async () => {
+      const output = createMockOutput({
+        variants: [{ id: "afrikaans" }, { id: "swahili" }],
+      });
+      const projectConfig = createMockProjectConfig({
+        projects: [{ id: "project1" }, { id: "project2" }],
+        variants: [{ id: "spanish" }, { id: "japanese" }],
+      });
+
+      const mockVariants = [
+        { id: "variant1", name: "Variant 1" },
+        { id: "variant2", name: "Variant 2" },
+      ];
+      mockFetchVariants.mockResolvedValue(mockVariants);
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+      await formatter.fetchVariants();
+      expect(formatter.variants).toEqual(output.variants);
+    });
+
+    it("should otherwise default to variants configured in project config", async () => {
+      const output = createMockOutput();
+      const projectConfig = createMockProjectConfig({
+        projects: [{ id: "project1" }, { id: "project2" }],
+        variants: [{ id: "spanish" }, { id: "japanese" }],
+      });
+
+      const mockVariants = [
+        { id: "variant1", name: "Variant 1" },
+        { id: "variant2", name: "Variant 2" },
+      ];
+      mockFetchVariants.mockResolvedValue(mockVariants);
+      // @ts-ignore
+      const formatter = new TestBaseExportFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+      await formatter.fetchVariants();
+      expect(formatter.variants).toEqual(projectConfig.variants);
+    });
+  });
+
+  /***********************************************************
    * fetchTextItemsMap
    ***********************************************************/
 
@@ -198,7 +297,7 @@ describe("BaseExportFormatter", () => {
       });
     });
 
-    it("should fetch variants from API when 'all' is specified", async () => {
+    it("should fetch variants from API when 'all' is specified, including base", async () => {
       const projectConfig = createMockProjectConfig({
         projects: [{ id: "project1" }],
         variants: [{ id: "all" }],
@@ -226,6 +325,7 @@ describe("BaseExportFormatter", () => {
       expect(mockFetchVariants).toHaveBeenCalled();
       expect(result).toEqual({
         project1: {
+          base: mockContent,
           variant1: mockContent,
           variant2: mockContent,
         },
@@ -292,7 +392,7 @@ describe("BaseExportFormatter", () => {
       expect(mockExportComponents).toHaveBeenCalledTimes(2);
     });
 
-    it("should fetch variants from API when 'all' is specified", async () => {
+    it("should fetch variants from API when 'all' is specified, including base text", async () => {
       const projectConfig = createMockProjectConfig({
         variants: [{ id: "all" }],
         components: {
@@ -320,7 +420,11 @@ describe("BaseExportFormatter", () => {
       const result = await formatter.fetchComponentsMap();
 
       expect(mockFetchVariants).toHaveBeenCalled();
-      expect(result).toEqual({ variant1: mockContent, variant2: mockContent });
+      expect(result).toEqual({
+        base: mockContent,
+        variant1: mockContent,
+        variant2: mockContent,
+      });
     });
 
     it("should default to base variant when variants are empty", async () => {

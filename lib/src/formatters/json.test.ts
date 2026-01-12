@@ -421,11 +421,15 @@ describe("JSONFormatter", () => {
         projectConfig,
         createMockMeta()
       );
-      const mockTextItem = createMockTextItem({ pluralForm: "one" });
+      const mockTextItem = createMockTextItem({
+        pluralForm: "one",
+        text: "The {{count}} ring to rule them all",
+      });
       formatter.transformAPITextEntity(mockTextItem, {});
-      expect(
-        formatter.getOutputFiles()["project-1___base"].content
-      ).toHaveProperty(`${mockTextItem.id}_one`);
+      const fileContent =
+        formatter.getOutputFiles()["project-1___base"].content;
+      expect(fileContent).toHaveProperty(`${mockTextItem.id}_one`);
+      expect(fileContent[`${mockTextItem.id}_one`]).toEqual(mockTextItem.text);
       expect(
         formatter.getOutputFiles()["project-1___base"].content
       ).not.toHaveProperty(mockTextItem.id);

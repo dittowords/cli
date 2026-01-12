@@ -61,9 +61,7 @@ export default class JSONFormatter extends applyMixins(
    * @param variablesById Mapping of devID <> variable data returned from API response.
    */
   private transformAPITextEntity(textEntity: TextItem | Component, variablesById: Record<string, Variable>) {
-    const fileName = isTextItem(textEntity)
-      ? `${textEntity.projectId}___${textEntity.variantId || BASE_VARIANT_ID}`
-      : `components___${textEntity.variantId || BASE_VARIANT_ID}`;
+    const fileName = isTextItem(textEntity) ? `${textEntity.projectId}___${textEntity.variantId || BASE_VARIANT_ID}` : `components___${textEntity.variantId || BASE_VARIANT_ID}`;
 
     this.outputFiles[fileName] ??= new JSONOutputFile({
       filename: fileName,

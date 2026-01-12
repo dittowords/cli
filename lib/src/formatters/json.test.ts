@@ -272,14 +272,18 @@ describe("JSONFormatter", () => {
       expect(transformAPITextEntitySpy).toHaveBeenCalledTimes(
         mockTextItems.length + mockComponents.length
       );
-      expect(transformAPITextEntitySpy).toHaveBeenCalledWith(
-        mockTextItems[0],
-        mockVariablesById
-      );
-      expect(transformAPITextEntitySpy).toHaveBeenCalledWith(
-        mockComponents[0],
-        mockVariablesById
-      );
+      mockTextItems.forEach((mockTextItem) => {
+        expect(transformAPITextEntitySpy).toHaveBeenCalledWith(
+          mockTextItem,
+          mockVariablesById
+        );
+      });
+      mockComponents.forEach((mockComponent) => {
+        expect(transformAPITextEntitySpy).toHaveBeenCalledWith(
+          mockComponent,
+          mockVariablesById
+        );
+      });
     });
 
     it("should call getFrameworkProcessor.process if framework is enabled", () => {

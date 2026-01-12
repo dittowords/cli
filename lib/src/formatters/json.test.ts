@@ -192,9 +192,6 @@ describe("JSONFormatter", () => {
     jest.clearAllMocks();
   });
 
-  /***********************************************************
-   * fetchAPIData
-   ***********************************************************/
   describe("fetchAPIData", () => {
     it("should fetch text items, components, and variables and combine them", async () => {
       const projectConfig = createMockProjectConfig({
@@ -239,9 +236,6 @@ describe("JSONFormatter", () => {
     });
   });
 
-  /***********************************************************
-   * transformAPIData
-   ***********************************************************/
   describe("transformAPIData", () => {
     it("should invoke transformAPITextEntity for each text item and component", () => {
       const projectConfig = createMockProjectConfig();
@@ -270,10 +264,10 @@ describe("JSONFormatter", () => {
         }, {} as Record<string, Variable>),
       });
 
-      const mockVariablesById = mockVariables.reduce((acc, variable) => {
-        acc[variable.id] = variable;
-        return acc;
-      }, {} as Record<string, Variable>);
+      const mockVariablesById = mockVariables.reduce(
+        (acc, variable) => ({ ...acc, [variable.id]: variable }),
+        {} as Record<string, Variable>
+      );
 
       expect(transformAPITextEntitySpy).toHaveBeenCalledTimes(
         mockTextItems.length + mockComponents.length
@@ -315,9 +309,6 @@ describe("JSONFormatter", () => {
     });
   });
 
-  /***********************************************************
-   * transformAPITextEntity
-   ***********************************************************/
   describe("transformAPITextEntity", () => {
     let projectConfig: ProjectConfigYAML;
     let output: Output;
@@ -340,30 +331,42 @@ describe("JSONFormatter", () => {
     });
 
     it("should write to output file named {projectId}___{variantId}.json if textItem entity", () => {
-      formatter.transformAPITextEntity(
-        createMockTextItem({ variantId: "french" }),
-        {}
+      const mockFrenchItem = createMockTextItem({ variantId: "french" });
+      const mockBaseItem = createMockTextItem();
+      formatter.transformAPITextEntity(mockFrenchItem, {});
+      formatter.transformAPITextEntity(mockBaseItem, {});
+
+      const baseVariantFile = formatter.getOutputFiles()["project-1___base"];
+      const frenchVariantFile =
+        formatter.getOutputFiles()["project-1___french"];
+      expect(baseVariantFile).toBeInstanceOf(JSONOutputFile);
+      expect(baseVariantFile.content[mockBaseItem.id]).toEqual(
+        mockBaseItem.text
       );
-      formatter.transformAPITextEntity(createMockTextItem(), {});
-      expect(formatter.getOutputFiles()["project-1___base"]).toBeInstanceOf(
-        JSONOutputFile
-      );
-      expect(formatter.getOutputFiles()["project-1___french"]).toBeInstanceOf(
-        JSONOutputFile
+      expect(frenchVariantFile).toBeInstanceOf(JSONOutputFile);
+      expect(frenchVariantFile.content[mockFrenchItem.id]).toEqual(
+        mockFrenchItem.text
       );
     });
 
     it("should write to output file named components___{variantId}.json if component entity", () => {
-      formatter.transformAPITextEntity(
-        createMockComponent({ variantId: "spanish" }),
-        {}
+      const mockSpanishComponent = createMockComponent({
+        variantId: "spanish",
+      });
+      const mockBaseComponent = createMockComponent();
+      formatter.transformAPITextEntity(mockSpanishComponent, {});
+      formatter.transformAPITextEntity(mockBaseComponent, {});
+
+      const baseVariantFile = formatter.getOutputFiles()["components___base"];
+      const spanishVariantFile =
+        formatter.getOutputFiles()["components___spanish"];
+      expect(baseVariantFile).toBeInstanceOf(JSONOutputFile);
+      expect(baseVariantFile.content[mockBaseComponent.id]).toEqual(
+        mockBaseComponent.text
       );
-      formatter.transformAPITextEntity(createMockComponent(), {});
-      expect(formatter.getOutputFiles()["components___spanish"]).toBeInstanceOf(
-        JSONOutputFile
-      );
-      expect(formatter.getOutputFiles()["components___base"]).toBeInstanceOf(
-        JSONOutputFile
+      expect(spanishVariantFile).toBeInstanceOf(JSONOutputFile);
+      expect(spanishVariantFile.content[mockSpanishComponent.id]).toEqual(
+        mockSpanishComponent.text
       );
     });
 
@@ -454,9 +457,6 @@ describe("JSONFormatter", () => {
     });
   });
 
-  /***********************************************************
-   * fetchTextItems
-   ***********************************************************/
   describe("fetchTextItems", () => {
     let projectConfig: ProjectConfigYAML;
     let output: Output;
@@ -511,9 +511,6 @@ describe("JSONFormatter", () => {
     });
   });
 
-  /***********************************************************
-   * fetchComponents
-   ***********************************************************/
   describe("fetchComponents", () => {
     let projectConfig: ProjectConfigYAML;
     let output: Output;
@@ -568,9 +565,6 @@ describe("JSONFormatter", () => {
     });
   });
 
-  /***********************************************************
-   * fetchVariables
-   ***********************************************************/
   describe("fetchVariables", () => {
     it("should invoke fetchVariables with formatter meta", async () => {
       const formatter = new TestJSONFormatter(

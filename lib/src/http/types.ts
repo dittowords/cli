@@ -23,9 +23,14 @@ export interface PullQueryParams {
 export const ZTextStatus = z.enum(["NONE", "WIP", "REVIEW", "FINAL"]);
 export type ITextStatus = z.infer<typeof ZTextStatus>;
 
-export const ZTextPluralType = z
-  .enum(["zero", "one", "two", "few", "many", "other"])
-  .nullable();
+export const ZTextPluralType = z.enum([
+  "zero",
+  "one",
+  "two",
+  "few",
+  "many",
+  "other",
+]);
 export type ITextPluralType = z.infer<typeof ZTextPluralType>;
 
 const ZBaseTextEntity = z.object({
@@ -35,7 +40,7 @@ const ZBaseTextEntity = z.object({
   status: z.string(),
   notes: z.string(),
   tags: z.array(z.string()),
-  pluralForm: ZTextPluralType,
+  pluralForm: ZTextPluralType.nullable(),
   variableIds: z.array(z.string()),
   variantId: z.string().nullable(),
 });

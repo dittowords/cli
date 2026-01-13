@@ -71,7 +71,7 @@ describe("fetchComponents", () => {
     const mockResponse = {
       data: [
         {
-          id: "text1",
+          id: "text1_one",
           text: "Plain text only",
           status: "FINAL",
           pluralForm: "one",

@@ -77,12 +77,7 @@ export default class JSONFormatter extends applyMixins(
       ? textEntity.richText 
       : textEntity.text;
 
-    let textKey = textEntity.id;
-    if (textEntity.pluralForm) {
-      textKey = textKey.concat(`_${textEntity.pluralForm}`)
-    }
-
-    this.outputFiles[fileName].content[textKey] = textValue;
+    this.outputFiles[fileName].content[textEntity.id] = textValue;
     for (const variableId of textEntity.variableIds) {
       const variable = variablesById[variableId];
       this.variablesOutputFile.content[variableId] = variable.data;

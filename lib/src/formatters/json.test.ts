@@ -417,7 +417,7 @@ describe("JSONFormatter", () => {
       ).toEqual(mockTextItem.text);
     });
 
-    it("should concat pluralForm to text item developer ID in file if not null", () => {
+    it("should write developer ID as-is from API response", () => {
       projectConfig = createMockProjectConfig({ richText: "html" });
       output = createMockOutput({ richText: false });
       formatter = new TestJSONFormatter(
@@ -426,17 +426,15 @@ describe("JSONFormatter", () => {
         createMockMeta()
       );
       const mockTextItem = createMockTextItem({
+        id: "the-one-ring_one",
         pluralForm: "one",
         text: "The {{count}} ring to rule them all",
       });
       formatter.transformAPITextEntity(mockTextItem, {});
       const fileContent =
         formatter.getOutputFiles()["project-1___base"].content;
-      expect(fileContent).toHaveProperty(`${mockTextItem.id}_one`);
-      expect(fileContent[`${mockTextItem.id}_one`]).toEqual(mockTextItem.text);
-      expect(
-        formatter.getOutputFiles()["project-1___base"].content
-      ).not.toHaveProperty(mockTextItem.id);
+      expect(fileContent).toHaveProperty(mockTextItem.id);
+      expect(fileContent[mockTextItem.id]).toEqual(mockTextItem.text);
     });
 
     it("should write each variableId to variables.json file", () => {

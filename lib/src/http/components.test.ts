@@ -45,6 +45,7 @@ describe("fetchComponents", () => {
           richText: "<p>Rich <strong>HTML</strong> text</p>",
           status: "FINAL",
           notes: "Test note",
+          pluralForm: null,
           tags: ["tag1"],
           variableIds: ["var1"],
           folderId: null,
@@ -70,9 +71,10 @@ describe("fetchComponents", () => {
     const mockResponse = {
       data: [
         {
-          id: "text1",
+          id: "text1_one",
           text: "Plain text only",
           status: "FINAL",
+          pluralForm: "one",
           notes: "",
           tags: [],
           variableIds: [],

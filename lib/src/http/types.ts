@@ -8,6 +8,7 @@ export interface PullFilters {
   }[];
   variants?: { id: string }[];
   statuses?: ITextStatus[];
+  integrated?: boolean;
 }
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
@@ -40,6 +41,7 @@ const ZBaseTextEntity = z.object({
   status: z.string(),
   notes: z.string(),
   tags: z.array(z.string()),
+  integrated: z.boolean(),
   pluralForm: ZTextPluralType.nullable(),
   variableIds: z.array(z.string()),
   variantId: z.string().nullable(),
@@ -163,6 +165,7 @@ export const ZExportSwiftFileRequest = z.object({
     })
     .optional(),
   statuses: z.array(ZTextStatus).optional(),
+  integrated: z.boolean().optional(),
 });
 
 export type IExportSwiftFileRequest = z.infer<typeof ZExportSwiftFileRequest>;

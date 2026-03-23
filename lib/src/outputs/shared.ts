@@ -20,6 +20,7 @@ export const ZBaseOutputFilters = z.object({
     })
     .optional(),
   statuses: z.array(ZTextStatus).optional(),
+  integrated: z.boolean().optional(),
   variants: z.array(z.object({ id: z.string() })).optional(),
   outDir: z.string().optional(),
   richText: z.union([z.literal("html"), z.literal(false)]).optional(),

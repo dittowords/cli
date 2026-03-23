@@ -145,6 +145,7 @@ export default abstract class BaseExportFormatter<
           ...super.generateQueryParams({
             projects: [{ id: project.id }],
             statuses: super.generateTextItemPullFilter().statuses,
+            integrated: super.generateTextItemPullFilter().integrated,
           }),
           variantId,
           format: this.exportFormat,

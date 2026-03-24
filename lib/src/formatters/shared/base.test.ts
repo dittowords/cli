@@ -155,6 +155,101 @@ describe("BaseFormatter", () => {
         variants: undefined,
       });
     });
+
+    it("should use projectConfig statuses and integrated when output does not override", () => {
+      const projectConfig = createMockProjectConfig({
+        statuses: ["FINAL"],
+        integrated: true,
+      });
+      const output = createMockOutput();
+      const formatter = new TestBaseFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const filters = formatter.generateTextItemPullFilter();
+
+      expect(filters).toEqual({
+        projects: [],
+        variants: [],
+        statuses: ["FINAL"],
+        integrated: true,
+      });
+    });
+
+    it("should override statuses with output.statuses when provided", () => {
+      const projectConfig = createMockProjectConfig({
+        statuses: ["FINAL"],
+        integrated: true,
+      });
+      const output = createMockOutput({
+        statuses: ["WIP"],
+      });
+      const formatter = new TestBaseFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const filters = formatter.generateTextItemPullFilter();
+
+      expect(filters).toEqual({
+        projects: [],
+        variants: [],
+        statuses: ["WIP"],
+        integrated: true,
+      });
+    });
+
+    it("should override integrated with output.integrated when provided", () => {
+      const projectConfig = createMockProjectConfig({
+        statuses: ["FINAL"],
+        integrated: true,
+      });
+      const output = createMockOutput({
+        integrated: false,
+      });
+      const formatter = new TestBaseFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const filters = formatter.generateTextItemPullFilter();
+
+      expect(filters).toEqual({
+        projects: [],
+        variants: [],
+        statuses: ["FINAL"],
+        integrated: false,
+      });
+    });
+
+    it("should override statuses and integrated when both are provided in output", () => {
+      const projectConfig = createMockProjectConfig({
+        statuses: ["FINAL"],
+        integrated: true,
+      });
+      const output = createMockOutput({
+        statuses: ["WIP"],
+        integrated: false,
+      });
+      const formatter = new TestBaseFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const filters = formatter.generateTextItemPullFilter();
+
+      expect(filters).toEqual({
+        projects: [],
+        variants: [],
+        statuses: ["WIP"],
+        integrated: false,
+      });
+    });
   });
 
   /***********************************************************
@@ -282,6 +377,90 @@ describe("BaseFormatter", () => {
       });
       expect(filters.folders).toBeUndefined();
     });
+
+    it("should use statuses and integrated from projectConfig when output does not override", () => {
+      const filters = getComponentPullFilters({
+        components: {
+          folders: [{ id: "folder1" }],
+        },
+        statuses: ["WIP"],
+        integrated: true,
+      });
+
+      expect(filters).toEqual({
+        folders: [{ id: "folder1" }],
+        variants: [],
+        statuses: ["WIP"],
+        integrated: true,
+      });
+    });
+
+    it("should override statuses with output.statuses when provided", () => {
+      const filters = getComponentPullFilters(
+        {
+          components: {
+            folders: [{ id: "folder1" }],
+          },
+          statuses: ["FINAL"],
+          integrated: true,
+        },
+        {
+          statuses: ["WIP"],
+        }
+      );
+
+      expect(filters).toEqual({
+        folders: [{ id: "folder1" }],
+        variants: [],
+        statuses: ["WIP"],
+        integrated: true,
+      });
+    });
+
+    it("should override integrated with output.integrated when provided", () => {
+      const filters = getComponentPullFilters(
+        {
+          components: {
+            folders: [{ id: "folder1" }],
+          },
+          statuses: ["FINAL"],
+          integrated: true,
+        },
+        {
+          integrated: false,
+        }
+      );
+
+      expect(filters).toEqual({
+        folders: [{ id: "folder1" }],
+        variants: [],
+        statuses: ["FINAL"],
+        integrated: false,
+      });
+    });
+
+    it("should override statuses and integrated when both are provided in output", () => {
+      const filters = getComponentPullFilters(
+        {
+          components: {
+            folders: [{ id: "folder1" }],
+          },
+          statuses: ["FINAL"],
+          integrated: true,
+        },
+        {
+          statuses: ["WIP"],
+          integrated: false,
+        }
+      );
+
+      expect(filters).toEqual({
+        folders: [{ id: "folder1" }],
+        variants: [],
+        statuses: ["WIP"],
+        integrated: false,
+      });
+    });
   });
 
   /***********************************************************
@@ -315,6 +494,35 @@ describe("BaseFormatter", () => {
       expect(params.richText).toBeUndefined();
     });
 
+    it("should generate query params for provided optional text item filters", () => {
+      const projectConfig = createMockProjectConfig({
+        projects: [{ id: "project1" }],
+        statuses: ["FINAL"],
+        integrated: true,
+      });
+      const output = createMockOutput();
+      const formatter = new TestBaseFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const params = formatter.generateQueryParams(
+        formatter.generateTextItemPullFilter()
+      );
+
+      expect(params.filter).toBeDefined();
+      expect(params.filter).toEqual(expect.any(String));
+      const parsedFilter = JSON.parse(params.filter);
+      expect(parsedFilter).toEqual({
+        projects: [{ id: "project1" }],
+        variants: [],
+        statuses: ["FINAL"],
+        integrated: true,
+      });
+      expect(params.richText).toBeUndefined();
+    });
+
     it("should generate query params with provided component filters", () => {
       const projectConfig = createMockProjectConfig({
         components: {
@@ -338,6 +546,33 @@ describe("BaseFormatter", () => {
       expect(parsedFilter).toEqual({
         folders: [{ id: "folder1" }],
         variants: [{ id: "variant1" }],
+      });
+      expect(params.richText).toBeUndefined();
+    });
+
+    it("should generate query params for optional component filters", () => {
+      const projectConfig = createMockProjectConfig({
+        statuses: ["WIP"],
+        integrated: false,
+      });
+      const output = createMockOutput();
+      const formatter = new TestBaseFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const params = formatter.generateQueryParams(
+        formatter.generateComponentPullFilter()
+      );
+
+      expect(params.filter).toBeDefined();
+      const parsedFilter = JSON.parse(params.filter);
+      expect(parsedFilter).toEqual({
+        folders: [],
+        variants: [],
+        statuses: ["WIP"],
+        integrated: false,
       });
       expect(params.richText).toBeUndefined();
     });
@@ -399,4 +634,3 @@ describe("BaseFormatter", () => {
     });
   });
 });
-

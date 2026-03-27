@@ -508,6 +508,7 @@ describe("JSONFormatter", () => {
         projects: projectConfig.projects,
         variants: projectConfig.variants,
         statuses: projectConfig.statuses,
+        tags: projectConfig.tags,
       };
       expect(mockFetchTextItems).toHaveBeenCalledWith(
         {
@@ -562,6 +563,7 @@ describe("JSONFormatter", () => {
         folders: projectConfig.components?.folders,
         variants: projectConfig.variants,
         statuses: projectConfig.statuses,
+        tags: projectConfig.tags,
       };
       expect(mockFetchComponents).toHaveBeenCalledWith(
         {

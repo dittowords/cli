@@ -9,6 +9,7 @@ export interface PullFilters {
   variants?: { id: string }[];
   statuses?: ITextStatus[];
   integrated?: boolean;
+  tags?: ITagsFilter;
 }
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
@@ -23,6 +24,12 @@ export interface PullQueryParams {
 }
 export const ZTextStatus = z.enum(["NONE", "WIP", "REVIEW", "FINAL"]);
 export type ITextStatus = z.infer<typeof ZTextStatus>;
+
+export const ZTagsFilter = z.object({
+  values: z.array(z.string()),
+  operator: z.enum(["AND", "OR"]).optional(),
+});
+export type ITagsFilter = z.infer<typeof ZTagsFilter>;
 
 export const ZTextPluralType = z.enum([
   "zero",
@@ -166,6 +173,7 @@ export const ZExportSwiftFileRequest = z.object({
     .optional(),
   statuses: z.array(ZTextStatus).optional(),
   integrated: z.boolean().optional(),
+  tags: ZTagsFilter.optional(),
 });
 
 export type IExportSwiftFileRequest = z.infer<typeof ZExportSwiftFileRequest>;

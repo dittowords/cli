@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ZTextStatus } from "../http/types";
+import { ZTagsFilter, ZTextStatus } from "../http/types";
 
 /**
  * These filters that are common to all outputs, used to filter the text items and components that are fetched from the API.
@@ -21,6 +21,7 @@ export const ZBaseOutputFilters = z.object({
     .optional(),
   statuses: z.array(ZTextStatus).optional(),
   integrated: z.boolean().optional(),
+  tags: ZTagsFilter.optional(),
   variants: z.array(z.object({ id: z.string() })).optional(),
   outDir: z.string().optional(),
   richText: z.union([z.literal("html"), z.literal(false)]).optional(),

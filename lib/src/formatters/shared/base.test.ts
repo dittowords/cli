@@ -250,6 +250,62 @@ describe("BaseFormatter", () => {
         integrated: false,
       });
     });
+
+    it("should use projectConfig tags when output does not override", () => {
+      const projectConfig = createMockProjectConfig({
+        tags: { values: ["tag-1", "tag-2"], operator: "AND" },
+      });
+      const output = createMockOutput();
+      const formatter = new TestBaseFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const filters = formatter.generateTextItemPullFilter();
+
+      expect(filters.tags).toEqual({
+        values: ["tag-1", "tag-2"],
+        operator: "AND",
+      });
+    });
+
+    it("should override tags with output.tags when provided", () => {
+      const projectConfig = createMockProjectConfig({
+        tags: { values: ["tag-1"] },
+      });
+      const output = createMockOutput({
+        tags: { values: ["tag-2", "tag-3"], operator: "OR" },
+      });
+      const formatter = new TestBaseFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const filters = formatter.generateTextItemPullFilter();
+
+      expect(filters.tags).toEqual({
+        values: ["tag-2", "tag-3"],
+        operator: "OR",
+      });
+    });
+
+    it("should use tags with only values and no operator", () => {
+      const projectConfig = createMockProjectConfig({
+        tags: { values: ["tag-1"] },
+      });
+      const output = createMockOutput();
+      const formatter = new TestBaseFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const filters = formatter.generateTextItemPullFilter();
+
+      expect(filters.tags).toEqual({ values: ["tag-1"] });
+    });
   });
 
   /***********************************************************
@@ -461,6 +517,50 @@ describe("BaseFormatter", () => {
         integrated: false,
       });
     });
+
+    it("should use projectConfig tags when output does not override", () => {
+      const filters = getComponentPullFilters({
+        components: {
+          folders: [{ id: "folder1" }],
+        },
+        tags: { values: ["tag-1", "tag-2"], operator: "AND" },
+      });
+
+      expect(filters.tags).toEqual({
+        values: ["tag-1", "tag-2"],
+        operator: "AND",
+      });
+    });
+
+    it("should override tags with output.tags when provided", () => {
+      const filters = getComponentPullFilters(
+        {
+          components: {
+            folders: [{ id: "folder1" }],
+          },
+          tags: { values: ["tag-1"] },
+        },
+        {
+          tags: { values: ["tag-2", "tag-3"], operator: "OR" },
+        }
+      );
+
+      expect(filters.tags).toEqual({
+        values: ["tag-2", "tag-3"],
+        operator: "OR",
+      });
+    });
+
+    it("should use tags with only values and no operator", () => {
+      const filters = getComponentPullFilters({
+        components: {
+          folders: [{ id: "folder1" }],
+        },
+        tags: { values: ["tag-1"] },
+      });
+
+      expect(filters.tags).toEqual({ values: ["tag-1"] });
+    });
   });
 
   /***********************************************************
@@ -492,6 +592,54 @@ describe("BaseFormatter", () => {
         variants: [{ id: "variant1" }],
       });
       expect(params.richText).toBeUndefined();
+    });
+
+    it("should generate query params with tags in text item filters", () => {
+      const projectConfig = createMockProjectConfig({
+        projects: [{ id: "project1" }],
+        tags: { values: ["tag-1"], operator: "AND" },
+      });
+      const output = createMockOutput();
+      const formatter = new TestBaseFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const params = formatter.generateQueryParams(
+        formatter.generateTextItemPullFilter()
+      );
+
+      const parsedFilter = JSON.parse(params.filter);
+      expect(parsedFilter.tags).toEqual({
+        values: ["tag-1"],
+        operator: "AND",
+      });
+    });
+
+    it("should generate query params with tags in component filters", () => {
+      const projectConfig = createMockProjectConfig({
+        components: {
+          folders: [{ id: "folder1" }],
+        },
+        tags: { values: ["tag-1", "tag-2"], operator: "OR" },
+      });
+      const output = createMockOutput();
+      const formatter = new TestBaseFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      const params = formatter.generateQueryParams(
+        formatter.generateComponentPullFilter()
+      );
+
+      const parsedFilter = JSON.parse(params.filter);
+      expect(parsedFilter.tags).toEqual({
+        values: ["tag-1", "tag-2"],
+        operator: "OR",
+      });
     });
 
     it("should generate query params for provided optional text item filters", () => {

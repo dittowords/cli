@@ -7,9 +7,11 @@ import { ZBaseOutputFilters } from "../outputs/shared";
 import { ZOutput } from "../outputs";
 import DittoError, { ErrorType } from "../utils/DittoError";
 
-const ZProjectConfigYAML = ZBaseOutputFilters.extend({
-  outputs: z.array(ZOutput),
-}).strict();
+const ZProjectConfigYAML = z.strictObject(
+  ZBaseOutputFilters.extend({
+    outputs: z.array(ZOutput),
+  }).shape
+);
 
 export type ProjectConfigYAML = z.infer<typeof ZProjectConfigYAML>;
 

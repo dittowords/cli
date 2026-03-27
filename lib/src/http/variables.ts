@@ -9,49 +9,39 @@ const ZBaseVariable = z.object({
   name: z.string(),
 });
 
-const ZVariableNumber = ZBaseVariable.merge(
-  z.object({
-    type: z.literal("number"),
-    data: z.object({
-      example: z.union([z.number(), z.string()]),
-      fallback: z.union([z.number(), z.string()]).optional(),
-    }),
-  })
-);
+const ZVariableNumber = ZBaseVariable.extend({
+  type: z.literal("number"),
+  data: z.object({
+    example: z.union([z.number(), z.string()]),
+    fallback: z.union([z.number(), z.string()]).optional(),
+  }),
+});
 
-const ZVariableString = ZBaseVariable.merge(
-  z.object({
-    type: z.literal("string"),
-    data: z.object({
-      example: z.string(),
-      fallback: z.string().optional(),
-    }),
-  })
-);
+const ZVariableString = ZBaseVariable.extend({
+  type: z.literal("string"),
+  data: z.object({
+    example: z.string(),
+    fallback: z.string().optional(),
+  }),
+});
 
-const ZVariableHyperlink = ZBaseVariable.merge(
-  z.object({
-    type: z.literal("hyperlink"),
-    data: z.object({
-      text: z.string(),
-      url: z.string(),
-    }),
-  })
-);
+const ZVariableHyperlink = ZBaseVariable.extend({
+  type: z.literal("hyperlink"),
+  data: z.object({
+    text: z.string(),
+    url: z.string(),
+  }),
+});
 
-const ZVariableList = ZBaseVariable.merge(
-  z.object({
-    type: z.literal("list"),
-    data: z.array(z.string()),
-  })
-);
+const ZVariableList = ZBaseVariable.extend({
+  type: z.literal("list"),
+  data: z.array(z.string()),
+});
 
-const ZVariableMap = ZBaseVariable.merge(
-  z.object({
-    type: z.literal("map"),
-    data: z.record(z.string()),
-  })
-);
+const ZVariableMap = ZBaseVariable.extend({
+  type: z.literal("map"),
+  data: z.record(z.string(), z.string()),
+});
 
 const ZVariable = z.discriminatedUnion("type", [
   ZVariableString,

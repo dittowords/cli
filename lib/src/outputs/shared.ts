@@ -6,6 +6,7 @@ import { ZTagsFilter, ZTextStatus } from "../http/types";
  * They are all optional by default unless otherwise specified in the output config.
  */
 export const ZBaseOutputFilters = z.object({
+  framework: z.undefined().optional(),
   projects: z.array(z.object({ id: z.string() })).optional(),
   components: z
     .object({

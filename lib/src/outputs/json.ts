@@ -4,7 +4,6 @@ import { ZBaseOutputFilters } from "./shared";
 const ZBaseJSONOutput = z.strictObject(
   ZBaseOutputFilters.extend({
     format: z.literal("json"),
-    framework: z.undefined().optional(),
   }).shape
 );
 

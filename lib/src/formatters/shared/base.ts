@@ -41,6 +41,7 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
       variants: this.projectConfig.variants,
       statuses: this.projectConfig.statuses,
       integrated: this.projectConfig.integrated,
+      tags: this.projectConfig.tags,
     };
 
     if (this.output.projects) {
@@ -59,6 +60,10 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
       filters.integrated = this.output.integrated;
     }
 
+    if (this.output.tags) {
+      filters.tags = this.output.tags;
+    }
+
     return filters;
   }
 
@@ -70,6 +75,7 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
       variants: this.projectConfig.variants,
       statuses: this.projectConfig.statuses,
       integrated: this.projectConfig.integrated,
+      tags: this.projectConfig.tags,
     };
 
     if (this.output.components) {
@@ -86,6 +92,10 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
 
     if (this.output.integrated !== undefined) {
       filters.integrated = this.output.integrated;
+    }
+
+    if (this.output.tags) {
+      filters.tags = this.output.tags;
     }
 
     return filters;

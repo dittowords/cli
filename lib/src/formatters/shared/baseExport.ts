@@ -141,11 +141,13 @@ export default abstract class BaseExportFormatter<
         // map "base" to undefined, as by default export endpoint returns base variant
         const variantId =
           variant.id === BASE_VARIANT_ID ? undefined : variant.id;
+        const { statuses, integrated, tags } = super.generateTextItemPullFilter();
         const params: PullQueryParams = {
           ...super.generateQueryParams({
             projects: [{ id: project.id }],
-            statuses: super.generateTextItemPullFilter().statuses,
-            integrated: super.generateTextItemPullFilter().integrated,
+            statuses,
+            integrated,
+            tags,
           }),
           variantId,
           format: this.exportFormat,
@@ -180,10 +182,10 @@ export default abstract class BaseExportFormatter<
     for (const variant of this.variants) {
       // map "base" to undefined, as by default export endpoint returns base variant
       const variantId = variant.id === BASE_VARIANT_ID ? undefined : variant.id;
-      const { folders, statuses } = super.generateComponentPullFilter();
+      const { folders, statuses, tags } = super.generateComponentPullFilter();
       const params: PullQueryParams = {
         // gets folders from base component pull filters, overwrites variants with just this iteration's variant
-        ...super.generateQueryParams({ folders, statuses }),
+        ...super.generateQueryParams({ folders, statuses, tags }),
         variantId,
         format: this.exportFormat,
       };

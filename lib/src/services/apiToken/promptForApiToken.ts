@@ -14,11 +14,11 @@ export const validate = async (token: string) => {
  * @returns The collected token
  */
 export default async function promptForApiToken() {
+  // @ts-expect-error - Enquirer types are not updated for the validate function
   const response = await prompt<{ token: string }>({
     type: "input",
     name: "token",
     message: "What is your API key?",
-    // @ts-expect-error - Enquirer types are not updated for the validate function
     validate,
   });
 

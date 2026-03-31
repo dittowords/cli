@@ -65,7 +65,7 @@ function readProjectConfigData(
     throw new DittoError({
       type: ErrorType.ConfigParseError,
       data: {
-        formattedError: JSON.stringify(parsedYAML.error.flatten(), null, 2),
+        formattedError: z.prettifyError(parsedYAML.error),
         messagePrefix: "There is an error in your project config file.",
       },
     });

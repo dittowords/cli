@@ -130,7 +130,7 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
 
   public async format(): Promise<void> {
     const data = await this.fetchAPIData();
-    const files = await this.transformAPIData(data);
+    const files = this.transformAPIData(data);
     await this.writeFiles(files);
   }
 

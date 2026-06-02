@@ -1,4 +1,5 @@
 import * as esbuild from "esbuild";
+import { execSync } from "child_process";
 
 let define = {};
 const KEYS_TO_DEFINE = [
@@ -35,6 +36,10 @@ const config = {
 
 async function main() {
   const result = await esbuild.build(config);
+  execSync(
+    "npx dts-bundle-generator --no-check --out-file bin/ditto.d.ts lib/ditto.ts",
+    { stdio: "inherit" }
+  );
   // Output build metafile so we can analyze the bundle
   // size over time and check if anything unexpected is being bundled in.
   if (process.env.ENV === "production") {

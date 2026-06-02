@@ -3,19 +3,19 @@
     "lib": ["es2019", "es2020.promise", "es2020.bigint", "es2020.string"],
     "module": "commonjs",
     "target": "es2019",
-
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowJs": false,
     "outDir": "bin",
     "resolveJsonModule": true,
     "sourceMap": true,
     // Set `sourceRoot` to  "/" to strip the build path prefix from
     // generated source code references. This will improve issue grouping in Sentry.
-    "sourceRoot": "/"
+    "sourceRoot": "/",
+    "types": ["node", "jest"]
   },
   "include": ["lib/**/*.ts"]
 }

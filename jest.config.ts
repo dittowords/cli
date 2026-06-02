@@ -2,6 +2,10 @@ import type { Config } from "jest";
 
 const config: Config = {
   transformIgnorePatterns: [],
+  moduleNameMapper: {
+    "^unicorn-magic/node$":
+      "<rootDir>/node_modules/unicorn-magic/node.js",
+  },
   maxWorkers: 1,
   verbose: true,
   testPathIgnorePatterns: [

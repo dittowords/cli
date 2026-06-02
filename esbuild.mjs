@@ -36,7 +36,10 @@ const config = {
 
 async function main() {
   const result = await esbuild.build(config);
-  execSync("tsc -p tsconfig.declarations.json --emitDeclarationOnly", { stdio: "inherit" });
+  execSync(
+    "npx dts-bundle-generator --no-check --out-file bin/ditto.d.ts lib/ditto.ts",
+    { stdio: "inherit" }
+  );
   // Output build metafile so we can analyze the bundle
   // size over time and check if anything unexpected is being bundled in.
   if (process.env.ENV === "production") {

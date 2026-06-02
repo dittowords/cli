@@ -54,6 +54,8 @@ For more information on configuring the CLI, see [this documentation section](ht
 
 ## Usage
 
+### Pull
+
 ```bash
 npx @dittowords/cli pull
 ```
@@ -69,6 +71,28 @@ See our demo projects for examples of how to integrate the Ditto CLI in differen
 - [React web app](https://github.com/dittowords/ditto-react-demo)
 - [iOS mobile app](https://github.com/dittowords/ditto-react-demo)
 - [Android mobile app](https://github.com/dittowords/ditto-react-demo)
+
+### Scan
+
+```bash
+npx @dittowords/cli scan <path>
+```
+
+Scans your codebase at `<path>` to identify user-facing text. Results are written to an output directory as a set of structured artifacts.
+
+**Options:**
+
+| Option              | Description                     | Default  |
+| ------------------- | ------------------------------- | -------- |
+| `--out-dir <dir>`   | Directory to write output files | `./out`  |
+| `--prefix <prefix>` | Prefix for output file names    | _(none)_ |
+
+**Output files** (written to `--out-dir`):
+
+- `candidates.ndjson` — all string candidates extracted from the codebase
+- `results.ndjson` — classified results for each candidate
+- `summary.json` — aggregate statistics from the classify phase
+- `resultsToVerify.ndjson` — results flagged for manual review
 
 ## Legacy Setup
 

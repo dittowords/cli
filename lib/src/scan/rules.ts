@@ -1,7 +1,7 @@
 import type {
   DittoScanDetectionKind,
   DittoScanEnclosingContext,
-} from "../types";
+} from "./types";
 
 // Unambiguous non-text value shapes. A pattern belongs here only if there
 // is effectively zero chance a real UI string could match it.

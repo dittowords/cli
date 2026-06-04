@@ -77,12 +77,20 @@ const appEntry = async () => {
     .description(
       "Run extract + classify + infer end-to-end; emits schema.json and stagings.ndjson to --out-dir"
     )
-    .option("--out-dir <dir>", "output directory", "./out")
+    .option(
+      "--local",
+      "outputs the candidates file locally to the out-dir with the given prefix",
+      false
+    )
+    .option("--out-dir <dir>", "output directory", "")
     .option("--prefix <prefix>", "prefix for output files", "")
     .action(
-      async (inputPath: string, opts: { outDir: string; prefix?: string }) => {
+      async (
+        inputPath: string,
+        opts: { local: boolean; outDir: string; prefix?: string }
+      ) => {
         try {
-          return await scan(inputPath, opts.outDir, opts.prefix);
+          return await scan(inputPath, opts);
         } catch (error) {
           handleCommandError(error);
         }

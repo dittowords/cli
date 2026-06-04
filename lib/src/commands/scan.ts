@@ -3,11 +3,12 @@ import fs from "fs/promises";
 import path from "path";
 
 import logger from "../utils/logger";
-import { quit } from "../utils/quit";
 import { DittoScanExtractSummary, runExtract } from "../scan/extract";
-import { DittoScanCandidate, DittoScanResult } from "../scan/types";
-import { preClassify } from "../scan/preClassify";
-import { DittoScanClassifyResult, runClassify } from "../scan/classify";
+import { DittoScanCandidate } from "../scan/types";
+import { quit } from "../utils/quit";
+import initAPIToken from "../services/apiToken/initAPIToken";
+import appContext from "../utils/appContext";
+import { initiateScan, uploadCandidatesToS3 } from "../http/scan";
 
 // Yarn sets INIT_CWD to the directory the user invoked yarn from, which
 // matters when we proxy via `cd product-text-detection && yarn ptd`.
@@ -23,12 +24,6 @@ function buildOutputPaths(outDir: string, prefix?: string) {
   const p = prefix ? `${prefix}-` : "";
   return {
     candidates: path.join(outDir, `${p}candidates.ndjson`),
-    results: path.join(outDir, `${p}results.ndjson`),
-    summary: path.join(outDir, `${p}summary.json`),
-    verify: path.join(outDir, `${p}resultsToVerify.ndjson`),
-    analysis: path.join(outDir, `${p}analysis.json`),
-    schema: path.join(outDir, `${p}schema.json`),
-    stagings: path.join(outDir, `${p}stagings.ndjson`),
   };
 }
 
@@ -49,7 +44,7 @@ async function writeCandidatesNdjson(
 // per-detection-kind candidate counts, and the output path.
 function logExtractSummary(
   summary: DittoScanExtractSummary,
-  outputPath: string
+  outputPath?: string
 ): void {
   process.stderr.write(
     `[ditto-cli scan][extract] framework: ${
@@ -84,89 +79,38 @@ function logExtractSummary(
     );
   }
   process.stderr.write(
-    `[ditto-cli scan][extract] emitted ${summary.candidatesEmitted} candidates -> ${outputPath}\n`
+    `[ditto-cli scan][extract] emitted ${
+      summary.candidatesEmitted
+    } candidates -> ${outputPath ?? "Ditto"}\n`
   );
   for (const [kind, count] of Object.entries(summary.candidatesByKind)) {
     if (count > 0) process.stderr.write(`  candidates.${kind}: ${count}\n`);
   }
-  const { accept, reject, llm } = summary.candidatesByVerdict;
-  if (accept > 0 || reject > 0 || llm > 0) {
-    process.stderr.write(
-      `[ditto-cli scan][extract] rule verdicts: accept=${accept}, reject=${reject}, llm=${llm}\n`
-    );
-    for (const [name, count] of Object.entries(summary.ruleHits)) {
-      process.stderr.write(`  rule.${name}: ${count}\n`);
-    }
-  }
 }
 
-// Telemetry for the classify phase — per-status counts, LLM call/token
-// totals, and the paths to the results and summary artifacts.
-function logClassifySummary(
-  result: DittoScanClassifyResult,
-  summaryPath: string
-): void {
-  process.stderr.write(
-    `[ditto-cli scan][classify] classified ${result.summary.candidate_total} candidates\n`
-  );
-  for (const [status, count] of Object.entries(result.summary.by_status)) {
-    process.stderr.write(`  ${status}: ${count}\n`);
-  }
-  process.stderr.write(
-    `[ditto-cli scan][classify] llm_calls: ${result.summary.llm_calls}, tokens_in: ${result.summary.llm_tokens_in}, tokens_out: ${result.summary.llm_tokens_out}\n`
-  );
-  process.stderr.write(
-    `[ditto-cli scan][classify] to_manually_validate: ${result.summary.num_results_to_manually_verify}\n`
-  );
-  process.stderr.write(
-    `[ditto-cli scan][classify] pct_results_needing_manual_verification: ${result.summary.pct_results_needing_manual_verification}\n`
-  );
-  for (const [status, filePath] of Object.entries(
-    result.writtenPaths.resultsByStatus
-  )) {
-    process.stderr.write(`[ptd classify] results.${status} -> ${filePath}\n`);
-  }
-  process.stderr.write(`[ptd classify] summary  -> ${summaryPath}\n`);
-  if (result.writtenPaths.verify) {
-    process.stderr.write(
-      `[ditto-cli scan][classify] verify   -> ${result.writtenPaths.verify}\n`
-    );
-  }
+interface ISyncOptions {
+  local: boolean;
+  outDir?: string;
+  prefix?: string;
 }
-
 export const scan = async (
   path: string,
-  outDir: string = "./out",
-  prefix: string = ""
+  { local, outDir = "", prefix = "" }: ISyncOptions
 ) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey.trim().length === 0) {
+  if (local && !outDir) {
     return await quit(
-      logger.errorText("GEMINI_API_KEY is not set. Aborting."),
+      logger.errorText(
+        "Must specify --out-dir if outputting candidates locally"
+      ),
       2
     );
   }
 
   const resolvedInput = resolveUserPath(path);
-  const resolvedOutDir = resolveUserPath(outDir);
-  await fs.mkdir(resolvedOutDir, { recursive: true });
 
-  const {
-    candidates: candidatesPath,
-    results: resultsPath,
-    summary: summaryPath,
-    verify: verifyPath,
-    schema: schemaPath,
-    stagings: stagingsPath,
-  } = buildOutputPaths(resolvedOutDir, prefix);
-
-  const {
-    candidates,
-    verdicts,
-    summary: extractSummary,
-  } = await runExtract({ inputPath: resolvedInput });
-  await writeCandidatesNdjson(candidates, candidatesPath);
-  logExtractSummary(extractSummary, candidatesPath);
+  const { candidates, summary: extractSummary } = await runExtract({
+    inputPath: resolvedInput,
+  });
 
   if (candidates.length === 0) {
     logger.warnText(
@@ -174,14 +118,31 @@ export const scan = async (
     );
   }
 
-  const { llmCandidates, preClassified } = preClassify(candidates, verdicts);
+  if (local) {
+    const resolvedOutDir = resolveUserPath(outDir);
+    await fs.mkdir(resolvedOutDir, { recursive: true });
 
-  const classifyResult = await runClassify({
-    candidates: llmCandidates,
-    preClassified,
-    outputPath: resultsPath,
-    summaryPath,
-    verifyPath,
-  });
-  logClassifySummary(classifyResult, summaryPath);
+    const { candidates: candidatesPath } = buildOutputPaths(
+      resolvedOutDir,
+      prefix
+    );
+
+    await writeCandidatesNdjson(candidates, candidatesPath);
+    logExtractSummary(extractSummary, candidatesPath);
+  } else {
+    const token = await initAPIToken();
+    appContext.setApiToken(token);
+    const {
+      candidatesSignedS3Url,
+      record: { _id: recordId },
+    } = await initiateScan(path);
+    await uploadCandidatesToS3(candidates, candidatesSignedS3Url);
+    logExtractSummary(extractSummary);
+    await quit(
+      logger.info(
+        `Scan initiated! Visit https://app.dittowords.com/scan/${recordId} to view progress and see results.`
+      ),
+      0
+    );
+  }
 };

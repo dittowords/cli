@@ -177,3 +177,12 @@ export const ZExportSwiftFileRequest = z.object({
 });
 
 export type IExportSwiftFileRequest = z.infer<typeof ZExportSwiftFileRequest>;
+
+export const ZInitiateScanBodySchema = z.object({
+  path: z.string(),
+});
+export const ZInitiateScanResponse = z.object({
+  record: z.object({ _id: z.string() }),
+  candidatesSignedS3Url: z.string(),
+});
+export type IInitiateScanResponse = z.infer<typeof ZInitiateScanResponse>;

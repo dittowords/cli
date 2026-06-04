@@ -9,7 +9,7 @@ import {
 } from "./types";
 import { createHash } from "crypto";
 import type { LlmFileTaskStats } from "./lang/llm-file-discovery";
-import { getClassificationVerdict, shouldEmit, type Verdict } from "./rules";
+import { shouldEmit } from "./rules";
 import { walkCodebase } from "./walk";
 
 export interface DittoScanExtractOptions {
@@ -18,7 +18,6 @@ export interface DittoScanExtractOptions {
 
 export interface DittoScanExtractResult {
   candidates: DittoScanCandidate[];
-  verdicts: Map<string, Verdict>;
   summary: DittoScanExtractSummary;
 }
 
@@ -28,8 +27,6 @@ export interface DittoScanExtractSummary {
   filesSkippedMinified: number;
   candidatesEmitted: number;
   candidatesByKind: Record<DittoScanDetectionKind, number>;
-  candidatesByVerdict: { accept: number; reject: number; llm: number };
-  ruleHits: Record<string, number>;
   framework: string[];
   elapsedMs: number;
   i18nFileDiscovery: LlmFileTaskStats | null;
@@ -249,9 +246,6 @@ export async function runExtract(
 
   const candidatesByKind = zeroKindCounts();
   const candidates: DittoScanCandidate[] = [];
-  const verdicts = new Map<string, Verdict>();
-  const candidatesByVerdict = { accept: 0, reject: 0, llm: 0 };
-  const ruleHits: Record<string, number> = {};
 
   for (const file of files) {
     const lang = file.language;
@@ -296,32 +290,17 @@ export async function runExtract(
       };
       candidates.push(candidate);
       candidatesByKind[hit.context.parentRole]++;
-
-      const verdict = getClassificationVerdict({
-        candidate,
-        context: hit.context,
-      });
-      verdicts.set(candidate.id, verdict);
-      if (verdict.kind === "accept" || verdict.kind === "reject") {
-        candidatesByVerdict[verdict.kind]++;
-        ruleHits[verdict.rule] = (ruleHits[verdict.rule] ?? 0) + 1;
-      } else {
-        candidatesByVerdict.llm++;
-      }
     }
   }
 
   return {
     candidates,
-    verdicts,
     summary: {
       filesScanned: files.length,
       filesByKind,
       filesSkippedMinified,
       candidatesEmitted: candidates.length,
       candidatesByKind,
-      candidatesByVerdict,
-      ruleHits,
       framework,
       elapsedMs: Date.now() - t0,
       i18nFileDiscovery,

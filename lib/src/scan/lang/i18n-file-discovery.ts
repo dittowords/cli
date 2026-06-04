@@ -1,4 +1,8 @@
-import { runLlmFileTask, type LlmFileTask, type LlmFileTaskResult } from "./llm-file-discovery";
+import {
+  runLlmFileTask,
+  type LlmFileTask,
+  type LlmFileTaskResult,
+} from "./llm-file-discovery";
 
 const NEVER_FILENAMES: ReadonlySet<string> = new Set([
   "package.json",
@@ -10,7 +14,11 @@ const NEVER_FILENAMES: ReadonlySet<string> = new Set([
   "bun.lockb",
 ]);
 
-const NEVER_PATTERNS: readonly RegExp[] = [/^tsconfig\.[^/]+\.json$/i, /\.schema\.json$/i, /\.lock$/i];
+const NEVER_PATTERNS: readonly RegExp[] = [
+  /^tsconfig\.[^/]+\.json$/i,
+  /\.schema\.json$/i,
+  /\.lock$/i,
+];
 
 const SYSTEM_PROMPT = `You identify internationalization (i18n) files in a codebase.
 
@@ -52,19 +60,32 @@ export const I18N_FILE_EXTENSIONS: ReadonlySet<string> = new Set([
 ]);
 
 // Subset that's single-purpose enough to skip the LLM round trip.
-const AUTO_INCLUDE_EXTENSIONS: ReadonlySet<string> = new Set([".po", ".arb", ".xliff", ".xlf", ".resx", ".resw"]);
+const AUTO_INCLUDE_EXTENSIONS: ReadonlySet<string> = new Set([
+  ".po",
+  ".arb",
+  ".xliff",
+  ".xlf",
+  ".resx",
+  ".resw",
+]);
 
 export const I18N_FILES_TASK: LlmFileTask = {
   taskName: "i18n files",
   globs: [...I18N_FILE_EXTENSIONS].map((ext) => `**/*${ext}`),
-  preFilter: (base) => NEVER_FILENAMES.has(base) || NEVER_PATTERNS.some((re) => re.test(base)),
+  preFilter: (base) =>
+    NEVER_FILENAMES.has(base) || NEVER_PATTERNS.some((re) => re.test(base)),
   autoInclude: (relPath) => {
     const dot = relPath.lastIndexOf(".");
-    return dot !== -1 && AUTO_INCLUDE_EXTENSIONS.has(relPath.slice(dot).toLowerCase());
+    return (
+      dot !== -1 &&
+      AUTO_INCLUDE_EXTENSIONS.has(relPath.slice(dot).toLowerCase())
+    );
   },
   systemPrompt: SYSTEM_PROMPT,
 };
 
-export async function findI18nFiles(rootPath: string): Promise<LlmFileTaskResult> {
+export async function findI18nFiles(
+  rootPath: string
+): Promise<LlmFileTaskResult> {
   return runLlmFileTask(rootPath, I18N_FILES_TASK);
 }

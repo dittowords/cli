@@ -8,7 +8,7 @@ import {
   type DittoScanDetectionKind,
 } from "./types";
 import { createHash } from "crypto";
-import type { LlmFileTaskStats } from "./lang/llm-file-discovery";
+import type { FileDiscoveryStats } from "./lang/file-discovery";
 import { shouldEmit } from "./rules";
 import { walkCodebase } from "./walk";
 
@@ -29,7 +29,7 @@ export interface DittoScanExtractSummary {
   candidatesByKind: Record<DittoScanDetectionKind, number>;
   framework: string[];
   elapsedMs: number;
-  i18nFileDiscovery: LlmFileTaskStats | null;
+  i18nFileDiscovery: FileDiscoveryStats | null;
 }
 
 const CONTEXT_LINES = 3;

@@ -10,7 +10,6 @@ import logger from "./utils/logger";
 import initAPIToken from "./services/apiToken/initAPIToken";
 import { initProjectConfig } from "./services/projectConfig";
 import appContext from "./utils/appContext";
-import type commander from "commander";
 import { ErrorType, isDittoError, isDittoErrorType } from "./utils/DittoError";
 import processCommandMetaFlag from "./utils/processCommandMetaFlag";
 

@@ -8,7 +8,11 @@ import { DittoScanCandidate } from "../scan/types";
 import { quit } from "../utils/quit";
 import initAPIToken from "../services/apiToken/initAPIToken";
 import appContext from "../utils/appContext";
-import { initiateScan, uploadCandidatesToS3 } from "../http/scan";
+import {
+  initiateClassify,
+  initiateScan,
+  uploadCandidatesToS3,
+} from "../http/scan";
 
 // Yarn sets INIT_CWD to the directory the user invoked yarn from, which
 // matters when we proxy via `cd product-text-detection && yarn ptd`.
@@ -59,15 +63,13 @@ function logExtractSummary(
   if (summary.i18nFileDiscovery) {
     const d = summary.i18nFileDiscovery;
     process.stderr.write(
-      `[ditto-cli scan][extract] llm file discovery (${d.task}): ${
-        d.llmConfirmed + d.autoIncluded
+      `[ditto-cli scan][extract] i18n file discovery (${d.task}): ${
+        d.heuristicConfirmed + d.autoIncluded
       }/${d.totalCandidates} files matched in ${d.elapsedMs}ms (preFiltered=${
         d.preFiltered
-      }, autoIncluded=${d.autoIncluded}, llmConsidered=${
-        d.llmConsidered
-      }, llmConfirmed=${d.llmConfirmed}, tokensIn=${
-        d.promptTokens
-      }, tokensOut=${d.completionTokens}, calls=${d.llmCalls})\n`
+      }, autoIncluded=${d.autoIncluded}, heuristicConsidered=${
+        d.heuristicConsidered
+      }, heuristicConfirmed=${d.heuristicConfirmed})\n`
     );
   }
   for (const [kind, count] of Object.entries(summary.filesByKind)) {
@@ -137,6 +139,7 @@ export const scan = async (
       record: { _id: recordId },
     } = await initiateScan(path);
     await uploadCandidatesToS3(candidates, candidatesSignedS3Url);
+    await initiateClassify(recordId);
     logExtractSummary(extractSummary);
     await quit(
       logger.info(

@@ -6,7 +6,7 @@ import {
   findI18nFiles,
   I18N_FILE_EXTENSIONS,
 } from "./lang/i18n-file-discovery";
-import type { LlmFileTaskStats } from "./lang/llm-file-discovery";
+import type { FileDiscoveryStats } from "./lang/file-discovery";
 import {
   findI18nLanguageForExt,
   findLanguageForFile,
@@ -86,7 +86,7 @@ export interface DiscoveredFile {
 export interface WalkResult {
   files: DiscoveredFile[];
   filesSkippedMinified: number;
-  i18nFileDiscovery: LlmFileTaskStats | null;
+  i18nFileDiscovery: FileDiscoveryStats | null;
 }
 
 export async function walkCodebase(rootPath: string): Promise<WalkResult> {
@@ -116,9 +116,9 @@ export async function walkCodebase(rootPath: string): Promise<WalkResult> {
 
     let language: Language | null;
     if (I18N_FILE_EXTENSIONS.has(ext)) {
-      // Skip i18n-shaped extensions when the LLM didn't confirm the
-      // file. If discovery itself was skipped (no API key) the set is
-      // null and we drop everything in this branch.
+      // Skip i18n-shaped extensions the heuristic didn't confirm.
+      // If discovery itself failed the set is null and we drop everything
+      // in this branch.
       if (!i18nFileResult || !i18nFileResult.paths.has(relPath)) continue;
       language = findI18nLanguageForExt(ext);
       if (!language) continue;
@@ -157,13 +157,7 @@ export async function walkCodebase(rootPath: string): Promise<WalkResult> {
 
 async function runI18nFileDiscovery(
   resolved: string
-): Promise<{ paths: Set<string>; stats: LlmFileTaskStats } | null> {
-  if (!process.env.GEMINI_API_KEY) {
-    process.stderr.write(
-      "[ptd extract] GEMINI_API_KEY not set — skipping LLM i18n-file discovery; no JSON/YAML/PO/properties/ARB/XLIFF/RESX i18n files will be extracted.\n"
-    );
-    return null;
-  }
+): Promise<{ paths: Set<string>; stats: FileDiscoveryStats } | null> {
   try {
     return await findI18nFiles(resolved);
   } catch (e) {

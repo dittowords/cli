@@ -1,6 +1,6 @@
-import type { DittoScanEnclosingContext } from "../types";
+import type { DittoScanEnclosingContext } from "./types";
 
-import { shouldEmit } from "./drop";
+import { shouldEmit } from "./rules";
 
 const other: DittoScanEnclosingContext = {
   parentRole: "other",

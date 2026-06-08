@@ -66,13 +66,35 @@ const I18N_DIR_SEGMENTS: ReadonlySet<string> = new Set([
   "l10n",
 ]);
 
-// BCP-47 locale token: 2-letter language code, optionally followed by
-// separator + 2-4 char region/script tag (e.g. en, fr, de-DE, zh_CN).
-const LOCALE_TOKEN_RE = /^[a-z]{2}([_-][a-zA-Z]{2,4})?$/i;
+// Exact ISO 639-1 two-letter language codes. Using a set rather than a regex
+// avoids false positives for common technical abbreviations (db, ui, go, ai…)
+// that also happen to be two letters but are not valid locale codes.
+const ISO_639_1: ReadonlySet<string> = new Set([
+  "af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "my",
+  "ca", "zh", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "ka", "de",
+  "el", "gu", "ht", "ha", "he", "hi", "hu", "is", "id", "ga", "it", "ja",
+  "kn", "kk", "km", "ko", "ku", "ky", "lo", "lv", "lt", "lb", "mk", "mg",
+  "ms", "ml", "mt", "mi", "mr", "mn", "ne", "nb", "nn", "no", "or", "ps",
+  "fa", "pl", "pt", "pa", "ro", "ru", "sm", "sr", "sn", "si", "sk", "sl",
+  "so", "es", "sw", "sv", "tl", "tg", "ta", "tt", "te", "th", "bo", "tr",
+  "tk", "uk", "ur", "ug", "uz", "vi", "cy", "xh", "yi", "yo", "zu",
+]);
+
+// BCP-47 subtag: separator + 2-4 char region/script (e.g. -DE, _Latn).
+// Only used when the token already contains a separator, so no bare-code
+// false positives are possible here.
+const LOCALE_SUBTAG_RE = /^[a-z]{2}[_-][a-zA-Z]{2,4}$/i;
+
+function isLocaleToken(s: string): boolean {
+  if (s.includes("-") || s.includes("_")) {
+    return LOCALE_SUBTAG_RE.test(s) && ISO_639_1.has(s.slice(0, 2).toLowerCase());
+  }
+  return ISO_639_1.has(s.toLowerCase());
+}
 
 // Locale as an underscore-delimited suffix in a filename stem, e.g.
 // messages_en, ApplicationResources_fr, labels_de-DE.
-const LOCALE_UNDERSCORE_SUFFIX_RE = /^.+_[a-z]{2}([_-][a-zA-Z]{2,4})?$/i;
+const LOCALE_UNDERSCORE_SUFFIX_RE = /^.+_([a-z]{2}([_-][a-zA-Z]{2,4})?)$/i;
 
 // JSON keys that appear in non-i18n config files (package.json, etc.).
 // A file containing any of these at the root level is almost certainly not i18n.
@@ -89,9 +111,10 @@ function filenameHasLocaleToken(filename: string): boolean {
 
   for (const part of parts) {
     // Whole dot-segment is a locale: "en", "de-DE", "zh_CN"
-    if (LOCALE_TOKEN_RE.test(part)) return true;
+    if (isLocaleToken(part)) return true;
     // Whole dot-segment ends with _<locale>: "messages_en", "labels_fr"
-    if (LOCALE_UNDERSCORE_SUFFIX_RE.test(part)) return true;
+    const m = part.match(LOCALE_UNDERSCORE_SUFFIX_RE);
+    if (m && isLocaleToken(m[1])) return true;
   }
   return false;
 }

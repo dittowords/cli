@@ -283,6 +283,8 @@ export async function runExtract(
           column: hit.location.column,
         },
         language: file.languageLabel,
+        locale_key: hit.localeKey ?? file.localeKey,
+        i18n_key: hit.i18nKey ?? null,
         framework,
         source_context: buildSourceContext(lines, hit.location.line),
         context_identifiers: hit.context.identifiers,

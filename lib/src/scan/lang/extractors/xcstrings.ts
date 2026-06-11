@@ -30,8 +30,9 @@ import { offsetToLineCol } from "./util";
  *
  * Every locale present in the file flows through (source + translations);
  * downstream groups candidates by their resource key, which lives in
- * `identifiers`. The locale itself is discoverable from `source_context`
- * (the surrounding JSON shows the `"en":` / `"fr":` / ... wrapping key).
+ * `identifiers`. The wrapping localization key ("en", "fr", …) is stamped
+ * on each hit as `localeKey`, since a path-derived locale can't work for
+ * a format that holds every locale in one file.
  *
  * Variations (`plural`, `device`, `width`) may be nested arbitrarily; we
  * recurse, accumulating the variant labels into `identifiers` after the
@@ -57,7 +58,7 @@ export const xcstringsExtractor: LanguageExtractor = {
       if (!localizations || localizations.kind !== "object") continue;
       for (const locale of localizations.entries) {
         if (locale.value.kind !== "object") continue;
-        emitLocalization(locale.value, [key], source, out);
+        emitLocalization(locale.value, [key], locale.key, source, out);
       }
     }
 
@@ -65,7 +66,13 @@ export const xcstringsExtractor: LanguageExtractor = {
   },
 };
 
-function emitLocalization(node: JsonObject, identifiers: string[], source: string, out: ExtractedHit[]): void {
+function emitLocalization(
+  node: JsonObject,
+  identifiers: string[],
+  localeKey: string,
+  source: string,
+  out: ExtractedHit[]
+): void {
   const stringUnit = objectGet(node, "stringUnit");
   if (stringUnit && stringUnit.kind === "object") {
     const value = objectGet(stringUnit, "value");
@@ -74,6 +81,10 @@ function emitLocalization(node: JsonObject, identifiers: string[], source: strin
         value: value.value,
         location: offsetToLineCol(source, value.start),
         context: { parentRole: "resource_value", identifiers },
+        // identifiers[0] is always the catalog key; later segments are
+        // variation labels (plural/device/width).
+        i18nKey: identifiers[0],
+        localeKey,
       });
     }
   }
@@ -84,7 +95,7 @@ function emitLocalization(node: JsonObject, identifiers: string[], source: strin
       if (variationType.value.kind !== "object") continue;
       for (const variant of variationType.value.entries) {
         if (variant.value.kind !== "object") continue;
-        emitLocalization(variant.value, [...identifiers, variationType.key, variant.key], source, out);
+        emitLocalization(variant.value, [...identifiers, variationType.key, variant.key], localeKey, source, out);
       }
     }
   }

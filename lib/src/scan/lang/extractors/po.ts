@@ -124,6 +124,8 @@ function emit(entry: PoEntry, out: ExtractedHit[]): void {
         value,
         location: { line, column: 1 },
         context: { parentRole: "resource_value", identifiers: [...ctxtIds, entry.msgid, `plural:${idx}`] },
+        // msgid is gettext's lookup key; msgctxt stays in identifiers only.
+        i18nKey: entry.msgid,
       });
     }
     return;
@@ -135,6 +137,7 @@ function emit(entry: PoEntry, out: ExtractedHit[]): void {
     value,
     location: { line: entry.msgidLine, column: 1 },
     context: { parentRole: "resource_value", identifiers: [...ctxtIds, entry.msgid] },
+    i18nKey: entry.msgid,
   });
 }
 

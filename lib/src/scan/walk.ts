@@ -3,6 +3,9 @@ import { globby } from "globby";
 import path from "path";
 
 import {
+  extractAndroidLocaleFromPath,
+  extractIosLocaleFromPath,
+  extractLocaleFromPath,
   findI18nFiles,
   I18N_FILE_EXTENSIONS,
 } from "./lang/i18n-file-discovery";
@@ -81,6 +84,9 @@ export interface DiscoveredFile {
   language: Language;
   source: string;
   languageLabel: string;
+  // Locale key derived from the path of an i18n-discovered file
+  // ("en", "de-DE", …). Null for source files and locale-less catalogs.
+  localeKey: string | null;
 }
 
 export interface WalkResult {
@@ -115,6 +121,7 @@ export async function walkCodebase(rootPath: string): Promise<WalkResult> {
     const relPath = path.relative(resolved, absPath).split(path.sep).join("/");
 
     let language: Language | null;
+    let localeKey: string | null = null;
     if (I18N_FILE_EXTENSIONS.has(ext)) {
       // Skip i18n-shaped extensions the heuristic didn't confirm.
       // If discovery itself failed the set is null and we drop everything
@@ -122,10 +129,12 @@ export async function walkCodebase(rootPath: string): Promise<WalkResult> {
       if (!i18nFileResult || !i18nFileResult.paths.has(relPath)) continue;
       language = findI18nLanguageForExt(ext);
       if (!language) continue;
+      localeKey = extractLocaleFromPath(relPath);
     } else {
       const found = findLanguageForFile({ ext, relPath });
       if (!found) continue;
       language = found;
+      localeKey = platformLocaleForPath(language.id, relPath);
     }
 
     let source: string;
@@ -145,6 +154,7 @@ export async function walkCodebase(rootPath: string): Promise<WalkResult> {
       language,
       source,
       languageLabel: labelFor(language, ext),
+      localeKey,
     });
   }
 
@@ -166,6 +176,23 @@ async function runI18nFileDiscovery(
     );
     return null;
   }
+}
+
+// Platform resource files carry their locale in path conventions rather
+// than locale-token filenames: Android `res/values-<qualifier>/`, iOS
+// `<locale>.lproj/`. `.xcstrings` holds every locale in one file, so its
+// locale is stamped per hit by the extractor instead of here.
+function platformLocaleForPath(
+  languageId: string,
+  relPath: string
+): string | null {
+  if (languageId === "android_resources") {
+    return extractAndroidLocaleFromPath(relPath);
+  }
+  if (languageId === "ios_strings" || languageId === "ios_stringsdict") {
+    return extractIosLocaleFromPath(relPath);
+  }
+  return null;
 }
 
 function labelFor(language: Language, ext: string): string {

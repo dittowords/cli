@@ -27,7 +27,7 @@ export const xliffExtractor: LanguageExtractor = {
       for (const el of unit.findAll({ rule: { kind: "element" } })) {
         const innerTag = tagName(el);
         if (innerTag !== "source" && innerTag !== "target") continue;
-        emitTextHit(el, [id, innerTag], out, source);
+        emitTextHit(el, [id, innerTag], out, source, id || undefined);
       }
     }
 

@@ -37,7 +37,8 @@ export const androidResourceExtractor: LanguageExtractor = {
         for (const child of el.children()) {
           if (child.kind() !== "element" || tagName(child) !== "item") continue;
           const variant = tag === "plurals" ? elementAttribute(child, "quantity") ?? "" : String(index);
-          emitTextHit(child, [parentName, variant], out, source);
+          // The resource name is the lookup key; quantity/index are selectors.
+          emitTextHit(child, [parentName, variant], out, source, parentName || undefined);
           index++;
         }
       }
@@ -66,6 +67,7 @@ function emitCdataValues(source: string, out: ExtractedHit[]): void {
         parentRole: "resource_value",
         identifiers: buildItemIdentifiers({ name, quantity, parent }),
       },
+      i18nKey: name || parent || undefined,
     });
   }
 }
@@ -106,5 +108,5 @@ function findEnclosingResourceParent(source: string, before: number): string | n
 
 function emitStringElement(el: SgNode, out: ExtractedHit[], source: string): void {
   const name = elementAttribute(el, "name");
-  emitTextHit(el, name ? [name] : [], out, source);
+  emitTextHit(el, name ? [name] : [], out, source, name ?? undefined);
 }

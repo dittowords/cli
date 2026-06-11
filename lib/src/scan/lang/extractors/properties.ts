@@ -44,6 +44,7 @@ export const propertiesExtractor: LanguageExtractor = {
         value,
         location: { line: startIdx + 1, column: keyColumn },
         context: { parentRole: "resource_value", identifiers: [key] },
+        i18nKey: key,
       });
     }
     return out;

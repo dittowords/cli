@@ -96,6 +96,9 @@ function walk(node: YamlNode, path: string[], source: string, out: ExtractedHit[
       value: node.value,
       location: offsetToLineCol(source, start),
       context: { parentRole: "resource_value", identifiers },
+      // The literal key path — keeps the plural suffix ("item_one") that
+      // `identifiers` splits into [base, variant].
+      i18nKey: path.length > 0 ? path.join(".") : undefined,
     });
   }
   // Non-string scalars: not the leaf shape we emit on.

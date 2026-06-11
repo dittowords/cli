@@ -20,6 +20,7 @@ export const stringsExtractor: LanguageExtractor = {
         value: pair.value,
         location: pair.location,
         context: { parentRole: "resource_value", identifiers: [pair.key] },
+        i18nKey: pair.key,
       });
     }
     return out;

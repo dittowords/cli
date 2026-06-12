@@ -96,6 +96,82 @@ function isLocaleToken(s: string): boolean {
 // messages_en, ApplicationResources_fr, labels_de-DE.
 const LOCALE_UNDERSCORE_SUFFIX_RE = /^.+_([a-z]{2}([_-][a-zA-Z]{2,4})?)$/i;
 
+// Derives the locale key for a per-locale i18n file from its path, e.g.
+// "locales/de-DE/common.json" -> "de-DE", "messages.en.json" -> "en",
+// "ApplicationResources_fr.properties" -> "fr". The filename is checked
+// before directory segments since it's the more specific signal, and
+// directories are checked deepest-first. Returns null when no path token
+// reads as a locale (e.g. a single-file catalog like "translations.json").
+export function extractLocaleFromPath(relPath: string): string | null {
+  const parts = relPath.split("/");
+  const filename = parts[parts.length - 1];
+
+  // Filename dot-segments, scanned right-to-left so the conventional
+  // trailing locale ("messages.en.json") wins over earlier tokens.
+  const stemParts = filename.split(".");
+  if (stemParts.length >= 2) {
+    stemParts.pop(); // drop the file extension
+    for (let i = stemParts.length - 1; i >= 0; i--) {
+      const part = stemParts[i];
+      if (isLocaleToken(part)) return part;
+      const m = part.match(LOCALE_UNDERSCORE_SUFFIX_RE);
+      if (m && isLocaleToken(m[1])) return m[1];
+    }
+  }
+
+  // Directory segments, deepest first ("locales/en/common.json").
+  for (let i = parts.length - 2; i >= 0; i--) {
+    if (isLocaleToken(parts[i])) return parts[i];
+  }
+  return null;
+}
+
+// Locale from an Android resource qualifier: `res/values-fr/` -> "fr",
+// `res/values-fr-rCA/` -> "fr-CA" (the "r" region prefix is normalized
+// away), `res/values-b+sr+Latn/` -> "sr-Latn" (BCP-47 form). Non-locale
+// qualifiers (night, v21, sw600dp, mcc310, …) are skipped, so the bare
+// `res/values/` default-locale dir and qualifier-only dirs return null.
+export function extractAndroidLocaleFromPath(relPath: string): string | null {
+  const m = relPath.match(/(?:^|\/)res\/values-([^/]+)\//i);
+  if (!m) return null;
+  const tokens = m[1].split("-");
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    // BCP-47 qualifier: a single dash-token shaped like "b+sr+Latn".
+    if (token.toLowerCase().startsWith("b+")) {
+      const parts = token.split("+").slice(1);
+      if (parts.length > 0 && ISO_639_1.has(parts[0].toLowerCase())) {
+        return parts.join("-");
+      }
+      continue;
+    }
+    if (ISO_639_1.has(token.toLowerCase())) {
+      const region = tokens[i + 1];
+      if (region && /^r[A-Za-z]{2,3}$/.test(region)) {
+        return `${token}-${region.slice(1)}`;
+      }
+      return token;
+    }
+  }
+  return null;
+}
+
+// Locale from an iOS localization bundle: `fr.lproj/Localizable.strings`
+// -> "fr", `pt-BR.lproj/` -> "pt-BR", `zh-Hans.lproj/` -> "zh-Hans".
+// `Base.lproj/` is the development-language placeholder, not a locale,
+// and falls out naturally ("base" is not an ISO language code).
+export function extractIosLocaleFromPath(relPath: string): string | null {
+  const m = relPath.match(/(?:^|\/)([^/]+)\.lproj\//i);
+  if (!m) return null;
+  const stem = m[1];
+  const lang = stem.split(/[-_]/)[0];
+  if (!ISO_639_1.has(lang.toLowerCase())) return null;
+  // Allow multi-subtag tags (zh-Hant-TW) that the stricter single-subtag
+  // check used for filename tokens would reject.
+  if (!/^[a-z]{2}(?:[_-][a-zA-Z0-9]{2,8})*$/i.test(stem)) return null;
+  return stem;
+}
+
 // JSON keys that appear in non-i18n config files (package.json, etc.).
 // A file containing any of these at the root level is almost certainly not i18n.
 const JSON_CONFIG_KEY_RE =

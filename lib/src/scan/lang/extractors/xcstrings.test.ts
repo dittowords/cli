@@ -23,6 +23,10 @@ describe("xcstringsExtractor", () => {
     expect(hits.map((h) => h.value).sort()).toEqual(["Hello", "Hola"]);
     expect(hits.every((h) => h.context.parentRole === "resource_value")).toBe(true);
     expect(hits.every((h) => h.context.identifiers[0] === "hello")).toBe(true);
+    expect(hits.map((h) => ({ v: h.value, locale: h.localeKey }))).toEqual([
+      { v: "Hello", locale: "en" },
+      { v: "Hola", locale: "es" },
+    ]);
   });
 
   test("walks plural variations and accumulates variant labels in identifiers", async () => {
@@ -50,6 +54,7 @@ describe("xcstringsExtractor", () => {
     expect(hits.map((h) => h.value).sort()).toEqual(["%d item", "%d items"]);
     const one = hits.find((h) => h.value === "%d item");
     expect(one?.context.identifiers).toEqual(["items_plural", "plural", "one"]);
+    expect(one?.localeKey).toBe("en");
   });
 
   test("skips empty/whitespace-only values", async () => {

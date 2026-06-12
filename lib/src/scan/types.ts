@@ -86,6 +86,18 @@ export const DittoScanCandidateSchema = z.object({
     column: z.number().int().positive(),
   }),
   language: z.string(),
+  // Locale key derived from the file's path when the candidate comes from a
+  // per-locale i18n resource file admitted by i18n file discovery (e.g. "en"
+  // for locales/en/common.json, "de-DE" for messages.de-DE.json). Null for
+  // source-code candidates and i18n files with no locale token in their path.
+  locale_key: z.string().nullable(),
+  // The string's lookup key within its localization resource file, as
+  // written in the file: the dot-joined key path for JSON/YAML catalogs
+  // ("labels.paste", "item_one"), the property key, the PO msgid, the
+  // XLIFF unit id, the resource name for Android/.resx, the catalog key
+  // for iOS .strings/.stringsdict/.xcstrings. Null for source-code
+  // candidates and resource hits where no key could be recovered.
+  i18n_key: z.string().nullable(),
   // Framework signals derived from the input project's package.json
   // (e.g., ["react", "next"] or ["vue"]). Same for every candidate in a run.
   framework: z.array(z.string()),

@@ -57,4 +57,20 @@ describe("jsonI18nExtractor", () => {
     expect(await extract(`not json`)).toEqual([]);
     expect(await extract(`["a", "b"]`)).toEqual([]);
   });
+
+  test("i18nKey is the literal dot-joined key path", async () => {
+    const source = JSON.stringify(
+      { "home.title": "Welcome", labels: { paste: "Paste" } },
+      null,
+      2
+    );
+    const hits = await extract(source);
+    expect(hits.map((h) => h.i18nKey)).toEqual(["home.title", "labels.paste"]);
+  });
+
+  test("i18nKey keeps the plural suffix that identifiers split off", async () => {
+    const source = JSON.stringify({ item_one: "1 item", item_other: "{count} items" }, null, 2);
+    const hits = await extract(source);
+    expect(hits.map((h) => h.i18nKey)).toEqual(["item_one", "item_other"]);
+  });
 });

@@ -53,6 +53,9 @@ function walk(node: JsonNode, path: string[], source: string, out: ExtractedHit[
       value: node.value,
       location: offsetToLineCol(source, node.start),
       context: { parentRole: "resource_value", identifiers },
+      // The literal key path — keeps the plural suffix ("item_one") that
+      // `identifiers` splits into [base, variant].
+      i18nKey: path.length > 0 ? path.join(".") : undefined,
     });
     return;
   }

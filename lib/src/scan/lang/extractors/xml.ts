@@ -42,7 +42,13 @@ export function elementAttribute(element: SgNode, name: string): string | null {
 // — `<![CDATA[Hi <b>x</b>]]>` can surface `]]` as a stray text node.
 // Skipping any element whose source range contains `<![CDATA[` is simpler
 // and matches the CDATA sweep, which recovers the real value.
-export function emitTextHit(element: SgNode, identifiers: string[], out: ExtractedHit[], source?: string): void {
+export function emitTextHit(
+  element: SgNode,
+  identifiers: string[],
+  out: ExtractedHit[],
+  source?: string,
+  i18nKey?: string
+): void {
   if (source !== undefined && elementContainsCdata(element, source)) return;
   const text = element.children().find((c) => c.kind() === "text");
   if (!text) return;
@@ -53,6 +59,7 @@ export function emitTextHit(element: SgNode, identifiers: string[], out: Extract
     value,
     location: { line: range.start.line + 1, column: range.start.column + 1 },
     context: { parentRole: "resource_value", identifiers },
+    i18nKey,
   });
 }
 

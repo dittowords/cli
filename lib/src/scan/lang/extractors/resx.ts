@@ -37,7 +37,7 @@ export const resxExtractor: LanguageExtractor = {
       const name = elementAttribute(el, "name") ?? "";
       const valueEl = findChildElement(el, "value");
       if (!valueEl) continue;
-      emitTextHit(valueEl, [name], out, source);
+      emitTextHit(valueEl, [name], out, source, name || undefined);
     }
 
     emitCdataValues(source, out);
@@ -79,6 +79,7 @@ function emitCdataValues(source: string, out: ExtractedHit[]): void {
       value,
       location: { line, column },
       context: { parentRole: "resource_value", identifiers: [name] },
+      i18nKey: name || undefined,
     });
   }
 }

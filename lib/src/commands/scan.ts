@@ -2,6 +2,9 @@ import "dotenv/config";
 import fs from "fs/promises";
 import path from "path";
 
+import { prompt } from "enquirer";
+import open from "open";
+
 import logger from "../utils/logger";
 import { DittoScanExtractSummary, runExtract } from "../scan/extract";
 import { DittoScanCandidate } from "../scan/types";
@@ -13,6 +16,7 @@ import {
   initiateScan,
   uploadCandidatesToS3,
 } from "../http/scan";
+import chalk from "chalk";
 
 // Yarn sets INIT_CWD to the directory the user invoked yarn from, which
 // matters when we proxy via `cd product-text-detection && yarn ptd`.
@@ -141,11 +145,19 @@ export const scan = async (
     await uploadCandidatesToS3(candidates, candidatesSignedS3Url);
     await initiateClassify(recordId);
     logExtractSummary(extractSummary);
-    await quit(
-      logger.info(
-        `Scan initiated! Visit https://app.dittowords.com/scan/${recordId} to view progress and see results.`
-      ),
-      0
+    const url = `https://app.dittowords.com/scan/${recordId}`;
+    console.log(
+      `Scan initiated! Visit ${chalk.blueBright.underline(
+        url
+      )} to view progress and see results.`
     );
+    const { openUrl } = await prompt<{ openUrl: boolean }>({
+      type: "confirm",
+      name: "openUrl",
+      message: "Open in browser?",
+      initial: true,
+    });
+    if (openUrl) await open(url);
+    await quit(null, 0);
   }
 };

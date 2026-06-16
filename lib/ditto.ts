@@ -25,4 +25,6 @@ const main = async () => {
   }
 };
 
+export type * from "./src/scan/types";
+
 main();

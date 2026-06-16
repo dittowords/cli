@@ -1,6 +1,6 @@
 import { Constructor } from "../shared";
 
-interface NamedImport {
+export interface NamedImport {
   name: string;
   alias?: string;
 }
@@ -9,9 +9,9 @@ export default function javascriptCodegenMixin<TBase extends Constructor>(
   Base: TBase
 ) {
   return class JavascriptCodegenHelpers extends Base {
-    protected indentSpaces: number = 2;
+    public indentSpaces: number = 2;
 
-    protected sanitizeStringForJSVariableName(str: string) {
+    public sanitizeStringForJSVariableName(str: string) {
       return str.replace(/[^a-zA-Z0-9]/g, "_");
     }
 
@@ -20,7 +20,7 @@ export default function javascriptCodegenMixin<TBase extends Constructor>(
      * @param modules array of { name: string, alias?: string }, each named import
      * @returns a string of comma-separated module names/aliases, sorted
      */
-    protected formatNamedModules(modules: NamedImport[]) {
+    public formatNamedModules(modules: NamedImport[]) {
       return modules
         .map((m) => {
           if (m.alias) {
@@ -39,7 +39,7 @@ export default function javascriptCodegenMixin<TBase extends Constructor>(
      * @param moduleName the name of the file or package to import from
      * @returns i.e `import { foo, bar as name } from "./file";`
      */
-    protected codegenNamedImport(modules: NamedImport[], moduleName: string) {
+    public codegenNamedImport(modules: NamedImport[], moduleName: string) {
       const formattedModules = this.formatNamedModules(modules);
 
       return `import { ${formattedModules} } from "${moduleName}";\n`;
@@ -52,7 +52,7 @@ export default function javascriptCodegenMixin<TBase extends Constructor>(
      * @param moduleName the name of the file or package to import from
      * @returns i.e `const { foo, bar as name } = require("./file");`
      */
-    protected codegenNamedRequire(modules: NamedImport[], moduleName: string) {
+    public codegenNamedRequire(modules: NamedImport[], moduleName: string) {
       const formattedModules = this.formatNamedModules(modules);
 
       return `const { ${formattedModules} } = require("${moduleName}");\n`;
@@ -64,7 +64,7 @@ export default function javascriptCodegenMixin<TBase extends Constructor>(
      * @param moduleName the name of the file or package to import from
      * @returns i.e codegenDefaultImport("item", "./file") => `import item from "./file";`
      */
-    protected codegenDefaultImport(module: string, moduleName: string) {
+    public codegenDefaultImport(module: string, moduleName: string) {
       return `import ${module} from "${moduleName}";\n`;
     }
 
@@ -74,7 +74,7 @@ export default function javascriptCodegenMixin<TBase extends Constructor>(
      * @param moduleName the name of the file or package to import from
      * @returns i.e codegenDefaultRequire("item", "./file") => `const item = require("./file)";`
      */
-    protected codegenDefaultRequire(module: string, moduleName: string) {
+    public codegenDefaultRequire(module: string, moduleName: string) {
       return `const ${module} = require("${moduleName}");\n`;
     }
 
@@ -83,7 +83,7 @@ export default function javascriptCodegenMixin<TBase extends Constructor>(
      * @param module the name of the module to export
      * @returns i.e codegenDefaultExport("item") => "export default item;"
      */
-    protected codegenDefaultExport(module: string) {
+    public codegenDefaultExport(module: string) {
       return `export default ${module};`;
     }
 
@@ -92,11 +92,11 @@ export default function javascriptCodegenMixin<TBase extends Constructor>(
      * @param module the name of the module to export
      * @returns i.e codegenModuleExports("item") => "module.exports = item;"
      */
-    protected codegenCommonJSModuleExports(module: string) {
+    public codegenCommonJSModuleExports(module: string) {
       return `module.exports = ${module};`;
     }
 
-    protected codegenPad(depth: number) {
+    public codegenPad(depth: number) {
       return " ".repeat(depth * this.indentSpaces);
     }
   };

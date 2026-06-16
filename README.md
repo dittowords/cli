@@ -54,6 +54,8 @@ For more information on configuring the CLI, see [this documentation section](ht
 
 ## Usage
 
+### Pull
+
 ```bash
 npx @dittowords/cli pull
 ```
@@ -70,9 +72,19 @@ See our demo projects for examples of how to integrate the Ditto CLI in differen
 - [iOS mobile app](https://github.com/dittowords/ditto-react-demo)
 - [Android mobile app](https://github.com/dittowords/ditto-react-demo)
 
+### Scan
+
+```bash
+npx @dittowords/cli scan <path>
+```
+
+Scans your codebase at `<path>` to identify user-facing text, and then prompts you to navigate to the Ditto web app where you can create a full content system off of the identified text.
+
+This feature is currently in beta, and only accessible to select partners, so message us at [support@dittowords.com](mailto:support@dittowords.com) if you would like access!
+
 ## Legacy Setup
 
-Beginning with `v5.0.0`, the Ditto CLI points at the new Ditto experience by default. To run the CLI compatible with legacy Ditto, append the `--legacy` flag to any legacy command, and the CLI will work as it did in the `4.x` version. All existing legacy commands remain fully functional at this time.
+Beginning with `v5.0.0`, the Ditto CLI points at the new Ditto experience by default. To run the CLI compatible with legacy Ditto, append the `--legacy` flag to any legacy command, and the CLI will work as it did in the `4.x` version. All existing legacy commands remain fully functional at this time. Only the `pull` command is supported with the `--legacy` flag.
 
 ## Feedback
 

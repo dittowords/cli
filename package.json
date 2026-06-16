@@ -1,12 +1,14 @@
 {
   "name": "@dittowords/cli",
-  "version": "5.5.1",
+  "version": "5.6.0",
   "description": "Command Line Interface for Ditto (dittowords.com).",
   "license": "MIT",
   "main": "bin/ditto.js",
   "scripts": {
+    "build": "node esbuild.mjs",
     "prepublishOnly": "ENV=production node esbuild.mjs && sentry-cli sourcemaps inject ./bin && npx sentry-cli sourcemaps upload ./bin --release=\"$(cat package.json | jq -r '.version')\"",
     "prepare": "husky install",
+    "scan": "node esbuild.mjs && node --enable-source-maps --require dotenv/config bin/ditto.js scan",
     "start": "node esbuild.mjs && node --enable-source-maps --require dotenv/config bin/ditto.js",
     "sync": "node esbuild.mjs && node --enable-source-maps --require dotenv/config bin/ditto.js pull",
     "test": "jest",
@@ -41,22 +43,29 @@
     "README.md",
     "LICENSE"
   ],
+  "exports": {
+    ".": {
+      "types": "./bin/ditto.d.ts",
+      "default": "./bin/ditto.js"
+    }
+  },
   "devDependencies": {
     "@babel/preset-env": "^7.20.2",
     "@babel/preset-typescript": "^7.18.6",
     "@jest/globals": "^29.7.0",
     "@sentry/cli": "^2.20.5",
     "@tsconfig/node16": "^1.0.3",
-    "@types/jest": "^26.0.9",
+    "@types/jest": "^29.5.0",
     "@types/js-yaml": "^4.0.5",
     "@types/node": "^18.0.0",
     "babel-jest": "^29.3.1",
     "dotenv": "^16.3.1",
+    "dts-bundle-generator": "^9.5.1",
     "esbuild": "^0.25.2",
     "husky": "^7.0.4",
     "jest": "^29.3.1",
     "lint-staged": "^11.2.4",
-    "prettier": "2.4.1",
+    "prettier": "^2.8.0",
     "rewire": "^6.0.0",
     "source-map": "^0.7.3",
     "tempy": "^0.6.0",
@@ -64,10 +73,14 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@ast-grep/lang-kotlin": "^0.0.7",
+    "@ast-grep/lang-swift": "^0.0.8",
+    "@ast-grep/napi": "^0.43.0",
     "@babel/core": "^7.11.4",
     "@babel/parser": "^7.21.4",
     "@babel/traverse": "^7.21.4",
     "@babel/types": "^7.21.4",
+    "@google/genai": "^2.7.0",
     "@sentry/node": "^7.64.0",
     "@types/babel-traverse": "^6.25.7",
     "axios": "^1.6.0",
@@ -78,9 +91,13 @@
     "faker": "^5.1.0",
     "form-data": "^4.0.0",
     "glob": "^9.3.4",
+    "globby": "^16.2.0",
+    "ignore": "^7.0.5",
     "js-yaml": "^4.1.0",
     "memfs": "^4.7.7",
+    "open": "^11.0.0",
     "ora": "^5.0.0",
+    "yaml": "^2.9.0",
     "zod": "^4.0.0"
   },
   "lint-staged": {

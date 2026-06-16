@@ -1,6 +1,6 @@
 import { Constructor } from "../shared";
 
-export interface NamedImport {
+interface NamedImport {
   name: string;
   alias?: string;
 }

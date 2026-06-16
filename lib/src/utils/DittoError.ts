@@ -50,7 +50,6 @@ export default class DittoError<T extends ErrorType> extends Error {
 export enum ErrorType {
   ConfigYamlLoadError = "ConfigYamlLoadError",
   ConfigParseError = "ConfigParseError",
-  GeminiError = "GeminiError",
   ScanError = "ScanError",
 }
 
@@ -61,7 +60,6 @@ export enum ErrorType {
 type ErrorDataMap = {
   [ErrorType.ConfigYamlLoadError]: ConfigYamlLoadErrorData;
   [ErrorType.ConfigParseError]: ConfigParseErrorData;
-  [ErrorType.GeminiError]: GeminiErrorData;
   [ErrorType.ScanError]: ScanErrorData;
 };
 
@@ -72,10 +70,6 @@ type ConfigYamlLoadErrorData = {
 type ConfigParseErrorData = {
   formattedError: string;
   messagePrefix: string;
-};
-
-type GeminiErrorData = {
-  rawErrorMessage: string;
 };
 
 type ScanErrorData = {

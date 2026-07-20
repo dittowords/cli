@@ -13,7 +13,7 @@ import appContext from "./utils/appContext";
 import { ErrorType, isDittoError, isDittoErrorType } from "./utils/DittoError";
 import processCommandMetaFlag from "./utils/processCommandMetaFlag";
 
-const handleCommandError = async (error: unknown) => {
+const handleCommandError = async (error: any) => {
   if (process.env.DEBUG === "true") {
     console.error(logger.info("Development stack trace:\n"), error);
   }
@@ -21,6 +21,7 @@ const handleCommandError = async (error: unknown) => {
   let sentryOptions = undefined;
   let exitCode = undefined;
   let errorText =
+    error.message ||
     "Something went wrong. Please contact support or try again later.";
 
   if (isDittoError(error)) {

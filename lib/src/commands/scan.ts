@@ -141,7 +141,7 @@ export const scan = async (
     const {
       candidatesSignedS3Url,
       record: { _id: recordId },
-    } = await initiateScan(path);
+    } = await initiateScan(resolvedInput);
     await uploadCandidatesToS3(candidates, candidatesSignedS3Url);
     await initiateClassify(recordId);
     logExtractSummary(extractSummary);

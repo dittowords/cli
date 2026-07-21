@@ -33,6 +33,10 @@ const handleCommandError = async (error: any) => {
       errorText = `${error.data.messagePrefix}\n\n${error.data.formattedError}`;
     }
 
+    if (error.expected) {
+      return await quit(logger.errorText(errorText), exitCode);
+    }
+
     sentryOptions = {
       extra: { message: errorText, ...(error.data || {}) },
     };
@@ -73,9 +77,9 @@ const appEntry = async () => {
 
   // ditto scan
   program
-    .command("scan <path>")
+    .command("scan [path]")
     .description(
-      "Run extract + classify + infer end-to-end; emits schema.json and stagings.ndjson to --out-dir"
+      "Scan a codebase for user-facing strings and send them to Ditto. Defaults to the current directory if no path is given."
     )
     .option(
       "--local",
@@ -86,11 +90,11 @@ const appEntry = async () => {
     .option("--prefix <prefix>", "prefix for output files", "")
     .action(
       async (
-        inputPath: string,
+        inputPath: string | undefined,
         opts: { local: boolean; outDir: string; prefix?: string }
       ) => {
         try {
-          return await scan(inputPath, opts);
+          return await scan(inputPath ?? ".", opts);
         } catch (error) {
           handleCommandError(error);
         }

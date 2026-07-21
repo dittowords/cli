@@ -9,6 +9,7 @@ import { z } from "zod";
 export default class DittoError<T extends ErrorType> extends Error {
   exitCode: number | undefined;
   type: ErrorType;
+  expected: boolean;
   // Note: if you see the type error "Type 'T' cannot be used to index type 'ErrorDataMap'",
   // a value is missing from the ErrorDataMap defined below
   data: ErrorDataMap[T];
@@ -18,17 +19,20 @@ export default class DittoError<T extends ErrorType> extends Error {
    * @param type The type of error, from the ErrorType enum
    * @param message Optional: error message to display to the user
    * @param exitCode Optional: exit code to return to the shell.
+   * @param expected Optional: whether this is an expected, user-actionable error
    * @param data Optional: additional data to pass along with the error
    */
   constructor({
     type,
     message,
     exitCode,
+    expected = false,
     data,
   }: {
     type: T;
     message?: string;
     exitCode?: number;
+    expected?: boolean;
     data: ErrorDataMap[T];
   }) {
     const errorMessage =
@@ -39,6 +43,7 @@ export default class DittoError<T extends ErrorType> extends Error {
 
     this.exitCode = exitCode;
     this.type = type;
+    this.expected = expected;
     this.data = data;
   }
 }

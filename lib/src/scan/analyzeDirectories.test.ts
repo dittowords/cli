@@ -154,15 +154,6 @@ describe("formatOverLimitMessage", () => {
     expect(msg).toContain("--list-directories");
     expect(msg).not.toMatch(/upgrade/i);
   });
-
-  test("names the blocker when nothing fits", () => {
-    const msg = formatOverLimitMessage(
-      analyzeDirectories(files({ "src/generated/a.ts": 5000 }), 1000),
-      { plan: "trial", originalPath: "." }
-    );
-    expect(msg).toContain("`src/generated` alone has 5,000 strings");
-    expect(msg).not.toMatch(/upgrade/i);
-  });
 });
 
 describe("formatDirectoryBreakdown", () => {

@@ -222,7 +222,7 @@ export const scan = async (
       throw e;
     }
     logExtractSummary(extractSummary);
-    const url = `https://app.dittowords.com/scan/${recordId}`;
+    const url = `${appContext.appHost}/scan/${recordId}`;
     console.log(
       `Scan initiated! Visit ${chalk.blueBright.underline(
         url

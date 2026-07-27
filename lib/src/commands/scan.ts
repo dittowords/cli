@@ -11,10 +11,18 @@ import { quit } from "../utils/quit";
 import initAPIToken from "../services/apiToken/initAPIToken";
 import appContext from "../utils/appContext";
 import {
+  asScanLimitInfo,
   initiateClassify,
   initiateScan,
+  scanLimitError,
   uploadCandidatesToS3,
 } from "../http/scan";
+import {
+  analyzeDirectories,
+  formatDirectoryBreakdown,
+  formatOverLimitMessage,
+} from "../scan/analyzeDirectories";
+import DittoError, { ErrorType } from "../utils/DittoError";
 import chalk from "chalk";
 
 // Yarn sets INIT_CWD to the directory the user invoked yarn from, which
@@ -93,16 +101,41 @@ function logExtractSummary(
   }
 }
 
+function buildOverLimitError(args: {
+  candidates: DittoScanCandidate[];
+  originalPath: string;
+  limit: number;
+  plan?: string;
+}): DittoError<ErrorType.ScanError> {
+  const analysis = analyzeDirectories(
+    args.candidates.map((c) => c.location.file),
+    args.limit
+  );
+  return new DittoError({
+    type: ErrorType.ScanError,
+    message: formatOverLimitMessage(analysis, {
+      plan: args.plan,
+      originalPath: args.originalPath,
+    }),
+    exitCode: 1,
+    expected: true,
+    data: {
+      rawErrorMessage: `scan candidate limit exceeded (${analysis.total} > ${args.limit})`,
+    },
+  });
+}
+
 interface ISyncOptions {
   local: boolean;
   outDir?: string;
   prefix?: string;
+  listDirectories?: boolean;
 }
 export const scan = async (
   path: string,
-  { local, outDir = "", prefix = "" }: ISyncOptions
+  { local, outDir = "", prefix = "", listDirectories = false }: ISyncOptions
 ) => {
-  if (local && !outDir) {
+  if (local && !outDir && !listDirectories) {
     return await quit(
       logger.errorText(
         "Must specify --out-dir if outputting candidates locally"
@@ -123,6 +156,16 @@ export const scan = async (
     );
   }
 
+  if (listDirectories) {
+    logger.writeLine(
+      formatDirectoryBreakdown(
+        candidates.map((c) => c.location.file),
+        path
+      )
+    );
+    return await quit(null, 0);
+  }
+
   if (local) {
     const resolvedOutDir = resolveUserPath(outDir);
     await fs.mkdir(resolvedOutDir, { recursive: true });
@@ -140,9 +183,44 @@ export const scan = async (
     const {
       candidatesSignedS3Url,
       record: { _id: recordId },
+      planLimit,
     } = await initiateScan(resolvedInput);
+
+    // Fail before the wasted upload when the candidates we already extracted exceed it.
+    if (
+      planLimit &&
+      candidates.length > planLimit.candidateLimit - planLimit.candidatesUsed
+    ) {
+      throw buildOverLimitError({
+        candidates,
+        originalPath: path,
+        limit: planLimit.candidateLimit - planLimit.candidatesUsed,
+        plan: planLimit.plan,
+      });
+    }
+
     await uploadCandidatesToS3(candidates, candidatesSignedS3Url);
-    await initiateClassify(recordId);
+    try {
+      await initiateClassify(recordId);
+    } catch (e) {
+      // Turn the classify step's plan-limit response into concrete
+      // subdirectory suggestions built from the candidates in memory.
+      const info = asScanLimitInfo(e);
+      if (info) {
+        if (info.limit != null) {
+          throw buildOverLimitError({
+            candidates,
+            originalPath: path,
+            limit: info.limit - (info.used ?? 0),
+            plan: info.plan,
+          });
+        }
+        throw scanLimitError(
+          info.message ?? "This scan exceeds your plan's limit."
+        );
+      }
+      throw e;
+    }
     logExtractSummary(extractSummary);
     const url = `https://app.dittowords.com/scan/${recordId}`;
     console.log(

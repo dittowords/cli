@@ -88,10 +88,20 @@ const appEntry = async () => {
     )
     .option("--out-dir <dir>", "output directory", "")
     .option("--prefix <prefix>", "prefix for output files", "")
+    .option(
+      "--list-directories",
+      "print the number of candidate strings per directory and exit, without uploading",
+      false
+    )
     .action(
       async (
         inputPath: string | undefined,
-        opts: { local: boolean; outDir: string; prefix?: string }
+        opts: {
+          local: boolean;
+          outDir: string;
+          prefix?: string;
+          listDirectories?: boolean;
+        }
       ) => {
         try {
           return await scan(inputPath ?? ".", opts);

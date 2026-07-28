@@ -184,5 +184,13 @@ export const ZInitiateScanBodySchema = z.object({
 export const ZInitiateScanResponse = z.object({
   record: z.object({ _id: z.string() }),
   candidatesSignedS3Url: z.string(),
+  // Null when there is no limit.
+  planLimit: z
+    .object({
+      plan: z.string(),
+      candidateLimit: z.number(),
+      candidatesUsed: z.number(),
+    })
+    .nullish(),
 });
 export type IInitiateScanResponse = z.infer<typeof ZInitiateScanResponse>;

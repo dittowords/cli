@@ -6,12 +6,16 @@ import {
   ProjectConfigYAML,
 } from "../services/projectConfig";
 
+const DEFAULT_API_HOST = "https://api.dittowords.com";
+const DEFAULT_APP_HOST = "https://app.dittowords.com";
+
 /**
  * This class is used to store the global CLI context. It is preserved across all methods
  * and is used to store the running state of the CLI.
  */
 class AppContext {
   #apiHost: string;
+  #appHost: string;
   #apiToken: string | undefined;
   #configFile: string;
   #projectConfigDir: string;
@@ -20,7 +24,8 @@ class AppContext {
   #projectConfig: ProjectConfigYAML;
   #outDir: string;
   constructor() {
-    this.#apiHost = process.env.DITTO_API_HOST || "https://api.dittowords.com";
+    this.#apiHost = process.env.DITTO_API_HOST || DEFAULT_API_HOST;
+    this.#appHost = process.env.DITTO_APP_HOST || DEFAULT_APP_HOST;
     this.#apiToken = process.env.DITTO_TOKEN;
     this.#configFile =
       process.env.DITTO_CONFIG_FILE || path.join(homedir(), ".config", "ditto");
@@ -37,6 +42,10 @@ class AppContext {
 
   get apiHost() {
     return this.#apiHost;
+  }
+
+  get appHost() {
+    return this.#appHost;
   }
 
   set apiHost(value: string) {

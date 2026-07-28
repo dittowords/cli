@@ -1,31 +1,62 @@
 import axios, { AxiosError } from "axios";
-import chalk from "chalk";
 import getHttpClient from "./client";
 import { IInitiateScanResponse, ZInitiateScanResponse } from "./types";
 import { DittoScanCandidate } from "../scan/types";
 import DittoError, { ErrorType } from "../utils/DittoError";
 import { Blob } from "buffer";
 
-// Deep-links to the home page with the billing/upgrade modal open.
-const BILLING_URL = "https://app.dittowords.com/home?openBillingModal=true";
+// Structured details from the classify step's SCAN_CANDIDATE_LIMIT_EXCEEDED
+// response.
+export class ScanLimitExceededError extends Error {
+  candidateCount?: number;
+  limit?: number;
+  used?: number;
+  plan?: string;
 
-// OSC 8 hyperlink: renders `label` as a clickable link to `href` in terminals
-// that support it.
-function terminalLink(label: string, href: string): string {
-  const OSC = "\u001B]8;;";
-  const BEL = "\u0007";
-  return `${OSC}${href}${BEL}${chalk.blueBright.underline(label)}${OSC}${BEL}`;
+  constructor(details: {
+    candidateCount?: number;
+    limit?: number;
+    plan?: string;
+    used?: number;
+    message?: string;
+  }) {
+    super(details.message ?? "Scan candidate limit exceeded");
+    this.name = "ScanLimitExceededError";
+    this.candidateCount = details.candidateCount;
+    this.limit = details.limit;
+    this.plan = details.plan;
+    this.used = details.used;
+  }
 }
 
-// Turns the server's plan-limit response into a message with concrete next
-// steps: upgrade, or scan a smaller path.
-function scanLimitError(serverMessage: string): DittoError<ErrorType.ScanError> {
+export interface ScanLimitInfo {
+  candidateCount?: number;
+  used: number | null;
+  limit: number | null;
+  plan?: string;
+  message?: string;
+}
+
+export function asScanLimitInfo(e: unknown): ScanLimitInfo | null {
+  if (!(e instanceof ScanLimitExceededError)) return null;
+  return {
+    candidateCount: e.candidateCount,
+    limit: e.limit ?? null,
+    plan: e.plan,
+    used: e.used ?? null,
+    message: e.message,
+  };
+}
+
+// Fallback message used only when we know the scan is over the limit but the
+// server gave no numeric limit to analyze against.
+export function scanLimitError(
+  serverMessage: string
+): DittoError<ErrorType.ScanError> {
   const message = [
     serverMessage,
     "",
-    "To scan more strings, you can either:",
-    `  • Upgrade your plan at ${terminalLink("app.dittowords.com", BILLING_URL)}`,
-    "  • Scan a smaller subdirectory, e.g. `npx @dittowords/cli scan ./src`",
+    "Scan a smaller subdirectory, e.g. `npx @dittowords/cli scan ./src`.",
   ].join("\n");
 
   return new DittoError({
@@ -67,7 +98,16 @@ export async function initiateClassify(scanId: string): Promise<void> {
 
     const data = e.response?.data;
     if (data?.code === "SCAN_CANDIDATE_LIMIT_EXCEEDED") {
-      throw scanLimitError(data.message);
+      throw new ScanLimitExceededError({
+        candidateCount:
+          typeof data.candidateCount === "number"
+            ? data.candidateCount
+            : undefined,
+        limit: typeof data.limit === "number" ? data.limit : undefined,
+        plan: typeof data.plan === "string" ? data.plan : undefined,
+        used: typeof data.used === "number" ? data.used : undefined,
+        message: typeof data.message === "string" ? data.message : undefined,
+      });
     }
     if (data?.message) throw new Error(data.message);
     throw e;

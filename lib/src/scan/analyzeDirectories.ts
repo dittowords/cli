@@ -98,15 +98,13 @@ export function formatOverLimitMessage(
     total
   )} strings, but your ${planLabel(opts.plan)} allows ${fmtCount(
     limit
-  )} per scan.`;
+  )} scanned strings.`;
 
   if (suggestions.length === 0) {
     return [
       header,
       "",
-      `There's no subdirectory small enough to scan on its own — all ${fmtCount(
-        total
-      )} strings are in files at the top level of \`${root}\`. Point the scan at a narrower path to stay under the limit.`,
+      `There's no subdirectory small enough to scan on its own.`,
     ].join("\n");
   }
 

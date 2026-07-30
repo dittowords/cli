@@ -15,7 +15,9 @@ export const validate = async (token: string) => {
  */
 export default async function promptForApiToken() {
   const response = await prompt<{ token: string }>({
-    type: "input",
+    // Masked so the key isn't left echoed in the user's scrollback, or captured
+    // by anything recording the terminal.
+    type: "password",
     name: "token",
     message: "What is your API key?",
     validate: validate as any,

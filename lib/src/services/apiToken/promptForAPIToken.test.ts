@@ -18,7 +18,7 @@ describe("promptForApiToken", () => {
     const response = await promptForApiToken();
     expect(response).toEqual(mockResponse);
     expect(promptSpy).toHaveBeenCalledWith({
-      type: "input",
+      type: "password",
       name: "token",
       message: "What is your API key?",
       validate: expect.any(Function),

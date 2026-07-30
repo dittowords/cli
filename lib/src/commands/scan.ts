@@ -228,13 +228,18 @@ export const scan = async (
         url
       )} to view progress and see results.`
     );
-    const { openUrl } = await prompt<{ openUrl: boolean }>({
-      type: "confirm",
-      name: "openUrl",
-      message: "Open in browser?",
-      initial: true,
-    });
-    if (openUrl) await open(url);
+    // The scan itself is done by this point, so a non-interactive caller — an
+    // agent running scan in a tool call — should get the URL and exit rather
+    // than wait on a confirm nobody can answer.
+    if (process.stdin.isTTY) {
+      const { openUrl } = await prompt<{ openUrl: boolean }>({
+        type: "confirm",
+        name: "openUrl",
+        message: "Open in browser?",
+        initial: true,
+      });
+      if (openUrl) await open(url);
+    }
     await quit(null, 0);
   }
 };

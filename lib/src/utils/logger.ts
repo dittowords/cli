@@ -10,6 +10,16 @@ export const write = (msg: string) => chalk.white(msg);
 export const bold = (msg: string) => chalk.bold(msg);
 export const writeLine = (msg: string) => console.log(msg);
 
+/**
+ * Only prints under DEBUG=true, matching the stack-trace behavior in the command
+ * error handler. Authentication picks a path through several silent branches —
+ * which credential was found, whether there's a terminal, which method was
+ * chosen — and without this, every one of them looks the same from outside.
+ */
+export const debug = (msg: string) => {
+  if (process.env.DEBUG === "true") console.log(subtle(`[ditto] ${msg}`));
+};
+
 export default {
   errorText,
   warnText,
@@ -20,4 +30,5 @@ export default {
   write,
   writeLine,
   bold,
+  debug,
 };

@@ -26,6 +26,14 @@ export default async function initOAuthCredential(
   stored?: OAuthCredential,
   method?: LoginMethod
 ) {
+  logger.debug(
+    `no API key found; stored browser login: ${
+      stored ? "yes" : "no"
+    }, terminal: ${process.stdin.isTTY ? "yes" : "no"}, OAuth configured: ${
+      isOAuthConfigured() ? "yes" : "no"
+    }, method: ${method ?? "not specified"}`
+  );
+
   if (stored) {
     appContext.setOAuthCredential(stored);
     // Sends the stored credential — refreshing it first if it's stale — so an
@@ -40,6 +48,7 @@ export default async function initOAuthCredential(
   // Nobody to ask, so don't offer a choice or open a browser that would sit
   // waiting: collectToken explains how to set a key up instead.
   if (!process.stdin.isTTY) {
+    logger.debug("no terminal to ask in — asking for an API key instead");
     return await collectAndSaveToken(host);
   }
 
@@ -57,6 +66,7 @@ export default async function initOAuthCredential(
   }
 
   const chosen = method ?? (await promptForLoginMethod());
+  logger.debug(`logging in with: ${chosen}`);
   if (chosen === "apiKey") {
     return await collectAndSaveToken(host);
   }
@@ -65,6 +75,7 @@ export default async function initOAuthCredential(
     persistCredential(await browserLogin());
     return undefined;
   } catch (error) {
+    logger.debug(`browser login threw: ${error}`);
     // A browser login can fail for reasons the person can't act on — a tenant
     // misconfiguration, no network. Say so, then offer the path that always
     // works instead of stopping the command.

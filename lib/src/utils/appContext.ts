@@ -1,6 +1,7 @@
 import { homedir } from "os";
 import path from "path";
 import crypto from "crypto";
+import { OAuthCredential } from "../services/oauth/types";
 import {
   DEFAULT_PROJECT_CONFIG_JSON,
   ProjectConfigYAML,
@@ -17,6 +18,7 @@ class AppContext {
   #apiHost: string;
   #appHost: string;
   #apiToken: string | undefined;
+  #oauthCredential: OAuthCredential | undefined;
   #configFile: string;
   #projectConfigDir: string;
   #projectConfigFile: string;
@@ -54,6 +56,14 @@ class AppContext {
 
   get apiToken() {
     return this.#apiToken;
+  }
+
+  get oauthCredential() {
+    return this.#oauthCredential;
+  }
+
+  setOAuthCredential(value: OAuthCredential | undefined) {
+    this.#oauthCredential = value;
   }
 
   get apiTokenOrThrow() {

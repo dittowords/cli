@@ -31,7 +31,7 @@ describe("promptForApiToken", () => {
     beforeEach(() => {
       checkTokenSpy = jest
         .spyOn(CheckToken, "default")
-        .mockImplementation((token: string) => {
+        .mockImplementation((token?: string) => {
           if (token === "good") {
             return Promise.resolve({ success: true });
           } else if (token === "output") {

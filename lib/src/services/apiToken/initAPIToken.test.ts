@@ -5,6 +5,7 @@ import * as CollectAndSaveToken from "./collectAndSaveToken";
 import * as GetURLHostname from "./getURLHostname";
 import initAPIToken from "./initAPIToken";
 import appContext from "../../utils/appContext";
+import * as CheckToken from "../../http/checkToken";
 
 describe("initAPIToken", () => {
   let validateTokenSpy: jest.SpiedFunction<typeof ValidateToken.default>;
@@ -117,5 +118,79 @@ describe("initAPIToken", () => {
     expect(readGlobalConfigDataSpy).toHaveBeenCalledWith(appContext.configFile);
     expect(getURLHostnameSpy).toHaveBeenCalledWith(appContext.apiHost);
     expect(collectAndSaveTokenSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("initAPIToken credential precedence", () => {
+  const OAUTH_CREDENTIAL = {
+    accessToken: "access-token",
+    refreshToken: "refresh-token",
+    expiresAt: 1893456000000,
+  };
+  let priorToken: string | undefined;
+
+  beforeEach(() => {
+    priorToken = appContext.apiToken;
+    appContext.setApiToken("");
+    appContext.setOAuthCredential(undefined);
+
+    jest.spyOn(fs, "existsSync").mockReturnValue(true);
+    jest.spyOn(GetURLHostname, "default").mockReturnValue("urlHostname");
+    jest
+      .spyOn(ValidateToken, "default")
+      .mockImplementation((token: string) => Promise.resolve(token));
+    jest
+      .spyOn(CollectAndSaveToken, "default")
+      .mockResolvedValue("collectedToken");
+    jest.spyOn(CheckToken, "default").mockResolvedValue({ success: true });
+  });
+
+  afterEach(() => {
+    appContext.setApiToken(priorToken);
+    appContext.setOAuthCredential(undefined);
+    jest.restoreAllMocks();
+  });
+
+  // An API key is the credential automation and existing users already rely on,
+  // so a stored browser login must never take it out of the running.
+  it("prefers a stored API key over a stored browser login", async () => {
+    jest.spyOn(ConfigService, "readGlobalConfigData").mockReturnValue({
+      urlHostname: [{ token: "myToken", oauth: OAUTH_CREDENTIAL }],
+    });
+
+    expect(await initAPIToken()).toBe("myToken");
+    expect(appContext.oauthCredential).toBeUndefined();
+  });
+
+  it("prefers DITTO_TOKEN over a stored browser login", async () => {
+    appContext.setApiToken("environmentToken");
+    jest.spyOn(ConfigService, "readGlobalConfigData").mockReturnValue({
+      urlHostname: [{ oauth: OAUTH_CREDENTIAL }],
+    });
+
+    expect(await initAPIToken()).toBe("environmentToken");
+    expect(appContext.oauthCredential).toBeUndefined();
+  });
+
+  it("uses a stored browser login when no API key is configured", async () => {
+    jest.spyOn(ConfigService, "readGlobalConfigData").mockReturnValue({
+      urlHostname: [{ oauth: OAUTH_CREDENTIAL }],
+    });
+
+    expect(await initAPIToken()).toBeUndefined();
+    expect(appContext.oauthCredential).toEqual(OAUTH_CREDENTIAL);
+    expect(CollectAndSaveToken.default).not.toHaveBeenCalled();
+  });
+
+  it("asks for an API key when the stored browser login no longer works", async () => {
+    jest.spyOn(ConfigService, "readGlobalConfigData").mockReturnValue({
+      urlHostname: [{ oauth: OAUTH_CREDENTIAL }],
+    });
+    jest
+      .spyOn(CheckToken, "default")
+      .mockResolvedValue({ success: false, output: ["expired"] });
+
+    expect(await initAPIToken()).toBe("collectedToken");
+    expect(appContext.oauthCredential).toBeUndefined();
   });
 });

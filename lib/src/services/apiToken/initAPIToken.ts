@@ -1,13 +1,20 @@
 import appContext from "../../utils/appContext";
 import fs from "fs";
 import * as configService from "../globalConfig";
-import collectAndSaveToken from "./collectAndSaveToken";
 import validateToken from "./validateToken";
 import getURLHostname from "./getURLHostname";
+import initOAuthCredential from "./initOAuthCredential";
 
 /**
- * Initializes the API token based on the appContext and config file.
- * @returns The initialized API token
+ * Initializes the credential based on the appContext and config file.
+ *
+ * An API key wins wherever one turns up — the environment variable first, then
+ * the config file — so automation and anyone who already pasted a key keeps the
+ * behavior they have today. Only with no key in either place does this fall
+ * through to a stored browser login, and then to logging in through the browser.
+ *
+ * @returns The initialized API token, or undefined when the browser login is
+ * what authenticated instead (that credential lands on the app context).
  */
 export default async function initAPIToken() {
   if (appContext.apiToken) {
@@ -15,19 +22,16 @@ export default async function initAPIToken() {
   }
 
   if (!fs.existsSync(appContext.configFile)) {
-    return await collectAndSaveToken();
+    return await initOAuthCredential();
   }
 
   const configData = configService.readGlobalConfigData(appContext.configFile);
   const sanitizedHost = getURLHostname(appContext.apiHost);
+  const stored = configData[sanitizedHost]?.[0];
 
-  if (
-    !configData[sanitizedHost] ||
-    !configData[sanitizedHost][0] ||
-    configData[sanitizedHost][0].token === ""
-  ) {
-    return await collectAndSaveToken(sanitizedHost);
+  if (stored?.token) {
+    return await validateToken(stored.token);
   }
 
-  return await validateToken(configData[sanitizedHost][0].token);
+  return await initOAuthCredential(sanitizedHost, stored?.oauth);
 }

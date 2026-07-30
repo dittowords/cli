@@ -55,7 +55,7 @@ const appEntry = async () => {
   // ditto login
   program
     .command("login")
-    .description("Save your Ditto API key on this computer")
+    .description("Log in to Ditto on this computer")
     .action(async () => {
       try {
         return await login();

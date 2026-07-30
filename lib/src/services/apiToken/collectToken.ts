@@ -19,13 +19,14 @@ export default async function collectToken() {
   if (!process.stdin.isTTY) {
     await quit(
       logger.warnText(
-        "Ditto needs an API key, and there's no terminal here to type it into."
+        "Ditto needs an API key — a password that lets Ditto reach your workspace. There's no way to type one in here."
       ) +
-        `\n\nCreate a key at ${logger.url(
-          apiKeysUrl
-        )}, then run this command again in your own terminal — or set ${logger.info(
+        `\n\nTo set it up:\n` +
+        `  1. Create a key at ${logger.url(apiKeysUrl)}\n` +
+        `  2. Run this same command yourself, in a terminal — the app on your computer where you type commands. It'll ask for the key and remember it, so this is a one-time step.\n` +
+        `\nSetting Ditto up for automation instead? Save your key as ${logger.info(
           "DITTO_TOKEN"
-        )} in your environment.`
+        )} and Ditto will use that.`
     );
     return "";
   }

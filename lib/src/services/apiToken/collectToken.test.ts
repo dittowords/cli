@@ -87,7 +87,14 @@ describe("collectToken", () => {
       const message = quitSpy.mock.calls[0][0] as string;
       expect(message).toContain("/developers/api-keys");
       expect(message).toContain("DITTO_TOKEN");
-      expect(message).toContain("your own terminal");
+      expect(message).toContain("in a terminal");
+    });
+
+    it("says what an API key is, for readers who won't already know", async () => {
+      await collectToken();
+
+      const message = quitSpy.mock.calls[0][0] as string;
+      expect(message).toContain("password");
     });
 
     it("does not open a browser nobody is watching", async () => {

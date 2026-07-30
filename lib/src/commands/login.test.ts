@@ -56,6 +56,38 @@ describe("login", () => {
     expect(output).not.toContain(appContext.configFile);
   });
 
+  describe("after a browser login", () => {
+    beforeEach(() => {
+      // A browser login returns no token and leaves the credential on the context.
+      initAPITokenSpy.mockResolvedValue(undefined);
+      appContext.setOAuthCredential({
+        accessToken: "access-token",
+        expiresAt: Date.now() + 60 * 60 * 1000,
+      });
+    });
+
+    afterEach(() => {
+      appContext.setOAuthCredential(undefined);
+    });
+
+    it("says where the login was saved", async () => {
+      await login();
+
+      const output = written.join("\n");
+      expect(output).toContain("Your login is saved in");
+      expect(output).toContain(appContext.configFile);
+      expect(quitSpy).toHaveBeenCalledWith(null, 0);
+    });
+
+    // Both the token and an unset DITTO_TOKEN are undefined, and comparing them
+    // for equality would credit an environment variable that isn't there.
+    it("doesn't credit DITTO_TOKEN", async () => {
+      await login();
+
+      expect(written.join("\n")).not.toContain("DITTO_TOKEN");
+    });
+  });
+
   it("stays quiet when there was no terminal to prompt in", async () => {
     // collectToken quits and returns "" in that case; login must not then
     // claim success on top of the message explaining what to do.

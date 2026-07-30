@@ -17,7 +17,9 @@ export const login = async () => {
   // collectToken exits on its own when there's no terminal to prompt in.
   if (!token && !loggedInWithBrowser) return;
 
-  const usingEnvironmentVariable = token === process.env.DITTO_TOKEN;
+  // Both are undefined after a browser login, and undefined === undefined would
+  // otherwise claim the key came from the environment.
+  const usingEnvironmentVariable = !!token && token === process.env.DITTO_TOKEN;
 
   logger.writeLine(
     logger.success("\nYou're all set — Ditto can reach your workspace.") +

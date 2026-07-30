@@ -87,7 +87,7 @@ describe("collectToken", () => {
       const message = quitSpy.mock.calls[0][0] as string;
       expect(message).toContain("/developers/api-keys");
       expect(message).toContain("DITTO_TOKEN");
-      expect(message).toContain("in a terminal");
+      expect(message).toContain("Open a terminal");
     });
 
     it("says what an API key is, for readers who won't already know", async () => {
@@ -95,6 +95,34 @@ describe("collectToken", () => {
 
       const message = quitSpy.mock.calls[0][0] as string;
       expect(message).toContain("password");
+    });
+
+    it("restates the command to rerun, for a reader who never saw it", async () => {
+      const argv = process.argv;
+      process.argv = ["node", "ditto-cli", "scan", "./src"];
+
+      try {
+        await collectToken();
+      } finally {
+        process.argv = argv;
+      }
+
+      const message = quitSpy.mock.calls[0][0] as string;
+      expect(message).toContain("npx -y @dittowords/cli@latest scan ./src");
+    });
+
+    it("quotes arguments containing spaces so the command can be pasted", async () => {
+      const argv = process.argv;
+      process.argv = ["node", "ditto-cli", "scan", "./my source"];
+
+      try {
+        await collectToken();
+      } finally {
+        process.argv = argv;
+      }
+
+      const message = quitSpy.mock.calls[0][0] as string;
+      expect(message).toContain('scan "./my source"');
     });
 
     it("does not open a browser nobody is watching", async () => {

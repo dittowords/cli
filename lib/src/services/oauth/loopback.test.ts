@@ -50,6 +50,20 @@ describe("startLoopback", () => {
     loopback.close();
   });
 
+  // Auth0 frequently omits error_description, and the code is then the only
+  // clue about which piece of tenant configuration was refused.
+  it("surfaces the error code when there's no description", async () => {
+    const loopback = await startLoopback("expected-state");
+    const waiting = expect(loopback.waitForCode()).rejects.toThrow(
+      "invalid_scope"
+    );
+
+    await get(`${loopback.redirectUri}?error=invalid_scope`);
+
+    await waiting;
+    loopback.close();
+  });
+
   it("ignores requests to any other path", async () => {
     const loopback = await startLoopback("expected-state");
 

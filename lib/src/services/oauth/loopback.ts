@@ -59,12 +59,26 @@ export default async function startLoopback(state: string) {
       return res.end();
     }
 
-    const code = url.searchParams.get("code");
-    if (url.searchParams.get("error") || !code) {
-      respond(res, "Log in again", LOGIN_FAILED);
+    // Auth0 often sends `error` with no `error_description`, so the code itself
+    // has to make it into the message — it's the only clue about which bit of
+    // tenant configuration was refused.
+    const failure = url.searchParams.get("error");
+    if (failure) {
+      const description = url.searchParams.get("error_description");
+      respond(res, "Log in again", description || LOGIN_FAILED);
       return rejectCode(
-        new Error(url.searchParams.get("error_description") || LOGIN_FAILED)
+        new Error(
+          `The login server refused the request (${failure})${
+            description ? `: ${description}` : ""
+          }`
+        )
       );
+    }
+
+    const code = url.searchParams.get("code");
+    if (!code) {
+      respond(res, "Log in again", LOGIN_FAILED);
+      return rejectCode(new Error(LOGIN_FAILED));
     }
     if (url.searchParams.get("state") !== state) {
       respond(res, "Log in again", LOGIN_FAILED);
@@ -89,7 +103,14 @@ export default async function startLoopback(state: string) {
         received,
         new Promise<never>((_, reject) =>
           setTimeout(
-            () => reject(new Error(LOGIN_FAILED)),
+            // Distinct from a refusal: a five-minute wait that ends in the same
+            // sentence looks identical to being turned down straight away.
+            () =>
+              reject(
+                new Error(
+                  "Ditto stopped waiting for the browser. Log in again."
+                )
+              ),
             OAUTH_LOGIN_TIMEOUT_MS
           ).unref()
         ),

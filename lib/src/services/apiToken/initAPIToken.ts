@@ -4,6 +4,7 @@ import * as configService from "../globalConfig";
 import validateToken from "./validateToken";
 import getURLHostname from "./getURLHostname";
 import initOAuthCredential from "./initOAuthCredential";
+import { LoginMethod } from "./promptForLoginMethod";
 
 /**
  * Initializes the credential based on the appContext and config file.
@@ -11,18 +12,19 @@ import initOAuthCredential from "./initOAuthCredential";
  * An API key wins wherever one turns up — the environment variable first, then
  * the config file — so automation and anyone who already pasted a key keeps the
  * behavior they have today. Only with no key in either place does this fall
- * through to a stored browser login, and then to logging in through the browser.
+ * through to a stored browser login, and then to asking how to log in.
  *
+ * @param method Skips asking how to log in, for `--browser` / `--api-key`.
  * @returns The initialized API token, or undefined when the browser login is
  * what authenticated instead (that credential lands on the app context).
  */
-export default async function initAPIToken() {
+export default async function initAPIToken(method?: LoginMethod) {
   if (appContext.apiToken) {
     return await validateToken(appContext.apiToken);
   }
 
   if (!fs.existsSync(appContext.configFile)) {
-    return await initOAuthCredential();
+    return await initOAuthCredential(undefined, undefined, method);
   }
 
   const configData = configService.readGlobalConfigData(appContext.configFile);
@@ -33,5 +35,5 @@ export default async function initAPIToken() {
     return await validateToken(stored.token);
   }
 
-  return await initOAuthCredential(sanitizedHost, stored?.oauth);
+  return await initOAuthCredential(sanitizedHost, stored?.oauth, method);
 }

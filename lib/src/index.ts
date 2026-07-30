@@ -56,9 +56,23 @@ const appEntry = async () => {
   program
     .command("login")
     .description("Log in to Ditto on this computer")
-    .action(async () => {
+    .option("--browser", "Log in through your browser without being asked")
+    .option("--api-key", "Paste an API key without being asked")
+    .action(async (opts: { browser?: boolean; apiKey?: boolean }) => {
       try {
-        return await login();
+        if (opts.browser && opts.apiKey) {
+          return await quit(
+            logger.errorText("Pass either --browser or --api-key, not both.")
+          );
+        }
+
+        const method = opts.browser
+          ? "browser"
+          : opts.apiKey
+          ? "apiKey"
+          : undefined;
+
+        return await login(method);
       } catch (error) {
         handleCommandError(error);
       }

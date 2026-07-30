@@ -8,21 +8,23 @@ import browserLogin from "../oauth/browserLogin";
 import { persistCredential } from "../oauth/credential";
 import { OAuthCredential } from "../oauth/types";
 import collectAndSaveToken from "./collectAndSaveToken";
+import promptForLoginMethod, { LoginMethod } from "./promptForLoginMethod";
 
 const LOGIN_EXPIRED = "We couldn't verify your login. Log in again.";
 
 /**
  * Reached only when no API key was found. Uses a stored browser login when
- * there's a working one, otherwise logs in through the browser, and falls back to
- * asking for an API key whenever the browser isn't an option — no client id
- * configured, or nothing on the other end of the terminal to log in with.
+ * there's a working one; otherwise asks how to authenticate — unless the choice
+ * arrived with the command — and falls back to asking for an API key whenever
+ * the browser isn't an option.
  *
  * @returns undefined when authenticated through the browser, or the collected
  * API key when it fell back to asking for one.
  */
 export default async function initOAuthCredential(
   host?: string,
-  stored?: OAuthCredential
+  stored?: OAuthCredential,
+  method?: LoginMethod
 ) {
   if (stored) {
     appContext.setOAuthCredential(stored);
@@ -35,7 +37,27 @@ export default async function initOAuthCredential(
     response.output?.forEach((line) => logger.writeLine(line));
   }
 
-  if (!isOAuthConfigured() || !process.stdin.isTTY) {
+  // Nobody to ask, so don't offer a choice or open a browser that would sit
+  // waiting: collectToken explains how to set a key up instead.
+  if (!process.stdin.isTTY) {
+    return await collectAndSaveToken(host);
+  }
+
+  if (!isOAuthConfigured()) {
+    // Only reachable before the Auth0 application exists. Say it plainly rather
+    // than silently ignoring an explicit --browser.
+    if (method === "browser") {
+      logger.writeLine(
+        logger.warnText(
+          "This version of Ditto can't log in through a browser yet. Use an API key instead."
+        )
+      );
+    }
+    return await collectAndSaveToken(host);
+  }
+
+  const chosen = method ?? (await promptForLoginMethod());
+  if (chosen === "apiKey") {
     return await collectAndSaveToken(host);
   }
 

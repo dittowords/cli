@@ -1,4 +1,5 @@
 import initAPIToken from "../services/apiToken/initAPIToken";
+import { LoginMethod } from "../services/apiToken/promptForLoginMethod";
 import appContext from "../utils/appContext";
 import logger from "../utils/logger";
 import { quit } from "../utils/quit";
@@ -8,8 +9,8 @@ import { quit } from "../utils/quit";
  * only needs to get authenticated — pull and scan both have side effects
  * (project config, file writes, uploading a scan) that would surprise them.
  */
-export const login = async () => {
-  const token = await initAPIToken();
+export const login = async (method?: LoginMethod) => {
+  const token = await initAPIToken(method);
 
   // A browser login returns no token; the credential is on the app context.
   const loggedInWithBrowser = !token && !!appContext.oauthCredential;

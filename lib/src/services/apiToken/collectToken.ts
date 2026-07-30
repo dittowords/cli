@@ -12,14 +12,11 @@ import promptForApiToken from "./promptForApiToken";
 export default async function collectToken() {
   const apiKeysUrl = `${appContext.appHost}/developers/api-keys`;
 
-  // Restated in full rather than as "this command", because whoever reads the
-  // non-interactive message below often never saw it run — an agent invoked it
-  // for them. `-y` matters for the same reason the guard does: without it npx
-  // can stop on its own install prompt.
-  const commandToRerun = ["npx", "-y", "@dittowords/cli@latest"]
-    .concat(process.argv.slice(2))
-    .map((arg) => (/\s/.test(arg) ? `"${arg}"` : arg))
-    .join(" ");
+  // Points at login rather than at whatever command was actually run, because
+  // login is the only one that does nothing but save the key — and because the
+  // agent can retry the real work itself afterwards. `-y` matters for the same
+  // reason the guard does: without it npx can stop on its own install prompt.
+  const loginCommand = "npx -y @dittowords/cli@latest login";
 
   // Every command needing a token funnels through here, so this is the one place
   // that has to cope with nobody being there to ask: run from an agent's tool
@@ -33,7 +30,7 @@ export default async function collectToken() {
         `\n\nTo set it up:\n` +
         `  1. Create a key at ${logger.url(apiKeysUrl)}\n` +
         `  2. Open a terminal — the app on your computer where you type commands — and run:\n\n` +
-        `       ${logger.info(commandToRerun)}\n\n` +
+        `       ${logger.info(loginCommand)}\n\n` +
         `     It'll ask for the key and remember it, so this is a one-time step.\n` +
         `\nSetting Ditto up for automation instead? Save your key as ${logger.info(
           "DITTO_TOKEN"

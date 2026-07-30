@@ -97,7 +97,7 @@ describe("collectToken", () => {
       expect(message).toContain("password");
     });
 
-    it("restates the command to rerun, for a reader who never saw it", async () => {
+    it("names the login command, not whatever command was actually run", async () => {
       const argv = process.argv;
       process.argv = ["node", "ditto-cli", "scan", "./src"];
 
@@ -108,21 +108,8 @@ describe("collectToken", () => {
       }
 
       const message = quitSpy.mock.calls[0][0] as string;
-      expect(message).toContain("npx -y @dittowords/cli@latest scan ./src");
-    });
-
-    it("quotes arguments containing spaces so the command can be pasted", async () => {
-      const argv = process.argv;
-      process.argv = ["node", "ditto-cli", "scan", "./my source"];
-
-      try {
-        await collectToken();
-      } finally {
-        process.argv = argv;
-      }
-
-      const message = quitSpy.mock.calls[0][0] as string;
-      expect(message).toContain('scan "./my source"');
+      expect(message).toContain("npx -y @dittowords/cli@latest login");
+      expect(message).not.toContain("scan");
     });
 
     it("does not open a browser nobody is watching", async () => {

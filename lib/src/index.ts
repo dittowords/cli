@@ -2,6 +2,7 @@
 // This is the main entry point for the ditto-cli command.
 import * as Sentry from "@sentry/node";
 import { program } from "commander";
+import { login } from "./commands/login";
 import { pull } from "./commands/pull";
 import { scan } from "./commands/scan";
 import { quit } from "./utils/quit";
@@ -50,6 +51,18 @@ const handleCommandError = async (error: any) => {
 
 const appEntry = async () => {
   program.name("ditto-cli");
+
+  // ditto login
+  program
+    .command("login")
+    .description("Save your Ditto API key on this computer")
+    .action(async () => {
+      try {
+        return await login();
+      } catch (error) {
+        handleCommandError(error);
+      }
+    });
 
   // ditto pull
   program

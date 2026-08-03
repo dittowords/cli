@@ -56,6 +56,7 @@ export enum ErrorType {
   ConfigYamlLoadError = "ConfigYamlLoadError",
   ConfigParseError = "ConfigParseError",
   ScanError = "ScanError",
+  AuthError = "AuthError",
 }
 
 /**
@@ -66,6 +67,7 @@ type ErrorDataMap = {
   [ErrorType.ConfigYamlLoadError]: ConfigYamlLoadErrorData;
   [ErrorType.ConfigParseError]: ConfigParseErrorData;
   [ErrorType.ScanError]: ScanErrorData;
+  [ErrorType.AuthError]: AuthErrorData;
 };
 
 type ConfigYamlLoadErrorData = {
@@ -79,6 +81,10 @@ type ConfigParseErrorData = {
 
 type ScanErrorData = {
   rawErrorMessage: string;
+};
+
+type AuthErrorData = {
+  apiHost?: string;
 };
 
 export function isDittoError(error: unknown): error is DittoError<ErrorType> {

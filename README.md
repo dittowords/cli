@@ -27,7 +27,11 @@ It's recommended to install the CLI as a development dependency to ensure your w
 
 ## Authentication
 
-The first time you run the CLI, you’ll be asked to provide an API key. You can generate an API key from your [developer integrations settings](https://app.dittowords.com/developers/api-keys).
+Run `ditto login` to log in through your browser. Your session is saved to `~/.config/ditto`; `ditto logout` forgets it.
+
+In CI, or anywhere a browser isn’t available, set the `DITTO_TOKEN` environment variable to an API key instead. `DITTO_TOKEN` takes precedence over a saved session. You can generate an API key from your [developer integrations settings](https://app.dittowords.com/developers/api-keys).
+
+If you have neither, the CLI will ask you for an API key the first time you run it.
 
 See the [Authentication](http://developer.dittowords.com/api-reference/authentication) page for more information on API keys.
 

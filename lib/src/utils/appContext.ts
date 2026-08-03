@@ -52,14 +52,8 @@ class AppContext {
     this.#apiHost = value;
   }
 
+  /** The `Authorization` header value: an API key verbatim, or `Bearer <token>`. */
   get apiToken() {
-    return this.#apiToken;
-  }
-
-  get apiTokenOrThrow() {
-    if (!this.#apiToken) {
-      throw new Error("No API Token found.");
-    }
     return this.#apiToken;
   }
 

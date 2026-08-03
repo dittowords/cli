@@ -15,7 +15,7 @@ const PROD_API_HOSTNAME = "api.dittowords.com";
  */
 const PROD: Auth0Config = {
   domain: "ditto-app.auth0.com",
-  clientId: "4nJcC64AvZ1JxmBG8NpYAKDHnbTdUH7y",
+  clientId: "8KEhl0kyB5nEMBUdYUwnGPw74AodU4tu",
   audience: "https://api.dittowords.com",
 };
 

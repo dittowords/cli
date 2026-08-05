@@ -23,7 +23,7 @@ export default async function collectAndSaveToken(
     );
     const sanitizedHost = getURLHostname(host);
     configService.saveToken(appContext.configFile, sanitizedHost, token);
-    appContext.setApiToken(token);
+    appContext.setAuthToken(token);
     return token;
   } catch (error) {
     // https://github.com/enquirer/enquirer/issues/225#issue-516043136

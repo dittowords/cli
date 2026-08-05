@@ -2,6 +2,8 @@
 // This is the main entry point for the ditto-cli command.
 import * as Sentry from "@sentry/node";
 import { program } from "commander";
+import { login } from "./commands/login";
+import { logout } from "./commands/logout";
 import { pull } from "./commands/pull";
 import { scan } from "./commands/scan";
 import { quit } from "./utils/quit";
@@ -51,6 +53,30 @@ const handleCommandError = async (error: any) => {
 const appEntry = async () => {
   program.name("ditto-cli");
 
+  // ditto login
+  program
+    .command("login")
+    .description("Log in to Ditto in your browser")
+    .action(async () => {
+      try {
+        return await login();
+      } catch (error) {
+        handleCommandError(error);
+      }
+    });
+
+  // ditto logout
+  program
+    .command("logout")
+    .description("Log out of Ditto on this machine")
+    .action(async () => {
+      try {
+        return await logout();
+      } catch (error) {
+        handleCommandError(error);
+      }
+    });
+
   // ditto pull
   program
     .command("pull")
@@ -67,7 +93,7 @@ const appEntry = async () => {
     .action(async (opts: { config?: string; meta?: string[] }) => {
       try {
         const token = await initAPIToken();
-        appContext.setApiToken(token);
+        appContext.setAuthToken(token);
         await initProjectConfig(opts);
         return await pull(processCommandMetaFlag(opts.meta ?? null));
       } catch (error) {

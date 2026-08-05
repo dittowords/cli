@@ -1,33 +1,48 @@
 import appContext from "../../utils/appContext";
-import fs from "fs";
+import DittoError, { ErrorType } from "../../utils/DittoError";
 import * as configService from "../globalConfig";
+import { resolveOAuthHeader } from "../auth/session";
 import collectAndSaveToken from "./collectAndSaveToken";
 import validateToken from "./validateToken";
 import getURLHostname from "./getURLHostname";
 
 /**
- * Initializes the API token based on the appContext and config file.
- * @returns The initialized API token
+ * The credential every command uses, in precedence order: `DITTO_TOKEN`, a
+ * saved OAuth session, a saved API key, then an interactive prompt. `DITTO_TOKEN`
+ * stays first so CI works without a browser.
+ *
+ * @returns The Authorization header value to send
  */
 export default async function initAPIToken() {
-  if (appContext.apiToken) {
-    return await validateToken(appContext.apiToken);
+  if (appContext.authToken) {
+    return await validateToken(appContext.authToken);
   }
 
-  if (!fs.existsSync(appContext.configFile)) {
-    return await collectAndSaveToken();
-  }
+  // Before any file-existence check: reading the config creates it, and bailing on
+  // a missing file would skip login entirely for first-time users.
+  const oauthHeader = await resolveOAuthHeader();
+  if (oauthHeader) return oauthHeader;
 
-  const configData = configService.readGlobalConfigData(appContext.configFile);
   const sanitizedHost = getURLHostname(appContext.apiHost);
+  const credential = configService.readCredential(
+    appContext.configFile,
+    sanitizedHost
+  );
 
-  if (
-    !configData[sanitizedHost] ||
-    !configData[sanitizedHost][0] ||
-    configData[sanitizedHost][0].token === ""
-  ) {
+  if (!credential?.token) {
+    // A stored session resolveOAuthHeader didn't return is expired past renewal.
+    if (credential?.oauth) {
+      throw new DittoError({
+        type: ErrorType.AuthError,
+        expected: true,
+        message:
+          "Your Ditto session has expired. Run `ditto login` to log in again.",
+        data: {},
+      });
+    }
+
     return await collectAndSaveToken(sanitizedHost);
   }
 
-  return await validateToken(configData[sanitizedHost][0].token);
+  return await validateToken(credential.token);
 }

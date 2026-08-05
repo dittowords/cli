@@ -11,7 +11,7 @@ describe("defaultInterceptor", () => {
   beforeEach(() => {
     appContext.apiHost = HOST;
     appContext.setClientId(CLIENT_ID);
-    appContext.setApiToken(API_TOKEN);
+    appContext.setAuthToken(API_TOKEN);
   });
 
   it("sets baseURL to appContext.apiHost", () => {
@@ -32,7 +32,7 @@ describe("defaultInterceptor", () => {
     expect(result.headers["x-ditto-client-id"]).toBe(CLIENT_ID);
   });
 
-  it("sets Authorization header to appContext.apiToken when no token is provided", () => {
+  it("sets Authorization header to appContext.authToken when no token is provided", () => {
     const interceptor = defaultInterceptor();
     const result = interceptor(INTERCEPTOR_CONFIG);
 

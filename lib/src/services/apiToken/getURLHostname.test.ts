@@ -14,4 +14,8 @@ describe("getURLHostname", () => {
     const result = getURLHostname(expectedHostName);
     expect(result).toBe(expectedHostName);
   });
+
+  it("should return an empty string when the URL is unparseable", () => {
+    expect(getURLHostname("https://")).toBe("");
+  });
 });

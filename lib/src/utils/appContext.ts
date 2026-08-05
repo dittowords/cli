@@ -16,7 +16,7 @@ const DEFAULT_APP_HOST = "https://app.dittowords.com";
 class AppContext {
   #apiHost: string;
   #appHost: string;
-  #apiToken: string | undefined;
+  #authToken: string | undefined;
   #configFile: string;
   #projectConfigDir: string;
   #projectConfigFile: string;
@@ -26,7 +26,7 @@ class AppContext {
   constructor() {
     this.#apiHost = process.env.DITTO_API_HOST || DEFAULT_API_HOST;
     this.#appHost = process.env.DITTO_APP_HOST || DEFAULT_APP_HOST;
-    this.#apiToken = process.env.DITTO_TOKEN;
+    this.#authToken = process.env.DITTO_TOKEN;
     this.#configFile =
       process.env.DITTO_CONFIG_FILE || path.join(homedir(), ".config", "ditto");
     this.#projectConfigFile =
@@ -53,8 +53,8 @@ class AppContext {
   }
 
   /** The `Authorization` header value: an API key verbatim, or `Bearer <token>`. */
-  get apiToken() {
-    return this.#apiToken;
+  get authToken() {
+    return this.#authToken;
   }
 
   get configFile() {
@@ -73,8 +73,8 @@ class AppContext {
     this.#clientId = value;
   }
 
-  setApiToken(value: string | undefined) {
-    this.#apiToken = value;
+  setAuthToken(value: string | undefined) {
+    this.#authToken = value;
   }
 
   get projectConfig() {

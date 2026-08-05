@@ -20,9 +20,9 @@ describe("collectAndSaveToken", () => {
   const sanitizedHost = "hostname";
 
   beforeEach(() => {
-    priorToken = appContext.apiToken;
+    priorToken = appContext.authToken;
     priorHost = appContext.apiHost;
-    appContext.setApiToken("");
+    appContext.setAuthToken("");
     appContext.apiHost = apiHost;
     collectTokenSpy = jest.spyOn(CollectToken, "default");
     getURLHostnameSpy = jest
@@ -37,7 +37,7 @@ describe("collectAndSaveToken", () => {
   });
 
   afterEach(() => {
-    appContext.setApiToken(priorToken);
+    appContext.setAuthToken(priorToken);
     appContext.apiHost = priorHost;
     jest.restoreAllMocks();
   });
@@ -45,7 +45,7 @@ describe("collectAndSaveToken", () => {
   it("collects, saves and returns a token", async () => {
     collectTokenSpy.mockResolvedValue(token);
 
-    expect(appContext.apiToken).toBe("");
+    expect(appContext.authToken).toBe("");
     const result = await collectAndSaveToken();
 
     expect(collectTokenSpy).toHaveBeenCalled();
@@ -56,13 +56,13 @@ describe("collectAndSaveToken", () => {
       token
     );
     expect(result).toBe(token);
-    expect(appContext.apiToken).toBe(token);
+    expect(appContext.authToken).toBe(token);
   });
 
   it("uses the host if provided", async () => {
     collectTokenSpy.mockResolvedValue(token);
 
-    expect(appContext.apiToken).toBe("");
+    expect(appContext.authToken).toBe("");
 
     const result = await collectAndSaveToken(host);
     expect(collectTokenSpy).toHaveBeenCalled();
@@ -78,12 +78,12 @@ describe("collectAndSaveToken", () => {
   it("handles empty string error", async () => {
     collectTokenSpy.mockImplementation(() => Promise.reject(""));
 
-    expect(appContext.apiToken).toBe("");
+    expect(appContext.authToken).toBe("");
     const response = await collectAndSaveToken();
 
     expect(collectTokenSpy).toHaveBeenCalled();
     expect(quitSpy).toHaveBeenCalledWith("", 0);
-    expect(appContext.apiToken).toBe("");
+    expect(appContext.authToken).toBe("");
     expect(response).toBe("");
     expect(getURLHostnameSpy).not.toHaveBeenCalled();
     expect(saveTokenSpy).not.toHaveBeenCalled();
@@ -92,12 +92,12 @@ describe("collectAndSaveToken", () => {
   it("handles other errors", async () => {
     collectTokenSpy.mockImplementation(() => Promise.reject("some error"));
 
-    expect(appContext.apiToken).toBe("");
+    expect(appContext.authToken).toBe("");
     const response = await collectAndSaveToken();
 
     expect(collectTokenSpy).toHaveBeenCalled();
     expect(quitSpy).toHaveBeenCalledWith(expect.stringContaining("Error ID:"));
-    expect(appContext.apiToken).toBe("");
+    expect(appContext.authToken).toBe("");
     expect(response).toBe("");
     expect(getURLHostnameSpy).not.toHaveBeenCalled();
     expect(saveTokenSpy).not.toHaveBeenCalled();

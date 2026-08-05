@@ -93,7 +93,7 @@ const appEntry = async () => {
     .action(async (opts: { config?: string; meta?: string[] }) => {
       try {
         const token = await initAPIToken();
-        appContext.setApiToken(token);
+        appContext.setAuthToken(token);
         await initProjectConfig(opts);
         return await pull(processCommandMetaFlag(opts.meta ?? null));
       } catch (error) {

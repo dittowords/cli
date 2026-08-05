@@ -1,7 +1,11 @@
 import axios from "axios";
 import crypto from "crypto";
 import http from "http";
-import { logInThroughBrowser, refreshSession } from "./loopbackFlow";
+import {
+  logInThroughBrowser,
+  refreshSession,
+  revokeRefreshToken,
+} from "./loopbackFlow";
 
 jest.mock("axios");
 
@@ -115,6 +119,16 @@ describe("logInThroughBrowser", () => {
     ).rejects.toThrow(/User did not authorize/);
   });
 
+  // A 200 with no token would otherwise be saved as a session that fails every
+  // request, with nothing pointing back at the login.
+  it("refuses a 200 that doesn't include an access token", async () => {
+    post().mockResolvedValueOnce({ status: 200, data: { expires_in: 3600 } });
+
+    await expect(logInThroughBrowser(config, approve)).rejects.toThrow(
+      /didn't include an access token/
+    );
+  });
+
   it("surfaces Auth0's description when the code exchange fails", async () => {
     post().mockResolvedValueOnce({
       status: 403,
@@ -186,5 +200,33 @@ describe("refreshSession", () => {
     });
 
     expect(await refreshSession(config, "spent-rt")).toBeNull();
+  });
+
+  // Throwing instead would surface as a login error mid-`pull`, where the caller
+  // already knows how to say "run `ditto login`".
+  it("returns null when a 200 doesn't include an access token", async () => {
+    post().mockResolvedValueOnce({ status: 200, data: { expires_in: 3600 } });
+
+    expect(await refreshSession(config, "original-rt")).toBeNull();
+  });
+});
+
+describe("revokeRefreshToken", () => {
+  it("posts the refresh token to Auth0's revoke endpoint", async () => {
+    post().mockResolvedValueOnce({ status: 200, data: {} });
+
+    await revokeRefreshToken(config, "rt");
+
+    const [url, body] = post().mock.calls[0];
+    expect(url).toBe("https://tenant.auth0.com/oauth/revoke");
+    expect(body).toMatchObject({ client_id: "client", token: "rt" });
+  });
+
+  // The local credential is cleared either way, so a network failure here must not
+  // take `ditto logout` down with it.
+  it("swallows a failed request", async () => {
+    post().mockRejectedValueOnce(new Error("network down"));
+
+    await expect(revokeRefreshToken(config, "rt")).resolves.toBeUndefined();
   });
 });

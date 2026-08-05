@@ -50,17 +50,28 @@ const post = (url: string, body: Record<string, string>) =>
 const describe = (data: any) =>
   data?.error_description || data?.error || "unexpected response";
 
-const toSession = (data: any): OAuthSession => ({
-  accessToken: data.access_token,
-  refreshToken: data.refresh_token,
-  expiresAt:
-    Date.now() +
-    ((data.expires_in ?? DEFAULT_EXPIRY_SECONDS) - EXPIRY_MARGIN_SECONDS) *
-      1000,
-});
+// A 200 with no `access_token` would otherwise be saved as a session that fails
+// every request, with nothing pointing back at the login.
+const toSession = (data: any): OAuthSession => {
+  if (!data?.access_token || typeof data.access_token !== "string") {
+    throw authError(
+      "We couldn't finish the login. The response didn't include an access token."
+    );
+  }
+
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+    expiresAt:
+      Date.now() +
+      ((data.expires_in ?? DEFAULT_EXPIRY_SECONDS) - EXPIRY_MARGIN_SECONDS) *
+        1000,
+  };
+};
 
 const base64url = (bytes: Buffer) => bytes.toString("base64url");
 
+// Creates the Proof Key for Code Exchange (PKCE) challenge + verifier.
 // PKCE stands in for a client secret, which a published CLI can't keep.
 const createPkce = () => {
   const verifier = base64url(crypto.randomBytes(32));
@@ -225,9 +236,34 @@ export async function refreshSession(
 
   if (response.status !== 200) return null;
 
-  return {
-    ...toSession(response.data),
-    // Rotation returns a new refresh token; keep the current one if it doesn't.
-    refreshToken: response.data.refresh_token || refreshToken,
-  };
+  try {
+    return {
+      ...toSession(response.data),
+      // Rotation returns a new refresh token; keep the current one if it doesn't.
+      refreshToken: response.data.refresh_token || refreshToken,
+    };
+  } catch {
+    // A malformed renewal is a failed renewal. Throwing here would surface as a
+    // login error mid-`pull`, where "run `ditto login`" is the useful answer.
+    return null;
+  }
+}
+
+/**
+ * Kills a refresh token at Auth0 so a copy of the config file can't be replayed
+ * after logout. Best-effort: the local credential is gone either way, and logout
+ * shouldn't fail because the network did.
+ */
+export async function revokeRefreshToken(
+  config: Auth0Config,
+  refreshToken: string
+): Promise<void> {
+  try {
+    await post(`https://${config.domain}/oauth/revoke`, {
+      client_id: config.clientId,
+      token: refreshToken,
+    });
+  } catch {
+    // Ignore.
+  }
 }

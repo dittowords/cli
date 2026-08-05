@@ -21,8 +21,8 @@ describe("initAPIToken", () => {
   let priorToken: string | undefined;
 
   beforeEach(() => {
-    priorToken = appContext.apiToken;
-    appContext.setApiToken("");
+    priorToken = appContext.authToken;
+    appContext.setAuthToken("");
 
     validateTokenSpy = jest
       .spyOn(ValidateToken, "default")
@@ -48,12 +48,12 @@ describe("initAPIToken", () => {
   });
 
   afterEach(() => {
-    appContext.setApiToken(priorToken);
+    appContext.setAuthToken(priorToken);
     jest.restoreAllMocks();
   });
 
   it("should validate and return the token if provided", async () => {
-    appContext.setApiToken("validToken");
+    appContext.setAuthToken("validToken");
     const response = await initAPIToken();
     expect(response).toBe("validToken");
     expect(validateTokenSpy).toHaveBeenCalledWith("validToken");
@@ -64,7 +64,7 @@ describe("initAPIToken", () => {
 
   // CI has no browser, so DITTO_TOKEN has to win over anything saved on disk.
   it("should prefer a provided token over a saved OAuth session", async () => {
-    appContext.setApiToken("ciToken");
+    appContext.setAuthToken("ciToken");
     resolveOAuthHeaderSpy.mockResolvedValue("Bearer fromSession");
 
     const response = await initAPIToken();

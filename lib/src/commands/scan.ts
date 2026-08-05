@@ -179,7 +179,7 @@ export const scan = async (
     logExtractSummary(extractSummary, candidatesPath);
   } else {
     const token = await initAPIToken();
-    appContext.setApiToken(token);
+    appContext.setAuthToken(token);
     const {
       candidatesSignedS3Url,
       record: { _id: recordId },

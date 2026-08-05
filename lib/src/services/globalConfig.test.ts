@@ -26,6 +26,14 @@ describe("globalConfig", () => {
     });
   });
 
+  // The file holds API keys and refresh tokens, so nobody else on the box gets to
+  // read it.
+  it("writes the config owner-only", () => {
+    configService.saveToken(file, "api.dittowords.com", "abc.def");
+
+    expect(fs.statSync(file).mode & 0o777).toBe(0o600);
+  });
+
   it("round-trips an OAuth session", () => {
     const oauth = { accessToken: "at", refreshToken: "rt", expiresAt: 1234 };
 

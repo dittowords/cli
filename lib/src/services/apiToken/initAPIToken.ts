@@ -14,8 +14,8 @@ import getURLHostname from "./getURLHostname";
  * @returns The Authorization header value to send
  */
 export default async function initAPIToken() {
-  if (appContext.apiToken) {
-    return await validateToken(appContext.apiToken);
+  if (appContext.authToken) {
+    return await validateToken(appContext.authToken);
   }
 
   // Before any file-existence check: reading the config creates it, and bailing on

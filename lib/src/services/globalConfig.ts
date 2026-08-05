@@ -50,6 +50,16 @@ export function readGlobalConfigData(
  */
 function writeGlobalConfigData(file: string, data: object) {
   createFileIfMissingSync(file);
+
+  // This file holds API keys and refresh tokens, so keep it owner-only. Best-effort:
+  // chmod is a partial no-op on Windows, and a config we can't lock down still beats
+  // failing the write.
+  try {
+    fs.chmodSync(file, 0o600);
+  } catch {
+    // Ignore.
+  }
+
   const existingData = readGlobalConfigData(file);
   const yamlStr = yaml.dump({ ...existingData, ...data });
   fs.writeFileSync(file, yamlStr, "utf8");

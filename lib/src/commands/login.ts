@@ -59,7 +59,7 @@ export const login = async () => {
     currentHostname(),
     session
   );
-  appContext.setApiToken(header);
+  appContext.setAuthToken(header);
 
   logger.writeLine(
     logger.success(

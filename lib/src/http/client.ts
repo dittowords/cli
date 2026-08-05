@@ -10,7 +10,7 @@ export function defaultInterceptor({ token, meta }: InterceptorParams = {}) {
     config.headers["x-ditto-client-id"] = appContext.clientId;
     config.headers["x-ditto-app"] =
       meta?.githubActionRequest === "true" ? "github_action" : "cli";
-    config.headers.Authorization = token || appContext.apiToken;
+    config.headers.Authorization = token || appContext.authToken;
     return config;
   };
 }

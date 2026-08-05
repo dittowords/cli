@@ -26,7 +26,7 @@ describe("getAuth0Config", () => {
   // An unfilled PROD block throws the missing-config error at every user.
   it("configures production from source with nothing in the environment", () => {
     expect(getAuth0Config("https://api.dittowords.com")).toEqual({
-      domain: expect.stringContaining("auth0.com"),
+      domain: "login.dittowords.com",
       clientId: expect.stringMatching(/.+/),
       audience: expect.stringMatching(/^https:\/\/.+/),
     });

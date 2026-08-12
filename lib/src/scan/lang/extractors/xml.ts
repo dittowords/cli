@@ -42,12 +42,15 @@ export function elementAttribute(element: SgNode, name: string): string | null {
 // — `<![CDATA[Hi <b>x</b>]]>` can surface `]]` as a stray text node.
 // Skipping any element whose source range contains `<![CDATA[` is simpler
 // and matches the CDATA sweep, which recovers the real value.
+// `transformValue` is per-format: Android processes escapes and printf specifiers
+// inside a value; .resx and XLIFF don't, and pass nothing.
 export function emitTextHit(
   element: SgNode,
   identifiers: string[],
   out: ExtractedHit[],
   source?: string,
-  i18nKey?: string
+  i18nKey?: string,
+  transformValue?: (value: string) => string
 ): void {
   if (source !== undefined && elementContainsCdata(element, source)) return;
   const text = element.children().find((c) => c.kind() === "text");
@@ -56,7 +59,7 @@ export function emitTextHit(
   if (value.trim().length === 0) return;
   const range = text.range();
   out.push({
-    value,
+    value: transformValue ? transformValue(value) : value,
     location: { line: range.start.line + 1, column: range.start.column + 1 },
     context: { parentRole: "resource_value", identifiers },
     i18nKey,

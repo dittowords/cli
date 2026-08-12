@@ -65,3 +65,29 @@ describe("androidResourceExtractor", () => {
     expect(welcome?.context.identifiers).toEqual(["welcome"]);
   });
 });
+
+// The main <string> path. An earlier version of this fix only reached the CDATA
+// sweep and silently did nothing here.
+describe("androidResourceExtractor escape decoding", () => {
+  const extract = (source: string) =>
+    androidResourceExtractor.extract({ source, kind: "android_resources" });
+
+  it("decodes escapes in a <string>", async () => {
+    const hits = await extract(
+      `<resources><string name="a">line one\\nline two</string></resources>`
+    );
+    expect(hits.map((h) => h.value)).toEqual(["line one\nline two"]);
+  });
+
+  it("decodes escapes inside <plurals> items", async () => {
+    const hits = await extract(
+      `<resources>
+         <plurals name="n">
+           <item quantity="one">one\\nfile</item>
+           <item quantity="other">many\\nfiles</item>
+         </plurals>
+       </resources>`
+    );
+    expect(hits.map((h) => h.value)).toEqual(["one\nfile", "many\nfiles"]);
+  });
+});

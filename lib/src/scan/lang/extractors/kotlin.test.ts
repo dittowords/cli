@@ -53,3 +53,21 @@ describe("kotlinExtractor", () => {
     expect(c?.context.callee).toBeUndefined();
   });
 });
+
+// From a pilot bug report: the escape shipped to users as the literal text `\n`.
+describe("kotlinExtractor escape decoding", () => {
+  const extract = (source: string) => kotlinExtractor.extract({ source, kind: "kotlin" });
+
+  it("decodes escapes in a Compose string", async () => {
+    const hits = await extract(
+      'fun S() { Text(text = "We need your phone number to provide\\nstatus updates") }'
+    );
+    expect(hits[0].value).toBe('"We need your phone number to provide\nstatus updates"');
+  });
+
+  // Raw strings don't process escapes, so a `\n` in one is two real characters.
+  it("leaves a raw string's escapes alone", async () => {
+    const hits = await extract('val s = """a\\nb"""');
+    expect(hits[0].value).toBe('"""a\\nb"""');
+  });
+});

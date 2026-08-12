@@ -36,10 +36,11 @@ describe("stringsExtractor (.strings)", () => {
     expect(hits.map((h) => h.context.identifiers[0])).toEqual(["a", "b"]);
   });
 
-  test("preserves escape sequences verbatim in value", async () => {
+  // Decoded, not verbatim: left raw, an exporter escapes it again and ships `\n`.
+  test("decodes escape sequences in value", async () => {
     const hits = await extract(`"k" = "line1\\nline2 with \\"quote\\"";\n`);
     expect(hits).toHaveLength(1);
-    expect(hits[0].value).toBe('line1\\nline2 with \\"quote\\"');
+    expect(hits[0].value).toBe('line1\nline2 with "quote"');
   });
 
   test("returns no hits for malformed input", async () => {

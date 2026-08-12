@@ -74,3 +74,34 @@ describe("javascriptExtractor", () => {
     expect(inner?.context.parentTag).toBeUndefined();
   });
 });
+
+// Escapes are decoded for real JS literals only. Getting this wrong either ships
+// a literal `\n` to users or mangles JSX text, so each branch is pinned.
+describe("javascriptExtractor escape decoding", () => {
+  test("decodes escapes in a plain string literal", async () => {
+    const hits = await ts.extract({ source: `const m = "line one\\nline two";\n`, kind: "typescript" });
+    expect(hits[0].value).toBe('"line one\nline two"');
+  });
+
+  test("decodes escapes in a template literal", async () => {
+    const hits = await ts.extract({ source: "const m = `line one\\nline two`;\n", kind: "typescript" });
+    expect(hits[0].value).toBe("`line one\nline two`");
+  });
+
+  test("leaves jsx text alone — a backslash there is two literal characters", async () => {
+    const hits = await tsx.extract({ source: `const C = () => <p>line one\\nline two</p>;\n`, kind: "tsx" });
+    expect(hits.find((h) => h.context.parentRole === "markup_text")?.value).toBe("line one\\nline two");
+  });
+
+  test("leaves a bare jsx attribute alone but decodes the braced form", async () => {
+    const bare = await tsx.extract({ source: `const C = () => <input placeholder="a\\nb" />;\n`, kind: "tsx" });
+    expect(bare[0].value).toBe('"a\\nb"');
+    const braced = await tsx.extract({ source: `const C = () => <input placeholder={"a\\nb"} />;\n`, kind: "tsx" });
+    expect(braced[0].value).toBe('"a\nb"');
+  });
+
+  test("does not convert format specifiers — a bare %s in JS is usually copy", async () => {
+    const hits = await ts.extract({ source: `const m = "Battery at %s";\n`, kind: "typescript" });
+    expect(hits[0].value).toBe('"Battery at %s"');
+  });
+});

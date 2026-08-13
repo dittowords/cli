@@ -18,7 +18,15 @@ describe("decodeEscapes", () => {
     expect(decodeEscapes("use \\\\n for a break")).toBe("use \\n for a break");
   });
 
-  it("leaves unrecognized escapes alone", () => {
-    expect(decodeEscapes("100\\% sure")).toBe("100\\% sure");
+  // Android escapes `?` and `@` on export, because a resource value that starts
+  // with one is a reference. The copy holds the bare character.
+  it("drops the backslash before escaped punctuation", () => {
+    expect(decodeEscapes("Forgot Password\\?")).toBe("Forgot Password?");
+    expect(decodeEscapes("\\@ home")).toBe("@ home");
+    expect(decodeEscapes("100\\% sure")).toBe("100% sure");
+  });
+
+  it("leaves an escaped letter alone", () => {
+    expect(decodeEscapes("match \\d digits")).toBe("match \\d digits");
   });
 });

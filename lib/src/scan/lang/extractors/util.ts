@@ -1,7 +1,7 @@
 // Only for formats that process escapes. A doubled backslash resolves last, so
 // `\\n` stays a backslash and an `n`.
 export function decodeEscapes(text: string): string {
-  return text.replace(/\\(u[0-9a-fA-F]{4}|[nrt'"`\\])/g, (_, seq: string) => {
+  return text.replace(/\\(u[0-9a-fA-F]{4}|[nrt]|[^A-Za-z0-9])/g, (_, seq: string) => {
     switch (seq[0]) {
       case "n":
         return "\n";
@@ -11,10 +11,8 @@ export function decodeEscapes(text: string): string {
         return "\t";
       case "u":
         return String.fromCharCode(parseInt(seq.slice(1), 16));
-      case "\\":
-        return "\\";
       default:
-        return seq; // ' " `
+        return seq; // \\ ' " ` ? @ % …
     }
   });
 }

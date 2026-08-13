@@ -53,3 +53,16 @@ describe("swiftExtractor", () => {
     });
   });
 });
+
+describe("swiftExtractor escape decoding", () => {
+  test("decodes escapes", async () => {
+    const hits = await extract(`let a = "line one\\nline two"\n`);
+    expect(hits[0].value).toBe('"line one\nline two"');
+  });
+
+  // Raw strings (`#"..."#`) don't process escapes.
+  test("leaves a raw string's escapes alone", async () => {
+    const hits = await extract(`let a = #"a\\nb"#\n`);
+    expect(hits[0].value).toBe('#"a\\nb"#');
+  });
+});

@@ -2,6 +2,7 @@ import { Lang, parse, type SgNode } from "@ast-grep/napi";
 
 import type { DittoScanEnclosingContext } from "../../types";
 import type { ExtractedHit, LanguageExtractor } from "../types";
+import { decodeEscapes } from "./util";
 import { extractHtmlMarkup } from "./html-markup";
 
 /**
@@ -99,20 +100,18 @@ function keyName(node: SgNode | undefined): string | null {
 }
 
 /**
- * Returns the raw source text for the node, or null if it should be
- * skipped. The only thing we skip here is whitespace-only `jsx_text`.
- * tree-sitter emits a `jsx_text` node for the literal whitespace between
- * elements (the newline and indent between `<p>` and `<span>` in
- * pretty-printed JSX), and those are not real candidates.
- *
- * We deliberately do not strip quotes, unescape `\n`, or normalize
- * `${...}` substitutions. The LLM reads `source_context` and handles raw
- * source fine, and a clean post-processing pass would just be lossy.
+ * Source text for the node, or null for whitespace-only `jsx_text`. Escapes are
+ * decoded (left raw, an exporter escapes them again) but only for real JS
+ * literals — a backslash isn't an escape in `jsx_text` or a bare JSX attribute.
  */
 function nodeValue(node: SgNode): string | null {
   const text = node.text();
-  if (node.kind() === "jsx_text" && text.trim().length === 0) return null;
-  return text;
+  if (node.kind() === "jsx_text") {
+    return text.trim().length === 0 ? null : text;
+  }
+  // A bare JSX attribute is HTML-shaped: a backslash isn't an escape there.
+  if (node.parent()?.kind() === "jsx_attribute") return text;
+  return decodeEscapes(text);
 }
 
 /**

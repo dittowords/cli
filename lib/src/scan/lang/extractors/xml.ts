@@ -35,32 +35,58 @@ export function elementAttribute(element: SgNode, name: string): string | null {
   return null;
 }
 
-// Emit a `resource_value` hit from `element`'s first text child. No-op when
-// the element has no direct text node, the text is whitespace-only, or the
+// Emit a `resource_value` hit from all of `element`'s inner text. No-op when
+// the element has no inner text, the text is whitespace-only, or the
 // element contains a CDATA section (handled by `findCdataElements`). The
 // HTML grammar parses CDATA inconsistently when its body looks like markup
 // — `<![CDATA[Hi <b>x</b>]]>` can surface `]]` as a stray text node.
 // Skipping any element whose source range contains `<![CDATA[` is simpler
 // and matches the CDATA sweep, which recovers the real value.
+// `transformValue` is per-format: Android processes escapes and printf specifiers
+// inside a value; .resx and XLIFF don't, and pass nothing.
 export function emitTextHit(
   element: SgNode,
   identifiers: string[],
   out: ExtractedHit[],
   source?: string,
-  i18nKey?: string
+  i18nKey?: string,
+  transformValue?: (value: string) => string
 ): void {
   if (source !== undefined && elementContainsCdata(element, source)) return;
-  const text = element.children().find((c) => c.kind() === "text");
-  if (!text) return;
-  const value = text.text();
-  if (value.trim().length === 0) return;
-  const range = text.range();
+  const inner = innerText(element);
+  if (!inner || inner.value.length === 0) return;
+  const { value, line, column } = inner;
   out.push({
-    value,
-    location: { line: range.start.line + 1, column: range.start.column + 1 },
+    value: transformValue ? transformValue(value) : value,
+    location: { line, column },
     context: { parentRole: "resource_value", identifiers },
     i18nKey,
   });
+}
+
+// All of an element's inner text, with nested markup (`<xliff:g>`, `<b>`) stripped.
+// Reads the source span: the grammar drops the whitespace next to a nested tag.
+function innerText(element: SgNode): { value: string; line: number; column: number } | null {
+  const children = element.children();
+  const start = children.find((c) => c.kind() === "start_tag");
+  const end = children.find((c) => c.kind() === "end_tag");
+  if (!start || !end) return null;
+  const offset = element.range().start.index;
+  const raw = element.text().slice(start.range().end.index - offset, end.range().start.index - offset);
+  const { line, column } = start.range().end;
+  return { value: decodeXmlEntities(raw.replace(/<[^>]*>/g, "")).trim(), line: line + 1, column: column + 1 };
+}
+
+// `&amp;` resolves last, so an escaped entity like `&amp;lt;` stays `&lt;`.
+function decodeXmlEntities(text: string): string {
+  return text
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&amp;/g, "&");
 }
 
 function elementContainsCdata(element: SgNode, source: string): boolean {

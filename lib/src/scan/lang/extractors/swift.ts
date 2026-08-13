@@ -2,6 +2,7 @@ import { parse, type SgNode } from "@ast-grep/napi";
 
 import type { DittoScanEnclosingContext } from "../../types";
 import type { ExtractedHit, LanguageExtractor } from "../types";
+import { decodeEscapes } from "./util";
 
 /**
  * Swift string-literal node kinds.
@@ -28,8 +29,11 @@ export const swiftExtractor: LanguageExtractor = {
         // inner shows up as part of its source text.
         if (isInsideInterpolation(node)) continue;
         const { line, column } = node.range().start;
+        const text = node.text();
+        // Raw strings (`#"..."#`) don't process escapes.
+        const decoded = text.startsWith("#") ? text : decodeEscapes(text);
         out.push({
-          value: node.text(),
+          value: decoded,
           location: { line: line + 1, column: column + 1 },
           context: classifySwiftParent(node),
         });

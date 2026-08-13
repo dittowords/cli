@@ -1,5 +1,5 @@
 import type { ExtractedHit, LanguageExtractor } from "../types";
-import { offsetToLineCol } from "./util";
+import { decodeEscapes, offsetToLineCol } from "./util";
 
 /**
  * iOS `.strings` files (Localizable.strings, InfoPlist.strings, etc.).
@@ -17,7 +17,7 @@ export const stringsExtractor: LanguageExtractor = {
     const out: ExtractedHit[] = [];
     for (const pair of parseStringsFile(source)) {
       out.push({
-        value: pair.value,
+        value: decodeEscapes(pair.value),
         location: pair.location,
         context: { parentRole: "resource_value", identifiers: [pair.key] },
         i18nKey: pair.key,

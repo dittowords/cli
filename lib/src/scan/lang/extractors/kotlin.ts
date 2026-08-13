@@ -2,6 +2,7 @@ import { parse, type SgNode } from "@ast-grep/napi";
 
 import type { DittoScanEnclosingContext } from "../../types";
 import type { ExtractedHit, LanguageExtractor } from "../types";
+import { decodeEscapes } from "./util";
 
 /**
  * Kotlin string extractor. Tree-sitter's Kotlin grammar models all
@@ -22,8 +23,11 @@ export const kotlinExtractor: LanguageExtractor = {
       // visited as their own top-level hit by the same `findAll` scan.
       if (isInsideInterpolation(node)) continue;
       const { line, column } = node.range().start;
+      const text = node.text();
+      // Raw strings (`"""..."""`) don't process escapes.
+      const decoded = text.startsWith('"""') ? text : decodeEscapes(text);
       out.push({
-        value: node.text(),
+        value: decoded,
         location: { line: line + 1, column: column + 1 },
         context: classifyKtParent(node),
       });

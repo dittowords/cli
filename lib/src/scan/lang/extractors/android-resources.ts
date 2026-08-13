@@ -1,7 +1,7 @@
 import { Lang, parse, type SgNode } from "@ast-grep/napi";
 
 import type { ExtractedHit, LanguageExtractor } from "../types";
-import { offsetToLineCol } from "./util";
+import { decodeEscapes, offsetToLineCol } from "./util";
 import { elementAttribute, emitTextHit, findCdataElements, tagName } from "./xml";
 
 /**
@@ -38,7 +38,7 @@ export const androidResourceExtractor: LanguageExtractor = {
           if (child.kind() !== "element" || tagName(child) !== "item") continue;
           const variant = tag === "plurals" ? elementAttribute(child, "quantity") ?? "" : String(index);
           // The resource name is the lookup key; quantity/index are selectors.
-          emitTextHit(child, [parentName, variant], out, source, parentName || undefined);
+          emitTextHit(child, [parentName, variant], out, source, parentName || undefined, decodeEscapes);
           index++;
         }
       }
@@ -61,7 +61,7 @@ function emitCdataValues(source: string, out: ExtractedHit[]): void {
     if (m.tag === "item" && !parent) continue;
     const { line, column } = offsetToLineCol(source, m.valueOffset);
     out.push({
-      value: m.value,
+      value: decodeEscapes(m.value),
       location: { line, column },
       context: {
         parentRole: "resource_value",
@@ -108,5 +108,5 @@ function findEnclosingResourceParent(source: string, before: number): string | n
 
 function emitStringElement(el: SgNode, out: ExtractedHit[], source: string): void {
   const name = elementAttribute(el, "name");
-  emitTextHit(el, name ? [name] : [], out, source, name ?? undefined);
+  emitTextHit(el, name ? [name] : [], out, source, name ?? undefined, decodeEscapes);
 }

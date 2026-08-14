@@ -5,8 +5,11 @@ import { prompt } from "enquirer";
 import open from "open";
 
 import logger from "../utils/logger";
-import { DittoScanExtractSummary, runExtract } from "../scan/extract";
-import { DittoScanCandidate } from "../scan/types";
+import {
+  DittoScanCandidate,
+  DittoScanExtractSummary,
+  runExtract,
+} from "@dittowords/text-extract";
 import { quit } from "../utils/quit";
 import initAPIToken from "../services/apiToken/initAPIToken";
 import appContext from "../utils/appContext";
@@ -90,6 +93,13 @@ function logExtractSummary(
     process.stderr.write(
       `  files.skipped_minified: ${summary.filesSkippedMinified}\n`
     );
+  }
+  // A failed file is dropped from the results, so its strings are missing.
+  if (summary.filesFailed > 0) {
+    process.stderr.write(`  files.failed: ${summary.filesFailed}\n`);
+    for (const f of summary.failures) {
+      process.stderr.write(`    ${f.file} (${f.language}): ${f.message}\n`);
+    }
   }
   process.stderr.write(
     `[ditto-cli scan][extract] emitted ${

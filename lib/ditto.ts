@@ -25,6 +25,6 @@ const main = async () => {
   }
 };
 
-export type * from "./src/scan/types";
+export type * from "@dittowords/text-extract";
 
 main();

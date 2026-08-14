@@ -1,7 +1,7 @@
 import axios, { AxiosError } from "axios";
 import getHttpClient from "./client";
 import { IInitiateScanResponse, ZInitiateScanResponse } from "./types";
-import { DittoScanCandidate } from "../scan/types";
+import { DittoScanCandidate } from "@dittowords/text-extract";
 import DittoError, { ErrorType } from "../utils/DittoError";
 import { Blob } from "buffer";
 

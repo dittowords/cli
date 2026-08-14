@@ -1159,6 +1159,17 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
+"@dittowords/text-extract@^0.2.0":
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/@dittowords/text-extract/-/text-extract-0.2.0.tgz#564db3d233cdd120fd77ccd57011d531dcce6e8a"
+  integrity sha512-q3Gb2CRvfqKRytxkU60WDQbl+lfwB5QMw4eYTNBw2irgJDp3SMs5LYMRoIUTSg/YYBue7V1T8pQWmHG1dtt2Cw==
+  dependencies:
+    "@ast-grep/lang-kotlin" "^0.0.7"
+    "@ast-grep/lang-swift" "^0.0.8"
+    "@ast-grep/napi" "^0.43.0"
+    globby "^16.2.0"
+    yaml "^2.9.0"
+
 "@esbuild/aix-ppc64@0.25.2":
   version "0.25.2"
   resolved "https://registry.yarnpkg.com/@esbuild/aix-ppc64/-/aix-ppc64-0.25.2.tgz#b87036f644f572efb2b3c75746c97d1d2d87ace8"

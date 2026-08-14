@@ -85,6 +85,7 @@ export const DittoScanCandidateSchema = z.object({
     line: z.number().int().positive(),
     column: z.number().int().positive(),
   }),
+  occurrence_index: z.number().int().nonnegative(),
   language: z.string(),
   // Locale key derived from the file's path when the candidate comes from a
   // per-locale i18n resource file admitted by i18n file discovery (e.g. "en"

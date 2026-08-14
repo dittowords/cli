@@ -2,14 +2,15 @@ import fs from "fs/promises";
 import { globby } from "globby";
 import path from "path";
 
+import { createHash } from "crypto";
+import type { FileDiscoveryStats } from "./lang/file-discovery";
+import type { ExtractedHit } from "./lang/types";
+import { shouldEmit } from "./rules";
 import {
   DittoScanDetectionKindSchema,
   type DittoScanCandidate,
   type DittoScanDetectionKind,
 } from "./types";
-import { createHash } from "crypto";
-import type { FileDiscoveryStats } from "./lang/file-discovery";
-import { shouldEmit } from "./rules";
 import { walkCodebase } from "./walk";
 
 export interface DittoScanExtractOptions {
@@ -231,6 +232,29 @@ export function makeCandidateId(
     .slice(0, 12);
 }
 
+export function assignOccurrenceIndexes(
+  hits: readonly Pick<ExtractedHit, "value" | "location">[]
+): number[] {
+  const sourceOrder = hits
+    .map((_, index) => index)
+    .sort((a, b) => {
+      const left = hits[a].location;
+      const right = hits[b].location;
+      return left.line - right.line || left.column - right.column || a - b;
+    });
+
+  const seen = new Map<string, number>();
+  const indexes = new Array<number>(hits.length);
+
+  for (const index of sourceOrder) {
+    const count = seen.get(hits[index].value) ?? 0;
+    indexes[index] = count;
+    seen.set(hits[index].value, count + 1);
+  }
+
+  return indexes;
+}
+
 export async function runExtract(
   opts: DittoScanExtractOptions
 ): Promise<DittoScanExtractResult> {
@@ -266,8 +290,10 @@ export async function runExtract(
 
     const lines = file.source.split(/\r?\n/);
 
-    for (const hit of hits) {
-      if (!shouldEmit(hit.value, hit.context)) continue;
+    const emitted = hits.filter((hit) => shouldEmit(hit.value, hit.context));
+    const occurrenceIndexes = assignOccurrenceIndexes(emitted);
+
+    for (const [index, hit] of emitted.entries()) {
       const candidate: DittoScanCandidate = {
         id: makeCandidateId(
           file.relPath,
@@ -282,6 +308,7 @@ export async function runExtract(
           line: hit.location.line,
           column: hit.location.column,
         },
+        occurrence_index: occurrenceIndexes[index],
         language: file.languageLabel,
         locale_key: hit.localeKey ?? file.localeKey,
         i18n_key: hit.i18nKey ?? null,

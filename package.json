@@ -77,7 +77,7 @@
     "@babel/parser": "^7.21.4",
     "@babel/traverse": "^7.21.4",
     "@babel/types": "^7.21.4",
-    "@dittowords/text-extract": "^0.2.0",
+    "@dittowords/text-extract": "^0.2.1",
     "@sentry/node": "^7.64.0",
     "@types/babel-traverse": "^6.25.7",
     "axios": "^1.6.0",

@@ -1159,10 +1159,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@dittowords/text-extract@^0.2.0":
-  version "0.2.0"
-  resolved "https://registry.yarnpkg.com/@dittowords/text-extract/-/text-extract-0.2.0.tgz#564db3d233cdd120fd77ccd57011d531dcce6e8a"
-  integrity sha512-q3Gb2CRvfqKRytxkU60WDQbl+lfwB5QMw4eYTNBw2irgJDp3SMs5LYMRoIUTSg/YYBue7V1T8pQWmHG1dtt2Cw==
+"@dittowords/text-extract@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@dittowords/text-extract/-/text-extract-0.2.1.tgz#0db692cb2f8112b2f9e5aca00eb308bdcd478cc9"
+  integrity sha512-Dq/N+sNQo5sCLmrsVnTbEf5a0NxT9JpPsVsbuMLOhO7BxZJEaoOpnvQQAJRnV8bgp+lWMTQgbMshBJVIMh0U+w==
   dependencies:
     "@ast-grep/lang-kotlin" "^0.0.7"
     "@ast-grep/lang-swift" "^0.0.8"

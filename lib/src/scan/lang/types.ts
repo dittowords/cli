@@ -4,6 +4,7 @@ export interface ExtractedHit {
   value: string;
   location: { line: number; column: number }; // 1-based
   context: DittoScanEnclosingContext;
+  snapshotText?: string;
   // The string's lookup key as written in its localization resource file
   // ("labels.paste", "item_one", a PO msgid, an Android resource name, …).
   // Set only by resource-file extractors; unlike `context.identifiers`,

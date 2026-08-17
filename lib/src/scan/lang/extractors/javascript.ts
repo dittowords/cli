@@ -52,6 +52,7 @@ export function javascriptExtractor(langId: Lang): LanguageExtractor {
           const { line, column } = node.range().start;
           out.push({
             value,
+            snapshotText: node.text(),
             location: { line: line + 1, column: column + 1 },
             context: classifyJsParent(node),
           });

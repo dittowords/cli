@@ -32,6 +32,7 @@ export const fallbackExtractor: LanguageExtractor = {
       while ((m = STRING_RE.exec(lines[i])) !== null) {
         out.push({
           value: m[2],
+          snapshotText: m[0],
           location: { line: i + 1, column: m.index + 1 },
           context: { parentRole: "other", identifiers: [] },
         });

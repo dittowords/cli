@@ -79,6 +79,7 @@ function emitText(textNode: SgNode, parentTag: string | undefined, out: Extracte
   const start = textNode.range().start;
   out.push({
     value: text,
+    snapshotText: text,
     location: { line: start.line + 1, column: start.column + 1 },
     context: { parentRole: "markup_text", identifiers: [], parentTag },
   });
@@ -99,6 +100,7 @@ function emitInterpolationLiterals(textNode: SgNode, parentTag: string | undefin
     const loc = offsetToLineCol(text, offset);
     out.push({
       value,
+      snapshotText: match[0],
       location: {
         line: start.line + loc.line,
         column: loc.line === 0 ? start.column + loc.column + 1 : loc.column + 1,
@@ -171,6 +173,7 @@ function emitAttribute(attr: SgNode, out: ExtractedHit[]): void {
   const start = (valueNode ?? attr).range().start;
   out.push({
     value: valueText,
+    snapshotText: valueNode?.text(),
     location: { line: start.line + 1, column: start.column + 1 },
     context: { parentRole: "markup_attr", identifiers: [rawName.toLowerCase()] },
   });

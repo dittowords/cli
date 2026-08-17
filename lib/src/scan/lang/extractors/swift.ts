@@ -34,6 +34,7 @@ export const swiftExtractor: LanguageExtractor = {
         const decoded = text.startsWith("#") ? text : decodeEscapes(text);
         out.push({
           value: decoded,
+          snapshotText: text,
           location: { line: line + 1, column: column + 1 },
           context: classifySwiftParent(node),
         });

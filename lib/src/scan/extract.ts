@@ -309,6 +309,7 @@ export async function runExtract(
           column: hit.location.column,
         },
         occurrence_index: occurrenceIndexes[index],
+        snapshot_text: hit.snapshotText ?? null,
         language: file.languageLabel,
         locale_key: hit.localeKey ?? file.localeKey,
         i18n_key: hit.i18nKey ?? null,

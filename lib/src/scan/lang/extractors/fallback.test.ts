@@ -8,6 +8,7 @@ describe("fallbackExtractor", () => {
     expect(hits).toEqual([
       {
         value: "Hello, world",
+        snapshotText: `"Hello, world"`,
         location: { line: 1, column: 18 },
         context: { parentRole: "other", identifiers: [] },
       },

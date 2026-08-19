@@ -162,8 +162,10 @@ export const scan = async (
   });
 
   if (candidates.length === 0) {
-    logger.warnText(
-      `[ditto scan] no candidates extracted; writing empty classify output\n`
+    logger.writeLine(
+      logger.warnText(
+        `[ditto scan] no candidates extracted; writing empty classify output\n`
+      )
     );
   }
 

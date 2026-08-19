@@ -180,7 +180,11 @@ export type IExportSwiftFileRequest = z.infer<typeof ZExportSwiftFileRequest>;
 
 export const ZInitiateScanBodySchema = z.object({
   path: z.string(),
+  repoKey: z.string().optional(),
+  gitCommitSha: z.string().optional(),
+  gitBranch: z.string().nullable().optional(),
 });
+export type IInitiateScanBody = z.infer<typeof ZInitiateScanBodySchema>;
 export const ZInitiateScanResponse = z.object({
   record: z.object({ _id: z.string() }),
   candidatesSignedS3Url: z.string(),

@@ -1,9 +1,14 @@
-import axios, { AxiosError } from "axios";
-import getHttpClient from "./client";
-import { IInitiateScanResponse, ZInitiateScanResponse } from "./types";
 import { DittoScanCandidate } from "@dittowords/text-extract";
-import DittoError, { ErrorType } from "../utils/DittoError";
+import axios, { AxiosError } from "axios";
 import { Blob } from "buffer";
+import { GitContext } from "../scan/git";
+import DittoError, { ErrorType } from "../utils/DittoError";
+import getHttpClient from "./client";
+import {
+  IInitiateScanBody,
+  IInitiateScanResponse,
+  ZInitiateScanResponse,
+} from "./types";
 
 // Structured details from the classify step's SCAN_CANDIDATE_LIMIT_EXCEEDED
 // response.
@@ -68,12 +73,32 @@ export function scanLimitError(
   });
 }
 
+/**
+ * Builds the `POST /v2/scan` body. Without git context the body is exactly what
+ * the CLI has always sent, so a scan outside a repo is unaffected.
+ */
+export function buildInitiateScanBody(
+  path: string,
+  gitContext?: GitContext | null
+): IInitiateScanBody {
+  if (!gitContext) return { path };
+  return {
+    path,
+    repoKey: gitContext.repoKey,
+    gitCommitSha: gitContext.commitSha,
+    gitBranch: gitContext.branch,
+  };
+}
+
 export async function initiateScan(
-  path: string
+  path: string,
+  gitContext?: GitContext | null
 ): Promise<IInitiateScanResponse> {
+  const body = buildInitiateScanBody(path, gitContext);
+
   try {
     const httpClient = getHttpClient({});
-    const response = await httpClient.post("/v2/scan", { path });
+    const response = await httpClient.post("/v2/scan", body);
     return ZInitiateScanResponse.parse(response.data);
   } catch (e) {
     if (!(e instanceof AxiosError)) {

@@ -3,6 +3,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
+/**
+ * Real git repos, not mocks: this checkout, plus a throwaway repo in the temp
+ * directory for the awkward states. Needs `git` on PATH and a real `.git`.
+ */
 import { normalizeRepoKey, readGitContext, REPO_KEY_PATTERN } from "./git";
 
 describe("normalizeRepoKey", () => {
@@ -39,6 +43,7 @@ describe("normalizeRepoKey", () => {
     expect(key).not.toMatch(/s3cret|user|@/);
   });
 
+  /** Cannot fail today - `normalizeRepoKey` already applies the pattern. */
   test("every non-null key satisfies REPO_KEY_PATTERN", () => {
     for (const [remoteUrl] of cases) {
       const key = normalizeRepoKey(remoteUrl);
@@ -48,6 +53,10 @@ describe("normalizeRepoKey", () => {
 });
 
 describe("readGitContext", () => {
+  /**
+   * Skips `branch` and `dirty` on purpose: CI checks out a detached HEAD, and
+   * local runs usually have uncommitted work.
+   */
   test("reads this repo", async () => {
     const context = await readGitContext(__dirname);
     expect(context).not.toBeNull();
@@ -64,6 +73,11 @@ describe("readGitContext", () => {
     ).resolves.toBeNull();
   });
 
+  /**
+   * One repo walked through each state - no remote, remote, edited file,
+   * detached HEAD - restored after each test. Sets its own identity and
+   * disables signing so it ignores the local global git config.
+   */
   describe("temp repo", () => {
     let dir: string;
 

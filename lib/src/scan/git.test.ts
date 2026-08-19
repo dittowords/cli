@@ -3,10 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { normalizeRepoKey, readGitContext } from "./git";
-
-const REPO_KEY_PATTERN =
-  /^[a-z0-9.-]+(\/[a-z0-9._-]+){1,}\/(?!.*\.git$)[a-z0-9._-]+$/;
+import { normalizeRepoKey, readGitContext, REPO_KEY_PATTERN } from "./git";
 
 describe("normalizeRepoKey", () => {
   const cases: [string, string | null][] = [

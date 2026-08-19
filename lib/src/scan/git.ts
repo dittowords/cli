@@ -3,17 +3,32 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
+/**
+ * Where a scan came from. `repoKey` and `commitSha` identify the same commit
+ * from any clone; `repoRoot` is local to this machine and isn't uploaded.
+ */
 export interface GitContext {
+  /** Host and path of `origin`, normalized: `github.com/dittowords/cli`. */
   repoKey: string;
+  /** Absolute path to the working tree. Local only — used to make candidate paths repo-root-relative. */
   repoRoot: string;
   commitSha: string;
+  /** `null` when HEAD is detached, as it is after `actions/checkout`. */
   branch: string | null;
+  /** Uncommitted changes are present, so `commitSha` doesn't fully describe what was scanned. */
   dirty: boolean;
 }
 
-const REPO_KEY_PATTERN =
+/**
+ * Copied from `shared/types/ProductTextDetection.ts` in `ditto-app`
+ */
+export const REPO_KEY_PATTERN =
   /^[a-z0-9.-]+(\/[a-z0-9._-]+){1,}\/(?!.*\.git$)[a-z0-9._-]+$/;
 
+/**
+ * The scp-like remote form `git@github.com:Ditto/App.git`, which has no scheme
+ * and so isn't a URL. Captures the host and the path around the colon.
+ */
 const SCP_LIKE = /^(?:[^/@]+@)?([^/:]+):(.+)$/;
 
 /**
@@ -88,7 +103,10 @@ export async function readGitContext(
   const repoKey = remoteUrl ? normalizeRepoKey(remoteUrl) : null;
   if (!repoKey) return null;
 
-  const branch = await git(["symbolic-ref", "--quiet", "--short", "HEAD"], repoRoot);
+  const branch = await git(
+    ["symbolic-ref", "--quiet", "--short", "HEAD"],
+    repoRoot
+  );
   const status = await git(["status", "--porcelain"], repoRoot);
 
   return {

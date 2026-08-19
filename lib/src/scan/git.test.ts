@@ -13,9 +13,15 @@ describe("normalizeRepoKey", () => {
     ["ssh://git@github.com:2222/ditto/app.git", "github.com/ditto/app"],
     ["git://github.com/ditto/app.git", "github.com/ditto/app"],
     ["https://user:token@github.com/ditto/app.git", "github.com/ditto/app"],
-    ["https://x-access-token:ghs_abc@github.com/ditto/app", "github.com/ditto/app"],
+    [
+      "https://x-access-token:ghs_abc@github.com/ditto/app",
+      "github.com/ditto/app",
+    ],
     ["git@gitlab.com:group/subgroup/app.git", "gitlab.com/group/subgroup/app"],
-    ["https://gitlab.com/group/sub/deeper/app.git", "gitlab.com/group/sub/deeper/app"],
+    [
+      "https://gitlab.com/group/sub/deeper/app.git",
+      "gitlab.com/group/sub/deeper/app",
+    ],
     ["/Users/laura/Desktop/Ditto/cli", null],
     ["file:///Users/laura/Desktop/Ditto/cli", null],
     ["https://github.com/app", null],
@@ -27,7 +33,9 @@ describe("normalizeRepoKey", () => {
   });
 
   test("never leaks credentials", () => {
-    const key = normalizeRepoKey("https://user:s3cret@github.com/ditto/app.git");
+    const key = normalizeRepoKey(
+      "https://user:s3cret@github.com/ditto/app.git"
+    );
     expect(key).not.toMatch(/s3cret|user|@/);
   });
 
@@ -51,7 +59,9 @@ describe("readGitContext", () => {
   });
 
   test("resolves null outside a repo", async () => {
-    await expect(readGitContext(fs.realpathSync(os.tmpdir()))).resolves.toBeNull();
+    await expect(
+      readGitContext(fs.realpathSync(os.tmpdir()))
+    ).resolves.toBeNull();
   });
 
   describe("temp repo", () => {
@@ -60,7 +70,10 @@ describe("readGitContext", () => {
     beforeAll(() => {
       dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "git-ctx-"));
       const run = (...args: string[]) =>
-        execFileSync("git", args, { cwd: dir, stdio: "ignore" });
+        execFileSync("git", ["-c", "commit.gpgsign=false", ...args], {
+          cwd: dir,
+          stdio: "ignore",
+        });
       run("init", "-b", "main");
       run("config", "user.email", "test@example.com");
       run("config", "user.name", "Test");
@@ -76,10 +89,14 @@ describe("readGitContext", () => {
     });
 
     test("branch, sha and clean tree", async () => {
-      execFileSync("git", ["remote", "add", "origin", "git@github.com:Ditto/App.git"], {
-        cwd: dir,
-        stdio: "ignore",
-      });
+      execFileSync(
+        "git",
+        ["remote", "add", "origin", "git@github.com:Ditto/App.git"],
+        {
+          cwd: dir,
+          stdio: "ignore",
+        }
+      );
       const context = await readGitContext(dir);
       expect(context).toEqual({
         repoKey: "github.com/ditto/app",
@@ -94,14 +111,20 @@ describe("readGitContext", () => {
       fs.writeFileSync(path.join(dir, "a.txt"), "changed\n");
       const context = await readGitContext(dir);
       expect(context!.dirty).toBe(true);
-      execFileSync("git", ["checkout", "--", "a.txt"], { cwd: dir, stdio: "ignore" });
+      execFileSync("git", ["checkout", "--", "a.txt"], {
+        cwd: dir,
+        stdio: "ignore",
+      });
     });
 
     test("detached HEAD gives a null branch and a sha", async () => {
       const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: dir })
         .toString()
         .trim();
-      execFileSync("git", ["checkout", "--detach", sha], { cwd: dir, stdio: "ignore" });
+      execFileSync("git", ["checkout", "--detach", sha], {
+        cwd: dir,
+        stdio: "ignore",
+      });
       const context = await readGitContext(dir);
       expect(context!.branch).toBeNull();
       expect(context!.commitSha).toBe(sha);

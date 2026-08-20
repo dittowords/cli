@@ -15,6 +15,7 @@ describe("normalizeRepoKey", () => {
     ["https://github.com/ditto/app", "github.com/ditto/app"],
     ["https://github.com/ditto/app.git", "github.com/ditto/app"],
     ["ssh://git@github.com:2222/ditto/app.git", "github.com/ditto/app"],
+    ["git@github.com:2222/ditto/app.git", "github.com/2222/ditto/app"],
     ["git://github.com/ditto/app.git", "github.com/ditto/app"],
     ["https://user:token@github.com/ditto/app.git", "github.com/ditto/app"],
     [

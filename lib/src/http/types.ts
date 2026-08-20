@@ -183,6 +183,7 @@ export const ZInitiateScanBodySchema = z.object({
   repoKey: z.string().optional(),
   gitCommitSha: z.string().optional(),
   gitBranch: z.string().nullable().optional(),
+  repoRelativeRoot: z.string().optional(),
 });
 export type IInitiateScanBody = z.infer<typeof ZInitiateScanBodySchema>;
 export const ZInitiateScanResponse = z.object({

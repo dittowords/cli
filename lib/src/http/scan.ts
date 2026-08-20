@@ -1,6 +1,7 @@
 import { DittoScanCandidate } from "@dittowords/text-extract";
 import axios, { AxiosError } from "axios";
 import { Blob } from "buffer";
+import { relative, sep } from "node:path";
 import { GitContext } from "../scan/git";
 import DittoError, { ErrorType } from "../utils/DittoError";
 import getHttpClient from "./client";
@@ -74,6 +75,22 @@ export function scanLimitError(
 }
 
 /**
+ * Where the scanned directory sits inside the repo, as a forward-slash path the
+ * server prefixes onto candidate paths to build code links (`toRepoRelativePath`
+ * in ditto-app `services/ai/productTextDetection/codeLinks.ts`). `""` when the
+ * scan is the repo root, and `undefined` when the scanned path is somehow
+ * outside the repo, so a bad value never becomes a wrong link.
+ */
+function repoRelativeRoot(
+  scannedPath: string,
+  repoRoot: string
+): string | undefined {
+  const rel = relative(repoRoot, scannedPath);
+  if (rel.startsWith("..")) return undefined;
+  return sep === "/" ? rel : rel.split(sep).join("/");
+}
+
+/**
  * Builds the `POST /v2/scan` body. Without git context the body is exactly what
  * the CLI has always sent, so a scan outside a repo is unaffected.
  */
@@ -82,11 +99,13 @@ export function buildInitiateScanBody(
   gitContext?: GitContext | null
 ): IInitiateScanBody {
   if (!gitContext) return { path };
+  const root = repoRelativeRoot(path, gitContext.repoRoot);
   return {
     path,
     repoKey: gitContext.repoKey,
     gitCommitSha: gitContext.commitSha,
     gitBranch: gitContext.branch,
+    ...(root === undefined ? {} : { repoRelativeRoot: root }),
   };
 }
 

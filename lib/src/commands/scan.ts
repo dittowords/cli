@@ -4,15 +4,12 @@ import path from "path";
 import { prompt } from "enquirer";
 import open from "open";
 
-import logger from "../utils/logger";
 import {
   DittoScanCandidate,
   DittoScanExtractSummary,
   runExtract,
 } from "@dittowords/text-extract";
-import { quit } from "../utils/quit";
-import initAPIToken from "../services/apiToken/initAPIToken";
-import appContext from "../utils/appContext";
+import chalk from "chalk";
 import {
   asScanLimitInfo,
   initiateClassify,
@@ -25,8 +22,12 @@ import {
   formatDirectoryBreakdown,
   formatOverLimitMessage,
 } from "../scan/analyzeDirectories";
+import { readGitContext } from "../scan/git";
+import initAPIToken from "../services/apiToken/initAPIToken";
+import appContext from "../utils/appContext";
 import DittoError, { ErrorType } from "../utils/DittoError";
-import chalk from "chalk";
+import logger from "../utils/logger";
+import { quit } from "../utils/quit";
 
 // Yarn sets INIT_CWD to the directory the user invoked yarn from, which
 // matters when we proxy via `cd product-text-detection && yarn ptd`.
@@ -161,8 +162,10 @@ export const scan = async (
   });
 
   if (candidates.length === 0) {
-    logger.warnText(
-      `[ditto scan] no candidates extracted; writing empty classify output\n`
+    logger.writeLine(
+      logger.warnText(
+        `[ditto scan] no candidates extracted; writing empty classify output\n`
+      )
     );
   }
 
@@ -188,13 +191,31 @@ export const scan = async (
     await writeCandidatesNdjson(candidates, candidatesPath);
     logExtractSummary(extractSummary, candidatesPath);
   } else {
+    const gitContext = await readGitContext(resolvedInput);
+    if (!gitContext) {
+      logger.writeLine(
+        logger.warnText(
+          "[ditto scan] not a git repository - this scan can be imported but not re-synced\n"
+        )
+      );
+    } else if (gitContext.dirty) {
+      logger.writeLine(
+        logger.warnText(
+          `[ditto scan] uncommitted changes present; recording ${gitContext.commitSha.slice(
+            0,
+            7
+          )} as an approximate commit\n`
+        )
+      );
+    }
+
     const token = await initAPIToken();
     appContext.setAuthToken(token);
     const {
       candidatesSignedS3Url,
       record: { _id: recordId },
       planLimit,
-    } = await initiateScan(resolvedInput);
+    } = await initiateScan(resolvedInput, gitContext);
 
     // Fail before the wasted upload when the candidates we already extracted exceed it.
     if (

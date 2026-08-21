@@ -22,17 +22,28 @@ describe("buildInitiateScanBody", () => {
       gitCommitSha: "d3c1a8148580e1869c91ee6caadda17165ceb0ea",
       gitBranch: "master",
       repoRelativeRoot: "lib/src",
+      scannedAllPaths: false,
+      scannedPaths: ["lib/src"],
     });
   });
 
-  test("sends an empty repo-relative root when scanning the repo root", () => {
+  test("scanning the repo root covers every path, with no path list", () => {
     const body = buildInitiateScanBody("/Users/laura/cli", context);
     expect(body.repoRelativeRoot).toBe("");
+    expect(body.scannedAllPaths).toBe(true);
+    expect(body).not.toHaveProperty("scannedPaths");
   });
 
-  test("omits the repo-relative root when the path is outside the repo", () => {
+  test("omits the whole scope when the path is outside the repo", () => {
     const body = buildInitiateScanBody("/elsewhere/src", context);
     expect(body).not.toHaveProperty("repoRelativeRoot");
+    expect(body).not.toHaveProperty("scannedAllPaths");
+    expect(body).not.toHaveProperty("scannedPaths");
+  });
+
+  test("scanned paths are relative to the repo root, not the scanned root", () => {
+    const body = buildInitiateScanBody("/Users/laura/cli/lib/src", context);
+    expect(body.scannedPaths).toEqual([body.repoRelativeRoot]);
   });
 
   test("sends a null branch on a detached HEAD", () => {
@@ -55,6 +66,8 @@ describe("buildInitiateScanBody", () => {
       "path",
       "repoKey",
       "repoRelativeRoot",
+      "scannedAllPaths",
+      "scannedPaths",
     ]);
   });
 

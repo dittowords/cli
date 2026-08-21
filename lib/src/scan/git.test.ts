@@ -27,8 +27,8 @@ describe("normalizeRepoKey", () => {
       "https://gitlab.com/group/sub/deeper/app.git",
       "gitlab.com/group/sub/deeper/app",
     ],
-    ["/Users/laura/Desktop/Ditto/cli", null],
-    ["file:///Users/laura/Desktop/Ditto/cli", null],
+    ["/Users/dev/Desktop/Ditto/cli", null],
+    ["file:///Users/dev/Desktop/Ditto/cli", null],
     ["https://github.com/app", null],
     ["", null],
   ];

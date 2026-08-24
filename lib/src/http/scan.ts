@@ -91,6 +91,22 @@ function repoRelativeRoot(
 }
 
 /**
+ * What the scan looked at, so the server only marks a code link removed where we
+ * actually looked. `scannedAllPaths` means the whole repo. Otherwise it's the one
+ * directory we scanned. Empty when the path is outside the repo, which the server
+ * treats as "looked nowhere".
+ */
+function scannedScope(root: string | undefined) {
+  if (root === undefined) return {};
+  if (root === "") return { repoRelativeRoot: root, scannedAllPaths: true };
+  return {
+    repoRelativeRoot: root,
+    scannedAllPaths: false,
+    scannedPaths: [root],
+  };
+}
+
+/**
  * Builds the `POST /v2/scan` body. Without git context the body is exactly what
  * the CLI has always sent, so a scan outside a repo is unaffected.
  */
@@ -105,7 +121,7 @@ export function buildInitiateScanBody(
     repoKey: gitContext.repoKey,
     gitCommitSha: gitContext.commitSha,
     gitBranch: gitContext.branch,
-    ...(root === undefined ? {} : { repoRelativeRoot: root }),
+    ...scannedScope(root),
   };
 }
 

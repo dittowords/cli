@@ -4,7 +4,7 @@ import { ZInitiateScanBodySchema } from "./types";
 
 const context: GitContext = {
   repoKey: "github.com/dittowords/cli",
-  repoRoot: "/Users/laura/cli",
+  repoRoot: "/Users/dev/cli",
   commitSha: "d3c1a8148580e1869c91ee6caadda17165ceb0ea",
   branch: "master",
   dirty: false,
@@ -16,27 +16,38 @@ describe("buildInitiateScanBody", () => {
   });
 
   test("sends repo, sha, branch and repo-relative root when there is", () => {
-    expect(buildInitiateScanBody("/Users/laura/cli/lib/src", context)).toEqual({
-      path: "/Users/laura/cli/lib/src",
+    expect(buildInitiateScanBody("/Users/dev/cli/lib/src", context)).toEqual({
+      path: "/Users/dev/cli/lib/src",
       repoKey: "github.com/dittowords/cli",
       gitCommitSha: "d3c1a8148580e1869c91ee6caadda17165ceb0ea",
       gitBranch: "master",
       repoRelativeRoot: "lib/src",
+      scannedAllPaths: false,
+      scannedPaths: ["lib/src"],
     });
   });
 
-  test("sends an empty repo-relative root when scanning the repo root", () => {
-    const body = buildInitiateScanBody("/Users/laura/cli", context);
+  test("scanning the repo root covers every path, with no path list", () => {
+    const body = buildInitiateScanBody("/Users/dev/cli", context);
     expect(body.repoRelativeRoot).toBe("");
+    expect(body.scannedAllPaths).toBe(true);
+    expect(body).not.toHaveProperty("scannedPaths");
   });
 
-  test("omits the repo-relative root when the path is outside the repo", () => {
+  test("omits the whole scope when the path is outside the repo", () => {
     const body = buildInitiateScanBody("/elsewhere/src", context);
     expect(body).not.toHaveProperty("repoRelativeRoot");
+    expect(body).not.toHaveProperty("scannedAllPaths");
+    expect(body).not.toHaveProperty("scannedPaths");
+  });
+
+  test("scanned paths are relative to the repo root, not the scanned root", () => {
+    const body = buildInitiateScanBody("/Users/dev/cli/lib/src", context);
+    expect(body.scannedPaths).toEqual([body.repoRelativeRoot]);
   });
 
   test("sends a null branch on a detached HEAD", () => {
-    const body = buildInitiateScanBody("/Users/laura/cli", {
+    const body = buildInitiateScanBody("/Users/dev/cli", {
       ...context,
       branch: null,
     });
@@ -45,7 +56,7 @@ describe("buildInitiateScanBody", () => {
   });
 
   test("never sends repoRoot or dirty", () => {
-    const body = buildInitiateScanBody("/Users/laura/cli/lib", {
+    const body = buildInitiateScanBody("/Users/dev/cli/lib", {
       ...context,
       dirty: true,
     });
@@ -55,6 +66,8 @@ describe("buildInitiateScanBody", () => {
       "path",
       "repoKey",
       "repoRelativeRoot",
+      "scannedAllPaths",
+      "scannedPaths",
     ]);
   });
 
@@ -62,7 +75,7 @@ describe("buildInitiateScanBody", () => {
     for (const c of [null, context, { ...context, branch: null }]) {
       expect(() =>
         ZInitiateScanBodySchema.parse(
-          buildInitiateScanBody("/Users/laura/cli/lib", c)
+          buildInitiateScanBody("/Users/dev/cli/lib", c)
         )
       ).not.toThrow();
     }

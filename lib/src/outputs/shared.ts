@@ -27,4 +27,5 @@ export const ZBaseOutputFilters = z.object({
   outDir: z.string().optional(),
   richText: z.union([z.literal("html"), z.literal(false)]).optional(),
   iosLocales: z.array(z.record(z.string(), z.string())).optional(),
+  androidLocales: z.array(z.record(z.string(), z.string())).optional(),
 });

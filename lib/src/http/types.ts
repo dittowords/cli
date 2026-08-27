@@ -20,6 +20,7 @@ export interface PullQueryParams {
     | "ios-stringsdict"
     | "android"
     | "json_icu"
+    | "arb"
     | undefined;
 }
 export const ZTextStatus = z.enum(["NONE", "WIP", "REVIEW", "FINAL"]);

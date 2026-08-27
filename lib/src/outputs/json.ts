@@ -23,8 +23,24 @@ const ZVueI18nJSONOutput = z.strictObject(
   }).shape
 );
 
+const ZICUJSONOutput = z.strictObject(
+  ZBaseOutputFilters.extend({
+    format: z.literal("json"),
+    framework: z.literal("icu"),
+  }).shape
+);
+
+const ZArbJSONOutput = z.strictObject(
+  ZBaseOutputFilters.extend({
+    format: z.literal("json"),
+    framework: z.literal("arb"),
+  }).shape
+);
+
 export const ZJSONOutput = z.discriminatedUnion("framework", [
   ZBaseJSONOutput,
   Zi18NextJSONOutput,
   ZVueI18nJSONOutput,
+  ZICUJSONOutput,
+  ZArbJSONOutput,
 ]);

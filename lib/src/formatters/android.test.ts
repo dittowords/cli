@@ -292,6 +292,26 @@ describe("AndroidXMLFormatter", () => {
 
       expect(formatter.getLocalesPath("japanese")).toBe("/test/output");
     });
+
+    it("uses androidLocalesOutDir instead of appContext.outDir when configured", () => {
+      const projectConfig = createMockProjectConfig({
+        androidLocales: [{ spanish: "es" }],
+        androidLocalesOutDir: "android/app/src/main/res",
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      const formatter = new TestAndroidXMLFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      expect(formatter.getLocalesPath("base")).toBe(
+        "android/app/src/main/res/values"
+      );
+      expect(formatter.getLocalesPath("spanish")).toBe(
+        "android/app/src/main/res/values-es"
+      );
+    });
   });
 
   describe("createOutputFile with androidLocales configured", () => {

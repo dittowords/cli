@@ -272,5 +272,26 @@ describe("IOSStringsFormatter", () => {
 
       expect(result).toBe("/mock/app/context/outDir/en.lproj");
     });
+
+    it("should use iosLocalesOutDir instead of appContext.outDir when configured", () => {
+      const projectConfig = createMockProjectConfig({
+        iosLocales: [{ base: "en" }, { variant1: "es" }],
+        iosLocalesOutDir: "ios/MyApp/Resources",
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      // @ts-ignore
+      const formatter = new TestIOSStringsFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      expect(formatter.getLocalesPath("base")).toBe(
+        "ios/MyApp/Resources/en.lproj"
+      );
+      expect(formatter.getLocalesPath("variant1")).toBe(
+        "ios/MyApp/Resources/es.lproj"
+      );
+    });
   });
 });

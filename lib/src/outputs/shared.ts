@@ -28,4 +28,6 @@ export const ZBaseOutputFilters = z.object({
   richText: z.union([z.literal("html"), z.literal(false)]).optional(),
   iosLocales: z.array(z.record(z.string(), z.string())).optional(),
   androidLocales: z.array(z.record(z.string(), z.string())).optional(),
+  iosLocalesOutDir: z.string().optional(),
+  androidLocalesOutDir: z.string().optional(),
 });

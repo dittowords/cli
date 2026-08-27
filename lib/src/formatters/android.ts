@@ -47,9 +47,9 @@ export default class AndroidXMLFormatter extends BaseExportFormatter<
   }
 
   /**
-   * If config.androidLocales configured, writes .xml files to the root project outDir
-   * using Android's expected `values`/`values-<locale>` resource directory structure
-   * instead of the specific output's outDir.
+   * If config.androidLocales configured, writes .xml files to config.androidLocalesOutDir
+   * (or the root project outDir if unset) using Android's expected `values`/`values-<locale>`
+   * resource directory structure instead of the specific output's outDir.
    *
    * The base variant always maps to `values` (Android's default/unqualified resource set).
    * Any other variants not configured in androidLocales will get written to the output's
@@ -59,11 +59,13 @@ export default class AndroidXMLFormatter extends BaseExportFormatter<
     if (!this.isLocaleStructured(variantId)) {
       return this.outDir;
     }
+    const localesOutDir =
+      this.projectConfig.androidLocalesOutDir ?? appContext.outDir;
     const isBaseVariant = !variantId || variantId === BASE_VARIANT_ID;
     if (isBaseVariant) {
-      return `${appContext.outDir}/values`;
+      return `${localesOutDir}/values`;
     }
     const variantLocale = this.getVariantLocale(variantId);
-    return `${appContext.outDir}/values-${variantLocale![variantId]}`;
+    return `${localesOutDir}/values-${variantLocale![variantId]}`;
   }
 }

@@ -148,4 +148,27 @@ describe("exportTextItems", () => {
     );
     expect(result).toEqual(mockData);
   });
+
+  it("should parse arb-shaped responses with object metadata entries", async () => {
+    const mockData = {
+      "@@locale": "en",
+      "text-item-1": "There are {count} items in the cart",
+      "@text-item-1": {
+        placeholders: {
+          count: { type: "num" },
+        },
+      },
+    };
+    mockHttpClient.get.mockResolvedValue({ status: 200, data: mockData });
+
+    const result = await exportTextItems(
+      {
+        filter: "",
+        format: "arb" as any,
+      },
+      {}
+    );
+
+    expect(result).toEqual(mockData);
+  });
 });

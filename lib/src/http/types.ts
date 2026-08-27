@@ -76,7 +76,11 @@ export type ExportTextItemsStringResponse = z.infer<
   typeof ZExportTextItemsStringResponse
 >;
 
-const ZExportTextItemsJSONResponse = z.record(z.string(), z.string());
+// Most JSON export formats (e.g. json_icu) map each key to a plain string, but some
+// (e.g. arb) also include metadata entries (e.g. "@key") whose value is an object.
+const ZExportItemValue = z.union([z.string(), z.record(z.string(), z.unknown())]);
+
+const ZExportTextItemsJSONResponse = z.record(z.string(), ZExportItemValue);
 export type ExportTextItemsJSONResponse = z.infer<
   typeof ZExportTextItemsJSONResponse
 >;
@@ -101,7 +105,10 @@ export type Component = z.infer<typeof ZComponent>;
 export const ZComponentsResponse = z.array(ZComponent);
 export type ComponentsResponse = z.infer<typeof ZComponentsResponse>;
 
-export const ZExportComponentsJSONResponse = z.record(z.string(), z.string());
+export const ZExportComponentsJSONResponse = z.record(
+  z.string(),
+  ZExportItemValue
+);
 export type ExportComponentsJSONResponse = z.infer<
   typeof ZExportComponentsJSONResponse
 >;

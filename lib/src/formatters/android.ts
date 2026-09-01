@@ -66,6 +66,21 @@ export default class AndroidXMLFormatter extends BaseExportFormatter<
       return `${localesOutDir}/values`;
     }
     const variantLocale = this.getVariantLocale(variantId);
-    return `${localesOutDir}/values-${variantLocale![variantId]}`;
+    const qualifier = this.toAndroidLocaleQualifier(variantLocale![variantId]);
+    return `${localesOutDir}/values-${qualifier}`;
+  }
+
+  /**
+   * Converts a locale code (e.g. "es-MX") into Android's resource-qualifier folder
+   * name (e.g. "es-rMX"). Android requires a 2-letter region subtag to be prefixed
+   * with a lowercase "r" — "values-es-MX" is not a valid qualifier and Android
+   * silently ignores the folder, so this must not be passed through as-is.
+   */
+  private toAndroidLocaleQualifier(locale: string): string {
+    const [language, region] = locale.split(/[-_]/);
+    if (region && /^[A-Za-z]{2}$/.test(region)) {
+      return `${language.toLowerCase()}-r${region.toUpperCase()}`;
+    }
+    return locale;
   }
 }

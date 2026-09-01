@@ -47,6 +47,11 @@ class TestAndroidXMLFormatter extends AndroidXMLFormatter {
     // @ts-ignore
     return super.isLocaleStructured(variantId);
   }
+
+  public toAndroidLocaleQualifier(locale: string) {
+    // @ts-ignore
+    return super.toAndroidLocaleQualifier(locale);
+  }
 }
 
 describe("AndroidXMLFormatter", () => {
@@ -229,6 +234,56 @@ describe("AndroidXMLFormatter", () => {
     });
   });
 
+  describe("toAndroidLocaleQualifier", () => {
+    it("passes through a language-only locale unchanged", () => {
+      const projectConfig = createMockProjectConfig();
+      const output = createMockOutput({ outDir: "/test/output" });
+      const formatter = new TestAndroidXMLFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      expect(formatter.toAndroidLocaleQualifier("es")).toBe("es");
+    });
+
+    it("prefixes a hyphenated region subtag with a lowercase r", () => {
+      const projectConfig = createMockProjectConfig();
+      const output = createMockOutput({ outDir: "/test/output" });
+      const formatter = new TestAndroidXMLFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      expect(formatter.toAndroidLocaleQualifier("es-MX")).toBe("es-rMX");
+    });
+
+    it("prefixes an underscore-separated region subtag with a lowercase r", () => {
+      const projectConfig = createMockProjectConfig();
+      const output = createMockOutput({ outDir: "/test/output" });
+      const formatter = new TestAndroidXMLFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      expect(formatter.toAndroidLocaleQualifier("es_MX")).toBe("es-rMX");
+    });
+
+    it("normalizes the region subtag's casing regardless of input casing", () => {
+      const projectConfig = createMockProjectConfig();
+      const output = createMockOutput({ outDir: "/test/output" });
+      const formatter = new TestAndroidXMLFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      expect(formatter.toAndroidLocaleQualifier("es-mx")).toBe("es-rMX");
+    });
+  });
+
   describe("getLocalesPath", () => {
     it("returns the output outDir when androidLocales is not configured", () => {
       const projectConfig = createMockProjectConfig({
@@ -291,6 +346,22 @@ describe("AndroidXMLFormatter", () => {
       );
 
       expect(formatter.getLocalesPath("japanese")).toBe("/test/output");
+    });
+
+    it("maps a mapped variant with a region-qualified locale to its values-<lang>-r<REGION> directory", () => {
+      const projectConfig = createMockProjectConfig({
+        androidLocales: [{ mexicanSpanish: "es-MX" }],
+      });
+      const output = createMockOutput({ outDir: "/test/output" });
+      const formatter = new TestAndroidXMLFormatter(
+        output,
+        projectConfig,
+        createMockMeta()
+      );
+
+      expect(formatter.getLocalesPath("mexicanSpanish")).toBe(
+        "/mock/app/context/outDir/values-es-rMX"
+      );
     });
 
     it("uses androidLocalesOutDir instead of appContext.outDir when configured", () => {

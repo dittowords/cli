@@ -36,8 +36,9 @@ export default class IOSStringsFormatter extends BaseExportFormatter<
   }
 
   /**
-   * If config.iosLocales configured, writes .strings files to root project outDir instead of the specific output
-   * This is because with both .strings and .stringsdict configured the locale files can get "overwritten" as far as
+   * If config.iosLocales configured, writes .strings files to config.iosLocalesOutDir (or the root
+   * project outDir if unset) instead of the specific output's outDir. This is because with both
+   * .strings and .stringsdict configured the locale files can get "overwritten" as far as
    * the Ditto.swift file is concerned. We need to have all .strings and .stringsdict files in one directory
    *
    * Any variants not-configured in the iosLocales will get written to the output's outDir as expected (if that output outDir is configured)
@@ -46,7 +47,9 @@ export default class IOSStringsFormatter extends BaseExportFormatter<
     let path = this.outDir;
     const variantLocale = this.getVariantLocale(variantId);
     if (variantLocale) {
-      path = `${appContext.outDir}/${variantLocale[variantId]}.lproj`;
+      const localesOutDir =
+        this.projectConfig.iosLocalesOutDir ?? appContext.outDir;
+      path = `${localesOutDir}/${variantLocale[variantId]}.lproj`;
     }
     return path;
   }

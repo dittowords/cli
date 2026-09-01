@@ -77,4 +77,18 @@ describe("getSwiftDriverFile", () => {
     );
     expect(result).toBeInstanceOf(SwiftOutputFile);
   });
+
+  it("should write to iosLocalesOutDir instead of appContext.outDir when configured", async () => {
+    const projectConfig = {
+      iosLocalesOutDir: "ios/MyApp/Resources",
+    };
+    const meta = {};
+
+    const result = await getSwiftDriverFile(
+      meta,
+      projectConfig as ProjectConfigYAML
+    );
+
+    expect(result.path).toBe("ios/MyApp/Resources");
+  });
 });

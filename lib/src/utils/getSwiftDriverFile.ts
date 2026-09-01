@@ -17,7 +17,7 @@ export default async function getSwiftDriverFile(
 
   const swiftDriver = await generateSwiftDriver(filters, meta);
   return new SwiftOutputFile({
-    path: appContext.outDir,
+    path: projectConfig.iosLocalesOutDir ?? appContext.outDir,
     content: swiftDriver,
   });
 }

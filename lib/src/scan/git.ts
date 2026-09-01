@@ -117,3 +117,44 @@ export async function readGitContext(
     dirty: Boolean(status),
   };
 }
+
+/**
+ * The `to` and `from` paths for a given file between renames (relative to repo root)
+ */
+export interface GitRename {
+  from: string;
+  to: string;
+}
+
+/**
+ * Reads the files git says were renamed between `previousSha` and `HEAD`, using
+ * git's similarity detection. A copy is left out.
+ *
+ * @returns `[]` when the diff fails, as it does on a shallow
+ * clone or with a sha this clone doesn't have.
+ */
+export async function readRenames(
+  repoRoot: string,
+  previousSha: string
+): Promise<GitRename[]> {
+  const out = await git(
+    ["diff", "-M", "--name-status", "-z", previousSha, "HEAD"],
+    repoRoot
+  );
+  if (!out) return [];
+
+  // `-z` gives NUL-separated fields: a status, then one path, or two for a rename or a copy.
+  const fields = out.split("\0");
+  const renames: GitRename[] = [];
+  for (let i = 0; i < fields.length && fields[i]; ) {
+    const status = fields[i][0];
+    if (status === "R" || status === "C") {
+      const [from, to] = [fields[i + 1], fields[i + 2]];
+      if (status === "R" && from && to) renames.push({ from, to });
+      i += 3;
+    } else {
+      i += 2;
+    }
+  }
+  return renames;
+}

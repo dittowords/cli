@@ -12,8 +12,10 @@ import {
 import chalk from "chalk";
 import {
   asScanLimitInfo,
+  getLastScanSha,
   initiateClassify,
   initiateScan,
+  MAX_SCAN_RENAMES,
   scanLimitError,
   uploadCandidatesToS3,
 } from "../http/scan";
@@ -22,7 +24,7 @@ import {
   formatDirectoryBreakdown,
   formatOverLimitMessage,
 } from "../scan/analyzeDirectories";
-import { readGitContext } from "../scan/git";
+import { GitContext, readGitContext, readRenames } from "../scan/git";
 import initAPIToken from "../services/apiToken/initAPIToken";
 import appContext from "../utils/appContext";
 import DittoError, { ErrorType } from "../utils/DittoError";
@@ -211,11 +213,13 @@ export const scan = async (
 
     const token = await initAPIToken();
     appContext.setAuthToken(token);
+    const renamesSinceLastScan = await readRenamesSinceLastScan(gitContext);
+
     const {
       candidatesSignedS3Url,
       record: { _id: recordId },
       planLimit,
-    } = await initiateScan(resolvedInput, gitContext);
+    } = await initiateScan(resolvedInput, gitContext, renamesSinceLastScan);
 
     // Fail before the wasted upload when the candidates we already extracted exceed it.
     if (
@@ -269,3 +273,25 @@ export const scan = async (
     await quit(null, 0);
   }
 };
+
+/**
+ * What git says moved between the last scan of this repo and HEAD, so a renamed/moved file
+ * keeps its links instead of reading as a delete plus a create. Empty when there is
+ * no git context, no earlier scan, or no way to reach the earlier commit.
+ */
+async function readRenamesSinceLastScan(gitContext: GitContext | null) {
+  if (!gitContext) return [];
+
+  const lastScanSha = await getLastScanSha(gitContext.repoKey);
+  if (!lastScanSha) return [];
+
+  const renames = await readRenames(gitContext.repoRoot, lastScanSha);
+  if (renames.length > MAX_SCAN_RENAMES) {
+    logger.writeLine(
+      logger.warnText(
+        `[ditto scan] ${renames.length} files moved since the last scan; keeping the history of the first ${MAX_SCAN_RENAMES}\n`
+      )
+    );
+  }
+  return renames;
+}

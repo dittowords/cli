@@ -7,7 +7,12 @@ import path from "node:path";
  * Real git repos, not mocks: this checkout, plus a throwaway repo in the temp
  * directory for the awkward states. Needs `git` on PATH and a real `.git`.
  */
-import { normalizeRepoKey, readGitContext, REPO_KEY_PATTERN } from "./git";
+import {
+  normalizeRepoKey,
+  readGitContext,
+  readRenames,
+  REPO_KEY_PATTERN,
+} from "./git";
 
 describe("normalizeRepoKey", () => {
   const cases: [string, string | null][] = [
@@ -145,5 +150,64 @@ describe("readGitContext", () => {
       expect(context!.commitSha).toBe(sha);
       execFileSync("git", ["checkout", "main"], { cwd: dir, stdio: "ignore" });
     });
+  });
+});
+
+describe("readRenames", () => {
+  let dir: string;
+  let firstSha: string;
+
+  const run = (...args: string[]) =>
+    execFileSync("git", ["-c", "commit.gpgsign=false", ...args], {
+      cwd: dir,
+      stdio: "ignore",
+    });
+  const sha = () =>
+    execFileSync("git", ["rev-parse", "HEAD"], { cwd: dir }).toString().trim();
+  const write = (file: string, contents: string) => {
+    fs.mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+    fs.writeFileSync(path.join(dir, file), contents);
+  };
+
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "git-mv-"));
+    run("init", "-b", "main");
+    run("config", "user.email", "test@example.com");
+    run("config", "user.name", "Test");
+    write("src/Old.tsx", "export const label = 'Save';\n");
+    write("src/Kept.tsx", "export const other = 'Cancel';\n");
+    run("add", ".");
+    run("commit", "-m", "init");
+    firstSha = sha();
+  });
+
+  afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  test("no change between two commits gives no renames", async () => {
+    await expect(readRenames(dir, firstSha)).resolves.toEqual([]);
+  });
+
+  test("reads a moved file, and only that file", async () => {
+    fs.mkdirSync(path.join(dir, "src/nested"));
+    run("mv", "src/Old.tsx", "src/nested/New.tsx");
+    run("commit", "-m", "move");
+
+    await expect(readRenames(dir, firstSha)).resolves.toEqual([
+      { from: "src/Old.tsx", to: "src/nested/New.tsx" },
+    ]);
+  });
+
+  test("a delete plus an unrelated add is not a rename", async () => {
+    const before = sha();
+    fs.rmSync(path.join(dir, "src/Kept.tsx"));
+    write("src/Unrelated.tsx", "export const totally = 'Different';\n");
+    run("add", "-A");
+    run("commit", "-m", "replace");
+
+    await expect(readRenames(dir, before)).resolves.toEqual([]);
+  });
+
+  test("a sha this clone does not have gives no renames", async () => {
+    await expect(readRenames(dir, "0".repeat(40))).resolves.toEqual([]);
   });
 });

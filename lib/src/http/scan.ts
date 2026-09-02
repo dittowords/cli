@@ -2,12 +2,13 @@ import { DittoScanCandidate } from "@dittowords/text-extract";
 import axios, { AxiosError } from "axios";
 import { Blob } from "buffer";
 import { relative, sep } from "node:path";
-import { GitContext } from "../scan/git";
+import { GitContext, GitRename } from "../scan/git";
 import DittoError, { ErrorType } from "../utils/DittoError";
 import getHttpClient from "./client";
 import {
   IInitiateScanBody,
   IInitiateScanResponse,
+  ZGetLastScannedCommitResponse,
   ZInitiateScanResponse,
 } from "./types";
 
@@ -107,12 +108,18 @@ function scannedScope(root: string | undefined) {
 }
 
 /**
+ * The most renames one scan carries, matching `MAX_SCAN_RENAMES` in ditto-app
+ */
+export const MAX_SCAN_RENAMES = 1000;
+
+/**
  * Builds the `POST /v2/scan` body. Without git context the body is exactly what
  * the CLI has always sent, so a scan outside a repo is unaffected.
  */
 export function buildInitiateScanBody(
   path: string,
-  gitContext?: GitContext | null
+  gitContext?: GitContext | null,
+  renamesSinceLastScan: GitRename[] = []
 ): IInitiateScanBody {
   if (!gitContext) return { path };
   const root = repoRelativeRoot(path, gitContext.repoRoot);
@@ -122,14 +129,20 @@ export function buildInitiateScanBody(
     gitCommitSha: gitContext.commitSha,
     gitBranch: gitContext.branch,
     ...scannedScope(root),
+    ...(renamesSinceLastScan.length
+      ? {
+          renamesSinceLastScan: renamesSinceLastScan.slice(0, MAX_SCAN_RENAMES),
+        }
+      : {}),
   };
 }
 
 export async function initiateScan(
   path: string,
-  gitContext?: GitContext | null
+  gitContext?: GitContext | null,
+  renamesSinceLastScan: GitRename[] = []
 ): Promise<IInitiateScanResponse> {
-  const body = buildInitiateScanBody(path, gitContext);
+  const body = buildInitiateScanBody(path, gitContext, renamesSinceLastScan);
 
   try {
     const httpClient = getHttpClient({});
@@ -142,6 +155,27 @@ export async function initiateScan(
       );
     }
     throw e;
+  }
+}
+
+/**
+ * The commit the last scan of this repo read, or `null` when the server has none,
+ * doesn't know the route, or can't be reached.
+ */
+export async function getLastScannedCommit(
+  repoKey: string
+): Promise<string | null> {
+  try {
+    const httpClient = getHttpClient({});
+    const response = await httpClient.get("/v2/scan/last-scanned-commit", {
+      params: { repoKey },
+    });
+    return (
+      ZGetLastScannedCommitResponse.parse(response.data).lastScannedCommit ??
+      null
+    );
+  } catch {
+    return null;
   }
 }
 

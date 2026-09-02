@@ -188,6 +188,9 @@ export type IExportSwiftFileRequest = z.infer<typeof ZExportSwiftFileRequest>;
 
 export const ZInitiateScanBodySchema = z.object({
   path: z.string(),
+  renamesSinceLastScan: z
+    .array(z.object({ from: z.string(), to: z.string() }))
+    .optional(),
   repoKey: z.string().optional(),
   gitCommitSha: z.string().optional(),
   gitBranch: z.string().nullable().optional(),
@@ -209,3 +212,7 @@ export const ZInitiateScanResponse = z.object({
     .nullish(),
 });
 export type IInitiateScanResponse = z.infer<typeof ZInitiateScanResponse>;
+
+export const ZGetLastScannedCommitResponse = z.object({
+  lastScannedCommit: z.string().nullish(),
+});

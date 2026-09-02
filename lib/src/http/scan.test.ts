@@ -1,5 +1,5 @@
 import { GitContext } from "../scan/git";
-import { buildInitiateScanBody } from "./scan";
+import { buildInitiateScanBody, MAX_SCAN_RENAMES } from "./scan";
 import { ZInitiateScanBodySchema } from "./types";
 
 const context: GitContext = {
@@ -69,6 +69,26 @@ describe("buildInitiateScanBody", () => {
       "scannedAllPaths",
       "scannedPaths",
     ]);
+  });
+
+  test("sends the renames git found since the last scan", () => {
+    const renames = [{ from: "src/Old.tsx", to: "src/New.tsx" }];
+    const body = buildInitiateScanBody("/Users/dev/cli", context, renames);
+    expect(body.renamesSinceLastScan).toEqual(renames);
+  });
+
+  test("omits the renames entirely when git found none", () => {
+    const body = buildInitiateScanBody("/Users/dev/cli", context, []);
+    expect(body).not.toHaveProperty("renamesSinceLastScan");
+  });
+
+  test("caps a refactor that moved more files than one scan carries", () => {
+    const renames = Array.from({ length: MAX_SCAN_RENAMES + 5 }, (_, i) => ({
+      from: `src/Old${i}.tsx`,
+      to: `src/New${i}.tsx`,
+    }));
+    const body = buildInitiateScanBody("/Users/dev/cli", context, renames);
+    expect(body.renamesSinceLastScan).toHaveLength(MAX_SCAN_RENAMES);
   });
 
   test("every body satisfies the request schema", () => {

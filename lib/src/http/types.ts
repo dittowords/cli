@@ -205,6 +205,6 @@ export const ZInitiateScanResponse = z.object({
 });
 export type IInitiateScanResponse = z.infer<typeof ZInitiateScanResponse>;
 
-export const ZGetLastScanShaResponse = z.object({
-  lastScanSha: z.string().nullish(),
+export const ZGetLastScannedCommitResponse = z.object({
+  lastScannedCommit: z.string().nullish(),
 });

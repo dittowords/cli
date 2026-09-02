@@ -12,7 +12,7 @@ import {
 import chalk from "chalk";
 import {
   asScanLimitInfo,
-  getLastScanSha,
+  getLastScannedCommit,
   initiateClassify,
   initiateScan,
   MAX_SCAN_RENAMES,
@@ -289,10 +289,10 @@ async function readRenamesSinceLastScan(
 ): Promise<GitRename[]> {
   if (!gitContext) return [];
 
-  const lastScanSha = await getLastScanSha(gitContext.repoKey);
-  if (!lastScanSha) return [];
+  const lastScannedCommit = await getLastScannedCommit(gitContext.repoKey);
+  if (!lastScannedCommit) return [];
 
-  const renames = await readRenames(gitContext.repoRoot, lastScanSha);
+  const renames = await readRenames(gitContext.repoRoot, lastScannedCommit);
   if (renames.length > MAX_SCAN_RENAMES) {
     logger.writeLine(
       logger.warnText(

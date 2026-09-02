@@ -8,7 +8,7 @@ import getHttpClient from "./client";
 import {
   IInitiateScanBody,
   IInitiateScanResponse,
-  ZGetLastScanShaResponse,
+  ZGetLastScannedCommitResponse,
   ZInitiateScanResponse,
 } from "./types";
 
@@ -162,13 +162,18 @@ export async function initiateScan(
  * The commit the last scan of this repo read, or `null` when the server has none,
  * doesn't know the route, or can't be reached.
  */
-export async function getLastScanSha(repoKey: string): Promise<string | null> {
+export async function getLastScannedCommit(
+  repoKey: string
+): Promise<string | null> {
   try {
     const httpClient = getHttpClient({});
-    const response = await httpClient.get("/v2/scan/last-commit", {
+    const response = await httpClient.get("/v2/scan/last-scanned-commit", {
       params: { repoKey },
     });
-    return ZGetLastScanShaResponse.parse(response.data).lastScanSha ?? null;
+    return (
+      ZGetLastScannedCommitResponse.parse(response.data).lastScannedCommit ??
+      null
+    );
   } catch {
     return null;
   }

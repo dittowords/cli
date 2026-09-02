@@ -24,7 +24,12 @@ import {
   formatDirectoryBreakdown,
   formatOverLimitMessage,
 } from "../scan/analyzeDirectories";
-import { GitContext, readGitContext, readRenames } from "../scan/git";
+import {
+  GitContext,
+  GitRename,
+  readGitContext,
+  readRenames,
+} from "../scan/git";
 import initAPIToken from "../services/apiToken/initAPIToken";
 import appContext from "../utils/appContext";
 import DittoError, { ErrorType } from "../utils/DittoError";
@@ -279,7 +284,9 @@ export const scan = async (
  * keeps its links instead of reading as a delete plus a create. Empty when there is
  * no git context, no earlier scan, or no way to reach the earlier commit.
  */
-async function readRenamesSinceLastScan(gitContext: GitContext | null) {
+async function readRenamesSinceLastScan(
+  gitContext: GitContext | null
+): Promise<GitRename[]> {
   if (!gitContext) return [];
 
   const lastScanSha = await getLastScanSha(gitContext.repoKey);

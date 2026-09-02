@@ -138,23 +138,24 @@ export async function readRenames(
   previousSha: string
 ): Promise<GitRename[]> {
   const out = await git(
-    ["diff", "-M", "--name-status", "-z", previousSha, "HEAD"],
+    [
+      "diff",
+      "-M",
+      "--diff-filter=R",
+      "--name-status",
+      "-z",
+      previousSha,
+      "HEAD",
+    ],
     repoRoot
   );
   if (!out) return [];
 
-  // `-z` gives NUL-separated fields: a status, then one path, or two for a rename or a copy.
-  const fields = out.split("\0");
+  // `-z` gives NUL-separated fields: a status, then the `from` and `to` paths.
+  const fields = out.split("\0").filter(Boolean);
   const renames: GitRename[] = [];
-  for (let i = 0; i < fields.length && fields[i]; ) {
-    const status = fields[i][0];
-    if (status === "R" || status === "C") {
-      const [from, to] = [fields[i + 1], fields[i + 2]];
-      if (status === "R" && from && to) renames.push({ from, to });
-      i += 3;
-    } else {
-      i += 2;
-    }
+  for (let i = 0; i + 2 < fields.length; i += 3) {
+    renames.push({ from: fields[i + 1], to: fields[i + 2] });
   }
   return renames;
 }

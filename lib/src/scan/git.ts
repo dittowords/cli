@@ -159,3 +159,29 @@ export async function readRenames(
   }
   return renames;
 }
+
+/**
+ * The branch a GitHub scan would read. Uses `origin/HEAD` when the clone has it
+ * — `git clone` sets it, a CI checkout often does not — and otherwise takes
+ * whichever of `main` or `master` exists locally.
+ *
+ * @returns `null` when none of those resolve.
+ */
+export async function readDefaultBranch(
+  repoRoot: string
+): Promise<string | null> {
+  const head = await git(
+    ["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"],
+    repoRoot
+  );
+  if (head) return head.replace(/^origin\//, "");
+
+  for (const name of ["main", "master"]) {
+    const found = await git(
+      ["rev-parse", "--verify", "--quiet", `refs/heads/${name}`],
+      repoRoot
+    );
+    if (found) return name;
+  }
+  return null;
+}

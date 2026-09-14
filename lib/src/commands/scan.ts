@@ -27,6 +27,7 @@ import {
 import {
   GitContext,
   GitRename,
+  readDefaultBranch,
   readGitContext,
   readRenames,
 } from "../scan/git";
@@ -205,15 +206,8 @@ export const scan = async (
           "[ditto scan] not a git repository - this scan can be imported but not re-synced\n"
         )
       );
-    } else if (gitContext.dirty) {
-      logger.writeLine(
-        logger.warnText(
-          `[ditto scan] uncommitted changes present; recording ${gitContext.commitSha.slice(
-            0,
-            7
-          )} as an approximate commit\n`
-        )
-      );
+    } else {
+      await assertScannableCheckout(gitContext);
     }
 
     const token = await initAPIToken();
@@ -278,6 +272,42 @@ export const scan = async (
     await quit(null, 0);
   }
 };
+
+/**
+ * A scan's code links point at the sha and branch it recorded. A GitHub scan
+ * always reads the default branch at a committed sha, so anything else here
+ * links to lines the default branch never had, and the next resync reads them
+ * as changed or removed.
+ */
+async function assertScannableCheckout(gitContext: GitContext): Promise<void> {
+  if (gitContext.dirty) {
+    throw new DittoError({
+      type: ErrorType.ScanError,
+      message:
+        "Uncommitted changes are present. Commit or stash them, then scan again.",
+      exitCode: 1,
+      expected: true,
+      data: { rawErrorMessage: "scan refused: dirty working tree" },
+    });
+  }
+
+  // A detached HEAD is what `actions/checkout` leaves behind, and it is on the
+  // default branch's commit often enough that refusing it would break CI scans.
+  if (gitContext.branch === null) return;
+
+  const defaultBranch = await readDefaultBranch(gitContext.repoRoot);
+  if (!defaultBranch || defaultBranch === gitContext.branch) return;
+
+  throw new DittoError({
+    type: ErrorType.ScanError,
+    message: `On branch "${gitContext.branch}", but this repo's default branch is "${defaultBranch}". Check out "${defaultBranch}" and scan again.`,
+    exitCode: 1,
+    expected: true,
+    data: {
+      rawErrorMessage: `scan refused: on ${gitContext.branch}, default is ${defaultBranch}`,
+    },
+  });
+}
 
 /**
  * What git says moved between the last scan of this repo and HEAD, so a renamed/moved file

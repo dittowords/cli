@@ -9,6 +9,7 @@ import path from "node:path";
  */
 import {
   normalizeRepoKey,
+  readDefaultBranch,
   readGitContext,
   readRenames,
   REPO_KEY_PATTERN,
@@ -209,5 +210,45 @@ describe("readRenames", () => {
 
   test("a sha this clone does not have gives no renames", async () => {
     await expect(readRenames(dir, "0".repeat(40))).resolves.toEqual([]);
+  });
+});
+
+describe("readDefaultBranch", () => {
+  let dir: string;
+
+  const run = (...args: string[]) =>
+    execFileSync("git", ["-c", "commit.gpgsign=false", ...args], {
+      cwd: dir,
+      stdio: "ignore",
+    });
+
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "git-def-"));
+    execFileSync("git", ["init", "-b", "trunk"], { cwd: dir, stdio: "ignore" });
+    run("config", "user.email", "test@example.com");
+    run("config", "user.name", "Test");
+    fs.writeFileSync(path.join(dir, "a.txt"), "hello\n");
+    run("add", ".");
+    run("commit", "-m", "init");
+  });
+
+  afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  test("falls back to null with no origin/HEAD and no main or master", async () => {
+    await expect(readDefaultBranch(dir)).resolves.toBeNull();
+  });
+
+  test("falls back to master, then prefers main", async () => {
+    run("branch", "master");
+    await expect(readDefaultBranch(dir)).resolves.toBe("master");
+    run("branch", "main");
+    await expect(readDefaultBranch(dir)).resolves.toBe("main");
+  });
+
+  test("origin/HEAD wins over the fallbacks", async () => {
+    run("remote", "add", "origin", "git@github.com:Ditto/App.git");
+    run("update-ref", "refs/remotes/origin/trunk", "HEAD");
+    run("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/trunk");
+    await expect(readDefaultBranch(dir)).resolves.toBe("trunk");
   });
 });

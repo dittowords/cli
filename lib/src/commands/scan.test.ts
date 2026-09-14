@@ -6,6 +6,10 @@ import path from "node:path";
 import { GitContext } from "../scan/git";
 import { assertScannableCheckout } from "./scan";
 
+// `open` is ESM-only and babel-jest can't load it. A factory keeps Jest from
+// reaching for the real module, which importing `./scan` would otherwise pull in.
+jest.mock("open", () => ({ __esModule: true, default: jest.fn() }));
+
 /** A real repo on `main`, so the gate runs the `git` calls it runs in a scan. */
 describe("assertScannableCheckout", () => {
   let dir: string;

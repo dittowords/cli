@@ -274,12 +274,13 @@ export const scan = async (
 };
 
 /**
- * A scan's code links point at the sha and branch it recorded. A GitHub scan
- * always reads the default branch at a committed sha, so anything else here
- * links to lines the default branch never had, and the next resync reads them
- * as changed or removed.
+ * Code links address the sha and branch a scan recorded, so a scan taken
+ * anywhere but a clean default branch points at lines that branch never had,
+ * and the next scan reads them as changed or removed.
  */
-async function assertScannableCheckout(gitContext: GitContext): Promise<void> {
+export async function assertScannableCheckout(
+  gitContext: GitContext
+): Promise<void> {
   if (gitContext.dirty) {
     throw new DittoError({
       type: ErrorType.ScanError,
@@ -291,12 +292,28 @@ async function assertScannableCheckout(gitContext: GitContext): Promise<void> {
     });
   }
 
-  // A detached HEAD is what `actions/checkout` leaves behind, and it is on the
-  // default branch's commit often enough that refusing it would break CI scans.
-  if (gitContext.branch === null) return;
-
+  // Not knowing the default branch is no evidence the checkout is wrong, and
+  // leaves nothing to name in the message.
   const defaultBranch = await readDefaultBranch(gitContext.repoRoot);
-  if (!defaultBranch || defaultBranch === gitContext.branch) return;
+  if (!defaultBranch) return;
+
+  // Refused outright rather than checked for ancestry: nothing runs `scan`
+  // unattended today, and a CI scan on merge would need `merge-base
+  // --is-ancestor` here to pass.
+  if (gitContext.branch === null) {
+    throw new DittoError({
+      type: ErrorType.ScanError,
+      message: `HEAD is detached at ${gitContext.commitSha.slice(
+        0,
+        7
+      )}. Check out "${defaultBranch}" and scan again.`,
+      exitCode: 1,
+      expected: true,
+      data: { rawErrorMessage: "scan refused: detached HEAD" },
+    });
+  }
+
+  if (defaultBranch === gitContext.branch) return;
 
   throw new DittoError({
     type: ErrorType.ScanError,

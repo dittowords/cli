@@ -161,11 +161,10 @@ export async function readRenames(
 }
 
 /**
- * The branch a GitHub scan would read. Uses `origin/HEAD` when the clone has it
- * — `git clone` sets it, a CI checkout often does not — and otherwise takes
- * whichever of `main` or `master` exists locally.
+ * The branch a GitHub scan would read. `git clone` records it as `origin/HEAD`;
+ * a hand-built or CI checkout often has no such ref, hence the fallbacks.
  *
- * @returns `null` when none of those resolve.
+ * @returns `null` when none of the three resolve.
  */
 export async function readDefaultBranch(
   repoRoot: string

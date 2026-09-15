@@ -8,6 +8,7 @@ import path from "node:path";
  * directory for the awkward states. Needs `git` on PATH and a real `.git`.
  */
 import {
+  fetchRemoteDefaultBranch,
   normalizeRepoKey,
   readDefaultBranch,
   readGitContext,
@@ -248,7 +249,75 @@ describe("readDefaultBranch", () => {
   test("origin/HEAD wins over the fallbacks", async () => {
     run("remote", "add", "origin", "git@github.com:Ditto/App.git");
     run("update-ref", "refs/remotes/origin/trunk", "HEAD");
-    run("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/trunk");
+    run(
+      "symbolic-ref",
+      "refs/remotes/origin/HEAD",
+      "refs/remotes/origin/trunk"
+    );
     await expect(readDefaultBranch(dir)).resolves.toBe("trunk");
+  });
+});
+
+/**
+ * A bare repo on disk stands in for the remote, so `ls-remote` really runs
+ * without reaching the network.
+ */
+describe("fetchRemoteDefaultBranch", () => {
+  let remote: string;
+  let clone: string;
+
+  const git = (cwd: string, ...args: string[]) =>
+    execFileSync("git", ["-c", "commit.gpgsign=false", ...args], {
+      cwd,
+      stdio: "ignore",
+    });
+
+  beforeAll(() => {
+    const root = fs.mkdtempSync(
+      path.join(fs.realpathSync(os.tmpdir()), "git-remote-")
+    );
+    const seed = path.join(root, "seed");
+    remote = path.join(root, "remote.git");
+    clone = path.join(root, "clone");
+
+    fs.mkdirSync(seed);
+    execFileSync("git", ["init", "-b", "main"], { cwd: seed, stdio: "ignore" });
+    git(seed, "config", "user.email", "test@example.com");
+    git(seed, "config", "user.name", "Test");
+    fs.writeFileSync(path.join(seed, "a.txt"), "hello\n");
+    git(seed, "add", ".");
+    git(seed, "commit", "-m", "init");
+    execFileSync("git", ["clone", "--bare", seed, remote], { stdio: "ignore" });
+    execFileSync("git", ["clone", remote, clone], { stdio: "ignore" });
+  });
+
+  afterAll(() =>
+    fs.rmSync(path.dirname(remote), { recursive: true, force: true })
+  );
+
+  test("reads the remote's default branch", async () => {
+    await expect(fetchRemoteDefaultBranch(clone)).resolves.toBe("main");
+  });
+
+  test("sees a rename the local ref still has as the old name", async () => {
+    git(remote, "branch", "-m", "main", "trunk");
+    git(remote, "symbolic-ref", "HEAD", "refs/heads/trunk");
+
+    // The stale local answer is the whole reason this function exists.
+    await expect(readDefaultBranch(clone)).resolves.toBe("main");
+    await expect(fetchRemoteDefaultBranch(clone)).resolves.toBe("trunk");
+  });
+
+  test("resolves null when the remote is unreachable", async () => {
+    const orphan = fs.mkdtempSync(
+      path.join(fs.realpathSync(os.tmpdir()), "git-orphan-")
+    );
+    execFileSync("git", ["init", "-b", "main"], {
+      cwd: orphan,
+      stdio: "ignore",
+    });
+    git(orphan, "remote", "add", "origin", path.join(orphan, "nope.git"));
+    await expect(fetchRemoteDefaultBranch(orphan)).resolves.toBeNull();
+    fs.rmSync(orphan, { recursive: true, force: true });
   });
 });

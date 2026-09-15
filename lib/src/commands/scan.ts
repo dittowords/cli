@@ -25,6 +25,7 @@ import {
   formatOverLimitMessage,
 } from "../scan/analyzeDirectories";
 import {
+  fetchRemoteDefaultBranch,
   GitContext,
   GitRename,
   readDefaultBranch,
@@ -294,8 +295,8 @@ export async function assertScannableCheckout(
 
   // Not knowing the default branch is no evidence the checkout is wrong, and
   // leaves nothing to name in the message.
-  const defaultBranch = await readDefaultBranch(gitContext.repoRoot);
-  if (!defaultBranch) return;
+  const localDefault = await readDefaultBranch(gitContext.repoRoot);
+  if (!localDefault) return;
 
   // Refused outright rather than checked for ancestry: nothing runs `scan`
   // unattended today, and a CI scan on merge would need `merge-base
@@ -306,18 +307,29 @@ export async function assertScannableCheckout(
       message: `HEAD is detached at ${gitContext.commitSha.slice(
         0,
         7
-      )}. Check out "${defaultBranch}" and scan again.`,
+      )}. Check out "${localDefault}" and scan again.`,
       exitCode: 1,
       expected: true,
       data: { rawErrorMessage: "scan refused: detached HEAD" },
     });
   }
 
+  if (localDefault === gitContext.branch) return;
+
+  // `origin/HEAD` is a snapshot from clone time, so a default branch renamed
+  // since would refuse a checkout that is in fact correct. Only worth the round
+  // trip on the path that is about to stop someone.
+  const remoteDefault = await fetchRemoteDefaultBranch(gitContext.repoRoot);
+  const defaultBranch = remoteDefault ?? localDefault;
   if (defaultBranch === gitContext.branch) return;
+
+  const staleHint = remoteDefault
+    ? ""
+    : " If the default branch was renamed recently, run `git remote set-head origin -a` to refresh it.";
 
   throw new DittoError({
     type: ErrorType.ScanError,
-    message: `On branch "${gitContext.branch}", but this repo's default branch is "${defaultBranch}". Check out "${defaultBranch}" and scan again.`,
+    message: `On branch "${gitContext.branch}", but this repo's default branch is "${defaultBranch}". Check out "${defaultBranch}" and scan again.${staleHint}`,
     exitCode: 1,
     expected: true,
     data: {

@@ -37,7 +37,9 @@ describe("assertScannableCheckout", () => {
     fs.writeFileSync(path.join(dir, "a.txt"), "hello\n");
     run("add", ".");
     run("commit", "-m", "init");
-    run("remote", "add", "origin", "git@github.com:Ditto/App.git");
+    // A local path, so the remote-confirm step fails instantly instead of
+    // reaching the network from a unit test.
+    run("remote", "add", "origin", path.join(dir, "no-such-remote.git"));
     run("update-ref", "refs/remotes/origin/main", "HEAD");
     run("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main");
   });
@@ -70,6 +72,41 @@ describe("assertScannableCheckout", () => {
     await expect(
       assertScannableCheckout(context({ branch: null }))
     ).rejects.toThrow(/detached/);
+  });
+
+  test("a stale local default branch defers to the remote", async () => {
+    const root = fs.mkdtempSync(
+      path.join(fs.realpathSync(os.tmpdir()), "scan-stale-")
+    );
+    const seed = path.join(root, "seed");
+    const remote = path.join(root, "remote.git");
+    const clone = path.join(root, "clone");
+    const at = (cwd: string, ...args: string[]) =>
+      execFileSync("git", ["-c", "commit.gpgsign=false", ...args], {
+        cwd,
+        stdio: "ignore",
+      });
+
+    fs.mkdirSync(seed);
+    execFileSync("git", ["init", "-b", "main"], { cwd: seed, stdio: "ignore" });
+    at(seed, "config", "user.email", "test@example.com");
+    at(seed, "config", "user.name", "Test");
+    fs.writeFileSync(path.join(seed, "a.txt"), "hello\n");
+    at(seed, "add", ".");
+    at(seed, "commit", "-m", "init");
+    execFileSync("git", ["clone", "--bare", seed, remote], { stdio: "ignore" });
+    execFileSync("git", ["clone", remote, clone], { stdio: "ignore" });
+
+    at(remote, "branch", "-m", "main", "trunk");
+    at(remote, "symbolic-ref", "HEAD", "refs/heads/trunk");
+
+    // The clone still records `main`; without the remote check this would
+    // refuse a checkout that is now correct.
+    await expect(
+      assertScannableCheckout(context({ repoRoot: clone, branch: "trunk" }))
+    ).resolves.toBeUndefined();
+
+    fs.rmSync(root, { recursive: true, force: true });
   });
 
   test("passes when the default branch can't be resolved", async () => {

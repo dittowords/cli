@@ -73,10 +73,18 @@ export function normalizeRepoKey(remoteUrl: string): string | null {
   return REPO_KEY_PATTERN.test(key) ? key : null;
 }
 
-/** Trimmed stdout, or `null` if git is missing or exits non-zero. */
-async function git(args: string[], cwd: string): Promise<string | null> {
+/** Trimmed stdout, or `null` if git is missing, times out, or exits non-zero. */
+async function git(
+  args: string[],
+  cwd: string,
+  opts: { timeout?: number; env?: NodeJS.ProcessEnv } = {}
+): Promise<string | null> {
   try {
-    const { stdout } = await execFileAsync("git", args, { cwd });
+    const { stdout } = await execFileAsync("git", args, {
+      cwd,
+      timeout: opts.timeout,
+      env: opts.env ? { ...process.env, ...opts.env } : undefined,
+    });
     return stdout.trim();
   } catch {
     return null;
@@ -158,4 +166,52 @@ export async function readRenames(
     renames.push({ from: fields[i + 1], to: fields[i + 2] });
   }
   return renames;
+}
+
+/**
+ * The branch a GitHub scan would read. `git clone` records it as `origin/HEAD`;
+ * a hand-built or CI checkout often has no such ref, hence the fallbacks.
+ *
+ * @returns `null` when none of the three resolve.
+ */
+export async function readDefaultBranch(
+  repoRoot: string
+): Promise<string | null> {
+  const head = await git(
+    ["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"],
+    repoRoot
+  );
+  if (head) return head.replace(/^origin\//, "");
+
+  for (const name of ["main", "master"]) {
+    const found = await git(
+      ["rev-parse", "--verify", "--quiet", `refs/heads/${name}`],
+      repoRoot
+    );
+    if (found) return name;
+  }
+  return null;
+}
+
+/**
+ * The default branch as `origin` reports it right now, over the network. The
+ * local `origin/HEAD` is only a snapshot from clone time, so this is the way to
+ * notice a default branch that has since been renamed.
+ *
+ * @returns `null` when the remote is unreachable, wants credentials we don't
+ * have, or reports no HEAD.
+ */
+export async function fetchRemoteDefaultBranch(
+  repoRoot: string
+): Promise<string | null> {
+  const out = await git(["ls-remote", "--symref", "origin", "HEAD"], repoRoot, {
+    timeout: 5000,
+    // Without these git prompts for credentials on a private repo with no
+    // cached auth, and the scan hangs on a password nobody is there to type.
+    env: { GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "/bin/true" },
+  });
+  if (!out) return null;
+
+  const ref = /^ref:\s+refs\/heads\/(\S+)\s+HEAD$/m.exec(out);
+  return ref ? ref[1] : null;
 }

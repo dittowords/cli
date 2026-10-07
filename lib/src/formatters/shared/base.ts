@@ -102,19 +102,25 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
   }
 
   /**
-   * Returns the query parameters for the fetchText API request
+   * Returns the query params shared by every export request (/v2/textItems/export and
+   * /v2/components/export): the stringified filter and richText. Per-request params
+   * (variantId, format, format-specific flags) are added by BaseExportFormatter.
    */
   protected generateQueryParams(filters: PullFilters = {}): PullQueryParams {
     let params: PullQueryParams = {
       filter: JSON.stringify(filters),
     };
 
-    if (this.projectConfig.richText) {
-      params.richText = this.projectConfig.richText;
-    }
+    // We must check against undefined here, as `richText: false` is a valid value that should be respected
+    // A truthy check here would incorrectly ignore an explicit `false` value on an output-level setting.
+    const richText =
+      this.output.richText !== undefined
+        ? this.output.richText
+        : this.projectConfig.richText;
 
-    if (this.output.richText) {
-      params.richText = this.output.richText;
+    // Now, we do a truthiness check - richText: false translates to no param on the request itself
+    if (richText) {
+      params.richText = richText;
     }
 
     return params;

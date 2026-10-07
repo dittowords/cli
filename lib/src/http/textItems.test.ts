@@ -1,105 +1,8 @@
 import getHttpClient from "./client";
-import { fetchTextItems, exportTextItems } from "./textItems";
+import { exportTextItems } from "./textItems";
 import { AxiosError } from "axios";
 
 jest.mock("./client");
-
-describe("fetchTextItems", () => {
-  const mockHttpClient = {
-    get: jest.fn(),
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    (getHttpClient as jest.Mock).mockReturnValue(mockHttpClient);
-  });
-
-  it("should throw error with response message", async () => {
-    const mockAxiosError = new AxiosError("Invalid format");
-    mockAxiosError.response = {
-      status: 400,
-      data: { message: "Invalid project filters" },
-    } as any;
-
-    mockHttpClient.get.mockRejectedValue(mockAxiosError);
-
-    await expect(
-      fetchTextItems(
-        {
-          filter: "asdfasdf",
-        },
-        {}
-      )
-    ).rejects.toThrow(
-      "Invalid project filters. Please check your project filters and try again."
-    );
-  });
-
-  it("should parse response with richText field correctly", async () => {
-    const mockResponse = {
-      status: 200,
-      data: [
-        {
-          id: "text1",
-          text: "Plain text",
-          richText: "<p>Rich <strong>HTML</strong> text</p>",
-          status: "FINAL",
-          tags: ["tag1"],
-          notes: "Test note",
-          integrated: true,
-          pluralForm: null,
-          variableIds: ["var1"],
-          projectId: "project1",
-          variantId: "variant1",
-        },
-      ],
-    };
-
-    mockHttpClient.get.mockResolvedValue(mockResponse);
-
-    const result = await fetchTextItems(
-      {
-        filter: "",
-        richText: "html",
-      },
-      {}
-    );
-
-    expect(result).toEqual([...mockResponse.data]);
-  });
-
-  it("should handle response without richText field", async () => {
-    const mockResponse = {
-      data: [
-        {
-          id: "text1",
-          text: "Plain text only",
-          richText: undefined,
-          status: "FINAL",
-          notes: "",
-          tags: [],
-          integrated: true,
-          pluralForm: null,
-          variableIds: [],
-          projectId: "project1",
-          variantId: null,
-        },
-      ],
-    };
-
-    mockHttpClient.get.mockResolvedValue(mockResponse);
-
-    const result = await fetchTextItems(
-      {
-        filter: "",
-        richText: "html",
-      },
-      {}
-    );
-
-    expect(result).toEqual([...mockResponse.data]);
-  });
-});
 
 describe("exportTextItems", () => {
   const mockHttpClient = {
@@ -165,6 +68,25 @@ describe("exportTextItems", () => {
       {
         filter: "",
         format: "arb" as any,
+      },
+      {}
+    );
+
+    expect(result).toEqual(mockData);
+  });
+
+  it("should parse json_i18next responses that include a __variables_used array", async () => {
+    const mockData = {
+      greeting: "Hello {{Name}}, you are {{Age}}",
+      __variables_used: ["Age", "Name"],
+    };
+    mockHttpClient.get.mockResolvedValue({ status: 200, data: mockData });
+
+    const result = await exportTextItems(
+      {
+        filter: "",
+        format: "json_i18next",
+        includeVariableSummary: "true",
       },
       {}
     );

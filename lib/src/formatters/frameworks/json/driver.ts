@@ -5,7 +5,13 @@ import javascriptCodegenMixin from "../../mixins/javascriptCodegenMixin";
 import JSONOutputFile from "../../shared/fileTypes/JSONOutputFile";
 import BaseFramework from "./base";
 
-export default class I18NextFramework extends applyMixins(
+/**
+ * Generates the `index.js` driver file that re-exports every generated JSON file, grouped by
+ * variant. Shared by the `i18next` and `vue-i18n` frameworks: the framework-specific parts
+ * (plural keys, single-brace interpolation) are rendered by the API's `json_i18next` and
+ * `json_vue_i18n` export formats, so the driver itself is the same for both.
+ */
+export default class JsonDriverFramework extends applyMixins(
   BaseFramework,
   javascriptCodegenMixin
 ) {

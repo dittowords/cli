@@ -780,5 +780,57 @@ describe("BaseFormatter", () => {
 
       expect(params.richText).toBe("html");
     });
+
+    /**
+     * An output-level `richText` replaces the project-level one outright -- including when it's
+     * `false`, which exists specifically so one output can opt out of a project-wide setting.
+     */
+    describe("richText precedence", () => {
+      const values = [undefined, false, "html", "html_paragraphs"] as const;
+      type RichTextSetting = (typeof values)[number];
+
+      const resolve = (project: RichTextSetting, output: RichTextSetting) => {
+        const formatter = new TestBaseFormatter(
+          createMockOutput(output === undefined ? {} : { richText: output }),
+          createMockProjectConfig(
+            project === undefined ? {} : { richText: project }
+          ),
+          createMockMeta()
+        );
+        return formatter.generateQueryParams().richText;
+      };
+
+      const cases = values.flatMap((project) =>
+        values.map((output) => {
+          const winner = output !== undefined ? output : project;
+          return {
+            project,
+            output,
+            expected: winner ? winner : undefined,
+          };
+        })
+      );
+
+      it.each(cases)(
+        "project $project + output $output -> $expected",
+        ({ project, output, expected }) => {
+          expect(resolve(project, output)).toBe(expected);
+        }
+      );
+
+      it("does not request rich text when an output sets false over a project-level html", () => {
+        expect(resolve("html", false)).toBeUndefined();
+      });
+
+      it("does not request rich text when an output sets false over a project-level html_paragraphs", () => {
+        expect(resolve("html_paragraphs", false)).toBeUndefined();
+      });
+
+      it("never sends richText: false as a query param", () => {
+        for (const { project, output } of cases) {
+          expect(resolve(project, output)).not.toBe(false);
+        }
+      });
+    });
   });
 });

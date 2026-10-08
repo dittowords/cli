@@ -87,8 +87,6 @@ export default abstract class BaseExportFormatter<
         : exportComponents(request.params, this.meta)
     );
 
-    // Assembled in request order (not completion order) so the maps -- and therefore the
-    // order files are written and listed in any driver file -- are deterministic.
     const textItemsMap: TextItemsMap = {};
     const componentsMap: ComponentsMap = {};
     requests.forEach((request, index) => {

@@ -455,6 +455,32 @@ describe("BaseExportFormatter", () => {
       });
     });
 
+    it("sends folders, statuses, integrated and tags in the component filter", async () => {
+      const projectConfig = createMockProjectConfig({
+        variants: [{ id: "base" }],
+        components: { folders: [{ id: "folder1" }] },
+        statuses: ["FINAL"],
+        integrated: true,
+        tags: { values: ["tag-1"] },
+      });
+      const formatter = new TestBaseExportFormatter(
+        createMockOutput(),
+        projectConfig,
+        createMockMeta()
+      );
+      mockExportComponents.mockResolvedValue(createMockComponentsContent());
+
+      await formatter.fetchAPIData();
+
+      const [params] = mockExportComponents.mock.calls[0];
+      expect(JSON.parse(params.filter)).toEqual({
+        folders: [{ id: "folder1" }],
+        statuses: ["FINAL"],
+        integrated: true,
+        tags: { values: ["tag-1"] },
+      });
+    });
+
     it("should return empty object when components not configured", async () => {
       const projectConfig = createMockProjectConfig({
         components: undefined,

@@ -200,12 +200,16 @@ export default abstract class BaseExportFormatter<
   private buildComponentRequests(): ExportRequest[] {
     if (!this.projectConfig.components && !this.output.components) return [];
 
-    const { folders, statuses, tags } = super.generateComponentPullFilter();
+    const { folders, statuses, integrated, tags } =
+      super.generateComponentPullFilter();
 
     return this.variants.map((variant) => ({
       kind: "components" as const,
       variantId: variant.id,
-      params: this.exportParams({ folders, statuses, tags }, variant.id),
+      params: this.exportParams(
+        { folders, statuses, integrated, tags },
+        variant.id
+      ),
     }));
   }
 

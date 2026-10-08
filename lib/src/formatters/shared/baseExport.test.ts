@@ -10,7 +10,10 @@ import { exportComponents } from "../../http/components";
 import fetchProjects from "../../http/projects";
 import fetchVariants from "../../http/variants";
 import generateSwiftDriver from "../../http/cli";
-import BaseExportFormatter, { ExportFormatAPIData } from "./baseExport";
+import BaseExportFormatter, {
+  ExportFormatAPIData,
+  OutputFileSourceKind,
+} from "./baseExport";
 import IOSStringsOutputFile from "./fileTypes/IOSStringsOutputFile";
 import { EXPORT_REQUEST_CONCURRENCY } from "../../utils/concurrency";
 import { ExportFormat, PullQueryParams } from "../../http/types";
@@ -53,7 +56,8 @@ class TestBaseExportFormatter extends BaseExportFormatter<
     filePrefix: string,
     fileName: string,
     variantId: string,
-    content: string
+    content: string,
+    sourceKind: OutputFileSourceKind
   ) {}
   public extraParams: Partial<PullQueryParams> = {};
   protected exportQueryParams() {
@@ -129,6 +133,7 @@ describe("BaseExportFormatter", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFetchProjects.mockResolvedValue([]);
   });
 
   /***********************************************************
@@ -274,10 +279,10 @@ describe("BaseExportFormatter", () => {
       );
 
       const mockProjects = [
-        { id: "project-1", name: "Project 1" },
-        { id: "project-2", name: "Project 2" },
-        { id: "project-3", name: "Project 3" },
-        { id: "project-4", name: "Project 4" },
+        { id: "project-1", name: "Project 1", baseId: null },
+        { id: "project-2", name: "Project 2", baseId: null },
+        { id: "project-3", name: "Project 3", baseId: null },
+        { id: "project-4", name: "Project 4", baseId: null },
       ];
       const mockContent = createMockIOSStringsContent();
 
@@ -361,6 +366,182 @@ describe("BaseExportFormatter", () => {
           base: mockContent,
         },
       });
+    });
+  });
+
+  /***********************************************************
+   * text item sources (bases)
+   ***********************************************************/
+  describe("text item sources", () => {
+    const filtersRequested = () =>
+      mockExportTextItems.mock.calls.map(([params]) => {
+        const { projects, bases } = JSON.parse(params.filter);
+        return { projects, bases };
+      });
+
+    const runWith = async (overrides: Partial<ProjectConfigYAML>) => {
+      const formatter = new TestBaseExportFormatter(
+        createMockOutput(),
+        createMockProjectConfig({ variants: [{ id: "base" }], ...overrides }),
+        createMockMeta()
+      );
+      mockExportTextItems.mockResolvedValue(createMockIOSStringsContent());
+      return formatter.fetchAPIData();
+    };
+
+    it("exports a project connected to a configured base together with that base", async () => {
+      mockFetchProjects.mockResolvedValue([
+        { id: "project1", name: "Project 1", baseId: "base1" },
+      ]);
+
+      const { textItemSources, textItemsMap } = await runWith({
+        projects: [{ id: "project1" }],
+        bases: [{ id: "base1" }],
+      });
+
+      expect(textItemSources).toEqual([
+        {
+          kind: "base",
+          id: "base1",
+          fetchBaseTextItems: true,
+          projectIds: ["project1"],
+        },
+      ]);
+      expect(filtersRequested()).toEqual([
+        { projects: [{ id: "project1" }], bases: [{ id: "base1" }] },
+      ]);
+      expect(Object.keys(textItemsMap)).toEqual(["base1"]);
+    });
+
+    it("groups projects sharing an unconfigured base without requesting the base", async () => {
+      mockFetchProjects.mockResolvedValue([
+        { id: "project1", name: "Project 1", baseId: "base1" },
+        { id: "project2", name: "Project 2", baseId: "base1" },
+        { id: "project3", name: "Project 3", baseId: null },
+      ]);
+
+      const { textItemSources } = await runWith({
+        projects: [{ id: "project1" }, { id: "project2" }, { id: "project3" }],
+      });
+
+      expect(textItemSources).toEqual([
+        {
+          kind: "base",
+          id: "base1",
+          fetchBaseTextItems: false,
+          projectIds: ["project1", "project2"],
+        },
+        { kind: "project", id: "project3" },
+      ]);
+      expect(filtersRequested()).toEqual([
+        { projects: [{ id: "project1" }, { id: "project2" }] },
+        { projects: [{ id: "project3" }] },
+      ]);
+    });
+
+    it("groups every workspace project by base when projects is empty", async () => {
+      mockFetchProjects.mockResolvedValue([
+        { id: "project1", name: "Project 1", baseId: null },
+        { id: "project2", name: "Project 2", baseId: "base1" },
+        { id: "project3", name: "Project 3", baseId: "base1" },
+      ]);
+
+      const { textItemSources } = await runWith({ projects: [] });
+
+      expect(textItemSources).toEqual([
+        {
+          kind: "base",
+          id: "base1",
+          fetchBaseTextItems: false,
+          projectIds: ["project2", "project3"],
+        },
+        { kind: "project", id: "project1" },
+      ]);
+    });
+
+    it("exports a configured base on its own when none of its projects are configured", async () => {
+      const { textItemSources } = await runWith({
+        bases: [{ id: "base1" }],
+      });
+
+      expect(mockFetchProjects).not.toHaveBeenCalled();
+      expect(textItemSources).toEqual([
+        {
+          kind: "base",
+          id: "base1",
+          fetchBaseTextItems: true,
+          projectIds: [],
+        },
+      ]);
+      expect(filtersRequested()).toEqual([{ bases: [{ id: "base1" }] }]);
+    });
+
+    it("prefers output-level bases over project-level bases", async () => {
+      const formatter = new TestBaseExportFormatter(
+        createMockOutput({ bases: [{ id: "output-base" }] }),
+        createMockProjectConfig({
+          variants: [{ id: "base" }],
+          bases: [{ id: "config-base" }],
+        }),
+        createMockMeta()
+      );
+      mockExportTextItems.mockResolvedValue(createMockIOSStringsContent());
+
+      const { textItemSources } = await formatter.fetchAPIData();
+
+      expect(textItemSources.map((source) => source.id)).toEqual([
+        "output-base",
+      ]);
+    });
+
+    it("uses only output-level bases when the top level sets only projects", async () => {
+      const formatter = new TestBaseExportFormatter(
+        createMockOutput({ bases: [{ id: "output-base" }] }),
+        createMockProjectConfig({
+          variants: [{ id: "base" }],
+          projects: [{ id: "config-project" }],
+        }),
+        createMockMeta()
+      );
+      mockExportTextItems.mockResolvedValue(createMockIOSStringsContent());
+
+      const { textItemSources } = await formatter.fetchAPIData();
+
+      expect(mockFetchProjects).not.toHaveBeenCalled();
+      expect(textItemSources).toEqual([
+        {
+          kind: "base",
+          id: "output-base",
+          fetchBaseTextItems: true,
+          projectIds: [],
+        },
+      ]);
+    });
+
+    it("uses only output-level projects when the top level sets only bases", async () => {
+      const formatter = new TestBaseExportFormatter(
+        createMockOutput({ projects: [{ id: "output-project" }] }),
+        createMockProjectConfig({
+          variants: [{ id: "base" }],
+          bases: [{ id: "config-base" }],
+        }),
+        createMockMeta()
+      );
+      mockExportTextItems.mockResolvedValue(createMockIOSStringsContent());
+
+      const { textItemSources } = await formatter.fetchAPIData();
+
+      expect(textItemSources).toEqual([
+        { kind: "project", id: "output-project" },
+      ]);
+    });
+
+    it("makes no text item requests when neither projects nor bases are configured", async () => {
+      const { textItemSources } = await runWith({});
+
+      expect(mockFetchProjects).not.toHaveBeenCalled();
+      expect(textItemSources).toEqual([]);
+      expect(mockExportTextItems).not.toHaveBeenCalled();
     });
   });
 
@@ -529,6 +710,7 @@ describe("BaseExportFormatter", () => {
 
       expect(fetchVariantsSpy).toHaveBeenCalled();
       expect(result).toEqual({
+        textItemSources: [{ kind: "project", id: "project1" }],
         textItemsMap: {
           project1: {
             base: mockTextContent,
@@ -556,29 +738,59 @@ describe("BaseExportFormatter", () => {
 
       const createOutputSpy = jest.spyOn(formatter, "createOutputFile");
       const mockTextContent = createMockIOSStringsContent();
-      const data = {
+      const data: ExportFormatAPIData = {
+        textItemSources: [
+          { kind: "project", id: "project1" },
+          {
+            kind: "base",
+            id: "base1",
+            fetchBaseTextItems: true,
+            projectIds: ["project2"],
+          },
+        ],
         textItemsMap: {
           project1: {
             base: mockTextContent,
             variant1: mockTextContent,
           },
+          base1: {
+            base: mockTextContent,
+          },
         },
-        componentsMap: {},
+        componentsMap: {
+          base: mockTextContent,
+        },
       };
 
       formatter.transformAPIData(data);
-      expect(createOutputSpy).toHaveBeenCalledTimes(2);
+      expect(createOutputSpy).toHaveBeenCalledTimes(4);
       expect(createOutputSpy).toHaveBeenCalledWith(
         "project1",
         `project1___base`,
         "base",
-        mockTextContent
+        mockTextContent,
+        "project"
       );
       expect(createOutputSpy).toHaveBeenCalledWith(
         "project1",
         `project1___variant1`,
         "variant1",
-        mockTextContent
+        mockTextContent,
+        "project"
+      );
+      expect(createOutputSpy).toHaveBeenCalledWith(
+        "base1",
+        `base1___base`,
+        "base",
+        mockTextContent,
+        "base"
+      );
+      expect(createOutputSpy).toHaveBeenCalledWith(
+        "components",
+        `components___base`,
+        "base",
+        mockTextContent,
+        "components"
       );
     });
   });

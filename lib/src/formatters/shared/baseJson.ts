@@ -1,5 +1,5 @@
 import BaseExportFormatter, { ExportFormatAPIData } from "./baseExport";
-import JSONOutputFile from "./fileTypes/JSONOutputFile";
+import JSONOutputFile, { JSONFileMetadata } from "./fileTypes/JSONOutputFile";
 import OutputFile from "./fileTypes/OutputFile";
 import { PullQueryParams, VARIABLES_USED_KEY } from "../../http/types";
 import fetchVariables, { Variable } from "../../http/variables";
@@ -12,7 +12,7 @@ import { getFrameworkProcessor } from "../frameworks/json";
  * `variables.json` and, when a framework is configured, an `index.js` driver file.
  */
 export default abstract class BaseJSONFormatter extends BaseExportFormatter<
-  JSONOutputFile<{ variantId: string }>
+  JSONOutputFile<JSONFileMetadata>
 > {
   private workspaceVariables: Variable[] = [];
   private usedVariableNames = new Set<string>();
@@ -28,7 +28,7 @@ export default abstract class BaseJSONFormatter extends BaseExportFormatter<
   }
 
   protected createOutputFile(
-    _filePrefix: string,
+    filePrefix: string,
     fileName: string,
     variantId: string,
     content: Record<string, string> & { [VARIABLES_USED_KEY]?: string[] }
@@ -50,7 +50,10 @@ export default abstract class BaseJSONFormatter extends BaseExportFormatter<
     this.outputFiles[fileName] ??= new JSONOutputFile({
       filename: fileName,
       path: this.outDir,
-      metadata: { variantId: variantId || BASE_VARIANT_ID },
+      metadata: {
+        variantId: variantId || BASE_VARIANT_ID,
+        projectId: filePrefix === "components" ? undefined : filePrefix,
+      },
       content: exportedText,
     });
   }

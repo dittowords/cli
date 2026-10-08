@@ -36,7 +36,10 @@ class TestJSONFormatter extends JSONFormatter {
     // @ts-ignore
     return this.exportFormat;
   }
-  public getOutputFiles(): Record<string, JSONOutputFile<{ variantId: string }>> {
+  public getOutputFiles(): Record<
+    string,
+    JSONOutputFile<{ variantId: string }>
+  > {
     // @ts-ignore
     return this.outputFiles;
   }
@@ -170,9 +173,9 @@ describe("JSON formatters", () => {
     it("contains the union of every file's __variables_used, keyed by id", async () => {
       mockExportTextItems.mockImplementation(
         async (params): Promise<Record<string, string | string[]>> =>
-        params.variantId === "french"
-          ? { bonjour: "Bonjour {{Name}}", __variables_used: ["Name"] }
-          : { hello: "Hi {{Age}}", __variables_used: ["Age"] }
+          params.variantId === "french"
+            ? { bonjour: "Bonjour {{Name}}", __variables_used: ["Name"] }
+            : { hello: "Hi {{Age}}", __variables_used: ["Age"] }
       );
       mockExportComponents.mockResolvedValue({
         shared: "{{State}}",
@@ -260,5 +263,58 @@ describe("JSON formatters", () => {
       expect(driver.formattedContent).toContain("...project_1___base");
       expect(driver.formattedContent).toContain("...components___base");
     });
+
+    it.each(["commonjs", "module"])(
+      "orders %s imports and spreads by project ID, then components",
+      async (type) => {
+        const formatter = new TestJSONFormatter(
+          // @ts-ignore
+          createMockOutput({ framework: "i18next", type }),
+          createMockProjectConfig({
+            projects: [{ id: "zeta" }, { id: "alpha" }, { id: "mid" }],
+            variants: [{ id: "french" }, { id: "base" }],
+            components: { folders: [] },
+          }),
+          createMockMeta()
+        );
+        mockExportComponents.mockResolvedValue({ shared: "Shared" });
+
+        const files = await formatter.run();
+
+        const content = findFile(files, "index")!.formattedContent;
+        const importOrder = [
+          ...content.matchAll(/^(?:const|import) (\w+)/gm),
+        ].map(([, name]) => name);
+        expect(importOrder).toEqual([
+          "alpha___base",
+          "alpha___french",
+          "mid___base",
+          "mid___french",
+          "zeta___base",
+          "zeta___french",
+          "components___base",
+          "components___french",
+        ]);
+
+        const spreadOrder = (variantId: string) => {
+          const block = content.match(
+            new RegExp(`"${variantId}": \\{([^}]*)\\}`)
+          )![1];
+          return [...block.matchAll(/\.\.\.(\w+)/g)].map(([, name]) => name);
+        };
+        expect(spreadOrder("base")).toEqual([
+          "alpha___base",
+          "mid___base",
+          "zeta___base",
+          "components___base",
+        ]);
+        expect(spreadOrder("french")).toEqual([
+          "alpha___french",
+          "mid___french",
+          "zeta___french",
+          "components___french",
+        ]);
+      }
+    );
   });
 });

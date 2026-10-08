@@ -49,113 +49,6 @@ describe("BaseFormatter", () => {
    ***********************************************************/
 
   describe("generateTextItemPullFilter", () => {
-    it("should use projectConfig projects and variants when output does not override", () => {
-      const projectConfig = createMockProjectConfig({
-        projects: [{ id: "project1" }, { id: "project2" }],
-        variants: [{ id: "variant1" }],
-      });
-      const output = createMockOutput();
-      const formatter = new TestBaseFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const filters = formatter.generateTextItemPullFilter();
-
-      expect(filters).toEqual({
-        projects: [{ id: "project1" }, { id: "project2" }],
-        variants: [{ id: "variant1" }],
-      });
-    });
-
-    it("should override projects with output.projects when provided", () => {
-      const projectConfig = createMockProjectConfig({
-        projects: [{ id: "project1" }, { id: "project2" }],
-        variants: [{ id: "variant1" }],
-      });
-      const output = createMockOutput({
-        projects: [{ id: "project3" }],
-      });
-      const formatter = new TestBaseFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const filters = formatter.generateTextItemPullFilter();
-
-      expect(filters).toEqual({
-        projects: [{ id: "project3" }],
-        variants: [{ id: "variant1" }],
-      });
-    });
-
-    it("should override variants with output.variants when provided", () => {
-      const projectConfig = createMockProjectConfig({
-        projects: [{ id: "project1" }],
-        variants: [{ id: "variant1" }],
-      });
-      const output = createMockOutput({
-        variants: [{ id: "variant2" }, { id: "variant3" }],
-      });
-      const formatter = new TestBaseFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const filters = formatter.generateTextItemPullFilter();
-
-      expect(filters).toEqual({
-        projects: [{ id: "project1" }],
-        variants: [{ id: "variant2" }, { id: "variant3" }],
-      });
-    });
-
-    it("should override both projects and variants when both are provided in output", () => {
-      const projectConfig = createMockProjectConfig({
-        projects: [{ id: "project1" }],
-        variants: [{ id: "variant1" }],
-      });
-      const output = createMockOutput({
-        projects: [{ id: "project2" }],
-        variants: [{ id: "variant2" }],
-      });
-      const formatter = new TestBaseFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const filters = formatter.generateTextItemPullFilter();
-
-      expect(filters).toEqual({
-        projects: [{ id: "project2" }],
-        variants: [{ id: "variant2" }],
-      });
-    });
-
-    it("should handle undefined projects and variants in projectConfig", () => {
-      const projectConfig = createMockProjectConfig({
-        projects: undefined,
-        variants: undefined,
-      });
-      const output = createMockOutput();
-      const formatter = new TestBaseFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const filters = formatter.generateTextItemPullFilter();
-
-      expect(filters).toEqual({
-        projects: undefined,
-        variants: undefined,
-      });
-    });
-
     it("should use projectConfig statuses and integrated when output does not override", () => {
       const projectConfig = createMockProjectConfig({
         statuses: ["FINAL"],
@@ -171,8 +64,6 @@ describe("BaseFormatter", () => {
       const filters = formatter.generateTextItemPullFilter();
 
       expect(filters).toEqual({
-        projects: [],
-        variants: [],
         statuses: ["FINAL"],
         integrated: true,
       });
@@ -195,8 +86,6 @@ describe("BaseFormatter", () => {
       const filters = formatter.generateTextItemPullFilter();
 
       expect(filters).toEqual({
-        projects: [],
-        variants: [],
         statuses: ["WIP"],
         integrated: true,
       });
@@ -219,8 +108,6 @@ describe("BaseFormatter", () => {
       const filters = formatter.generateTextItemPullFilter();
 
       expect(filters).toEqual({
-        projects: [],
-        variants: [],
         statuses: ["FINAL"],
         integrated: false,
       });
@@ -244,8 +131,6 @@ describe("BaseFormatter", () => {
       const filters = formatter.generateTextItemPullFilter();
 
       expect(filters).toEqual({
-        projects: [],
-        variants: [],
         statuses: ["WIP"],
         integrated: false,
       });
@@ -327,7 +212,7 @@ describe("BaseFormatter", () => {
       return formatter.generateComponentPullFilter();
     };
 
-    it("should use projectConfig components.folders and variants when output is not provided", () => {
+    it("should use projectConfig components.folders when output is not provided", () => {
       const filters = getComponentPullFilters({
         components: {
           folders: [
@@ -335,7 +220,6 @@ describe("BaseFormatter", () => {
             { id: "folder2", excludeNestedFolders: true },
           ],
         },
-        variants: [{ id: "variant1" }],
       });
 
       expect(filters).toEqual({
@@ -343,7 +227,6 @@ describe("BaseFormatter", () => {
           { id: "folder1" },
           { id: "folder2", excludeNestedFolders: true },
         ],
-        variants: [{ id: "variant1" }],
       });
     });
 
@@ -352,12 +235,9 @@ describe("BaseFormatter", () => {
         components: {
           folders: undefined,
         },
-        variants: [{ id: "variant1" }],
       });
 
-      expect(filters).toEqual({
-        variants: [{ id: "variant1" }],
-      });
+      expect(filters).toEqual({});
       expect(filters.folders).toBeUndefined();
     });
 
@@ -367,7 +247,6 @@ describe("BaseFormatter", () => {
           components: {
             folders: [{ id: "folder1" }],
           },
-          variants: [{ id: "variant1" }],
         },
         {
           components: {
@@ -378,59 +257,15 @@ describe("BaseFormatter", () => {
 
       expect(filters).toEqual({
         folders: [{ id: "folder2" }],
-        variants: [{ id: "variant1" }],
-      });
-    });
-
-    it("should override variants with output.variants when provided", () => {
-      const filters = getComponentPullFilters(
-        {
-          components: {
-            folders: [{ id: "folder1" }],
-          },
-          variants: [{ id: "variant1" }],
-        },
-        {
-          variants: [{ id: "variant2" }],
-        }
-      );
-
-      expect(filters).toEqual({
-        folders: [{ id: "folder1" }],
-        variants: [{ id: "variant2" }],
-      });
-    });
-
-    it("should override both folders and variants when both are provided in output", () => {
-      const filters = getComponentPullFilters(
-        {
-          components: {
-            folders: [{ id: "folder1" }],
-          },
-          variants: [{ id: "variant1" }],
-        },
-        {
-          components: {
-            folders: [{ id: "folder2" }],
-          },
-          variants: [{ id: "variant2" }],
-        }
-      );
-      expect(filters).toEqual({
-        folders: [{ id: "folder2" }],
-        variants: [{ id: "variant2" }],
       });
     });
 
     it("should handle undefined components in projectConfig", () => {
       const filters = getComponentPullFilters({
         components: undefined,
-        variants: [{ id: "variant1" }],
       });
 
-      expect(filters).toEqual({
-        variants: [{ id: "variant1" }],
-      });
+      expect(filters).toEqual({});
       expect(filters.folders).toBeUndefined();
     });
 
@@ -445,7 +280,6 @@ describe("BaseFormatter", () => {
 
       expect(filters).toEqual({
         folders: [{ id: "folder1" }],
-        variants: [],
         statuses: ["WIP"],
         integrated: true,
       });
@@ -467,7 +301,6 @@ describe("BaseFormatter", () => {
 
       expect(filters).toEqual({
         folders: [{ id: "folder1" }],
-        variants: [],
         statuses: ["WIP"],
         integrated: true,
       });
@@ -489,7 +322,6 @@ describe("BaseFormatter", () => {
 
       expect(filters).toEqual({
         folders: [{ id: "folder1" }],
-        variants: [],
         statuses: ["FINAL"],
         integrated: false,
       });
@@ -512,7 +344,6 @@ describe("BaseFormatter", () => {
 
       expect(filters).toEqual({
         folders: [{ id: "folder1" }],
-        variants: [],
         statuses: ["WIP"],
         integrated: false,
       });
@@ -568,32 +399,6 @@ describe("BaseFormatter", () => {
    ***********************************************************/
 
   describe("generateQueryParams", () => {
-    it("should generate query params for provided text item filters", () => {
-      const projectConfig = createMockProjectConfig({
-        projects: [{ id: "project1" }],
-        variants: [{ id: "variant1" }],
-      });
-      const output = createMockOutput();
-      const formatter = new TestBaseFormatter(
-        output,
-        projectConfig,
-        createMockMeta()
-      );
-
-      const params = formatter.generateQueryParams(
-        formatter.generateTextItemPullFilter()
-      );
-
-      expect(params.filter).toBeDefined();
-      expect(params.filter).toEqual(expect.any(String));
-      const parsedFilter = JSON.parse(params.filter);
-      expect(parsedFilter).toEqual({
-        projects: [{ id: "project1" }],
-        variants: [{ id: "variant1" }],
-      });
-      expect(params.richText).toBeUndefined();
-    });
-
     it("should generate query params with tags in text item filters", () => {
       const projectConfig = createMockProjectConfig({
         projects: [{ id: "project1" }],
@@ -663,8 +468,6 @@ describe("BaseFormatter", () => {
       expect(params.filter).toEqual(expect.any(String));
       const parsedFilter = JSON.parse(params.filter);
       expect(parsedFilter).toEqual({
-        projects: [{ id: "project1" }],
-        variants: [],
         statuses: ["FINAL"],
         integrated: true,
       });
@@ -676,7 +479,6 @@ describe("BaseFormatter", () => {
         components: {
           folders: [{ id: "folder1" }],
         },
-        variants: [{ id: "variant1" }],
       });
       const output = createMockOutput();
       const formatter = new TestBaseFormatter(
@@ -693,7 +495,6 @@ describe("BaseFormatter", () => {
       const parsedFilter = JSON.parse(params.filter);
       expect(parsedFilter).toEqual({
         folders: [{ id: "folder1" }],
-        variants: [{ id: "variant1" }],
       });
       expect(params.richText).toBeUndefined();
     });
@@ -718,7 +519,6 @@ describe("BaseFormatter", () => {
       const parsedFilter = JSON.parse(params.filter);
       expect(parsedFilter).toEqual({
         folders: [],
-        variants: [],
         statuses: ["WIP"],
         integrated: false,
       });

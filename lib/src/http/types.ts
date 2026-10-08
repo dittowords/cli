@@ -6,7 +6,6 @@ export interface PullFilters {
     id: string;
     excludeNestedFolders?: boolean;
   }[];
-  variants?: { id: string }[];
   statuses?: ITextStatus[];
   integrated?: boolean;
   tags?: ITagsFilter;

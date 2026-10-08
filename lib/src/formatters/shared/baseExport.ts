@@ -1,4 +1,5 @@
 import {
+  PullFilters,
   PullQueryParams,
   ExportFormat,
   ExportTextItemsResponse,
@@ -13,16 +14,45 @@ import OutputFile from "./fileTypes/OutputFile";
 import { BASE_VARIANT_ID } from "../../utils/constants";
 import { mapWithConcurrency } from "../../utils/concurrency";
 
+/**
+ * A base and the configured projects connected to it, exported together into one file named
+ * for the base. A base text item and its project instances may share a developer ID but can
+ * hold different values, and the export endpoint only resolves those conflicts across items
+ * it sees in the same request.
+ */
+type BaseTextItemSource = {
+  kind: "base";
+  /** Developer ID of the base */
+  id: string;
+  /** True if the base is in the config, so its own text items are exported too */
+  fetchBaseTextItems: boolean;
+  /** Developer IDs of the configured projects connected to this base */
+  projectIds: string[];
+};
+
+/** A configured project that isn't connected to a base, exported into its own file. */
+type ProjectTextItemSource = {
+  kind: "project";
+  /** Developer ID of the project */
+  id: string;
+};
+
+/** Where the text items for one output file come from. `id` is the file's name prefix. */
+export type TextItemSource = BaseTextItemSource | ProjectTextItemSource;
+
+export type OutputFileSourceKind = TextItemSource["kind"] | "components";
+
 interface ComponentsMap {
   [variantId: string]: ExportComponentsResponse;
 }
 interface TextItemsMap {
-  [projectId: string]: {
+  [sourceId: string]: {
     [variantId: string]: ExportTextItemsResponse;
   };
 }
 
 export type ExportFormatAPIData = {
+  textItemSources: TextItemSource[];
   textItemsMap: TextItemsMap;
   componentsMap: ComponentsMap;
 };
@@ -35,7 +65,7 @@ type ExportOutputFile<MetadataType extends { variantId: string }> = OutputFile<
 type ExportRequest =
   | {
       kind: "textItems";
-      projectId: string;
+      sourceId: string;
       variantId: string;
       params: PullQueryParams;
     }
@@ -56,7 +86,8 @@ export default abstract class BaseExportFormatter<
     filePrefix: string,
     fileName: string,
     variantId: string,
-    content: string | Record<string, unknown>
+    content: string | Record<string, unknown>,
+    sourceKind: OutputFileSourceKind
   ): void;
 
   /**
@@ -75,9 +106,10 @@ export default abstract class BaseExportFormatter<
    */
   protected async fetchAPIData(): Promise<ExportFormatAPIData> {
     await this.fetchVariants();
+    const textItemSources = await this.resolveTextItemSources();
 
     const requests: ExportRequest[] = [
-      ...(await this.buildTextItemRequests()),
+      ...this.buildTextItemRequests(textItemSources),
       ...this.buildComponentRequests(),
     ];
 
@@ -91,38 +123,38 @@ export default abstract class BaseExportFormatter<
     const componentsMap: ComponentsMap = {};
     requests.forEach((request, index) => {
       if (request.kind === "textItems") {
-        textItemsMap[request.projectId] ??= {};
-        textItemsMap[request.projectId][request.variantId] = responses[index];
+        textItemsMap[request.sourceId] ??= {};
+        textItemsMap[request.sourceId][request.variantId] = responses[index];
       } else {
         componentsMap[request.variantId] = responses[index];
       }
     });
 
-    return { textItemsMap, componentsMap };
+    return { textItemSources, textItemsMap, componentsMap };
   }
 
   /**
-   * For each project/variant permutation and its fetched file data,
-   * create a new file with the expected project/variant name
+   * For each source/variant permutation and its fetched file data,
+   * create a new file named for the source (a base or a project) and variant
    *
    * @returns {OutputFile[]} List of Output Files
    */
   protected transformAPIData(data: ExportFormatAPIData): OutputFile[] {
-    Object.entries(data.textItemsMap).forEach(
-      ([projectId, projectVariants]) => {
-        Object.entries(projectVariants).forEach(
-          ([variantId, textItemsFileContent]) => {
-            const fileName = `${projectId}___${variantId || BASE_VARIANT_ID}`;
-            this.createOutputFile(
-              projectId,
-              fileName,
-              variantId,
-              textItemsFileContent
-            );
-          }
-        );
-      }
-    );
+    for (const source of data.textItemSources) {
+      const sourceVariants = data.textItemsMap[source.id] ?? {};
+      Object.entries(sourceVariants).forEach(
+        ([variantId, textItemsFileContent]) => {
+          const fileName = `${source.id}___${variantId || BASE_VARIANT_ID}`;
+          this.createOutputFile(
+            source.id,
+            fileName,
+            variantId,
+            textItemsFileContent,
+            source.kind
+          );
+        }
+      );
+    }
 
     Object.entries(data.componentsMap).forEach(
       ([variantId, componentsFileContent]) => {
@@ -132,7 +164,8 @@ export default abstract class BaseExportFormatter<
           filePrefix,
           fileName,
           variantId,
-          componentsFileContent
+          componentsFileContent,
+          "components"
         );
       }
     );
@@ -159,31 +192,88 @@ export default abstract class BaseExportFormatter<
   }
 
   /**
-   * One text item export request per configured project and variant.
-   * Skipped entirely if no projects field is present in the config.
+   * Works out which files the configured projects and bases produce: one per base, holding
+   * every configured project connected to it (plus the base's own text items, if the base is
+   * configured), and one per configured project that isn't connected to a base.
+   *
+   * Returns no sources if neither a projects nor a bases field is present in the config.
    */
-  private async buildTextItemRequests(): Promise<ExportRequest[]> {
-    if (!this.projectConfig.projects && !this.output.projects) return [];
-    let projects: { id: string }[] =
-      this.output.projects ?? this.projectConfig.projects ?? [];
+  private async resolveTextItemSources(): Promise<TextItemSource[]> {
+    // projects and bases are taken together from the output if it sets either one,
+    // otherwise from the top level -- never one from each.
+    const { projects: configuredProjects, bases: configuredBases } =
+      this.output.projects || this.output.bases
+        ? this.output
+        : this.projectConfig;
+
+    // The projects list is the only place a project's baseId is exposed, so it's needed
+    // whenever any projects are configured.
+    const workspaceProjects = configuredProjects
+      ? await fetchProjects(this.meta)
+      : [];
+
+    const baseIdByProjectId = new Map(
+      workspaceProjects.map((project) => [project.id, project.baseId])
+    );
 
     // projects: [] corresponds to exporting every project in the workspace
-    // In this case, we need to fetch the whole list of projects so we can fire individual requests for each one
-    if (projects.length === 0) {
-      projects = await fetchProjects(this.meta);
+    const projectIds = (
+      configuredProjects?.length === 0
+        ? workspaceProjects
+        : configuredProjects ?? []
+    ).map((project) => project.id);
+
+    const baseSources = new Map<string, BaseTextItemSource>();
+    const getBaseSource = (baseId: string) => {
+      if (!baseSources.has(baseId)) {
+        baseSources.set(baseId, {
+          kind: "base",
+          id: baseId,
+          fetchBaseTextItems: false,
+          projectIds: [],
+        });
+      }
+      return baseSources.get(baseId)!;
+    };
+
+    const projectSources: ProjectTextItemSource[] = [];
+
+    for (const base of configuredBases ?? []) {
+      getBaseSource(base.id).fetchBaseTextItems = true;
     }
 
+    for (const projectId of projectIds) {
+      const baseId = baseIdByProjectId.get(projectId);
+      if (baseId) {
+        getBaseSource(baseId).projectIds.push(projectId);
+      } else {
+        projectSources.push({ kind: "project", id: projectId });
+      }
+    }
+
+    return [...baseSources.values(), ...projectSources];
+  }
+
+  /**
+   * One text item export request per text item source and variant.
+   */
+  private buildTextItemRequests(sources: TextItemSource[]): ExportRequest[] {
     const { statuses, integrated, tags } = super.generateTextItemPullFilter();
     const requests: ExportRequest[] = [];
 
-    for (const project of projects) {
+    for (const source of sources) {
       for (const variant of this.variants) {
         requests.push({
           kind: "textItems",
-          projectId: project.id,
+          sourceId: source.id,
           variantId: variant.id,
           params: this.exportParams(
-            { projects: [{ id: project.id }], statuses, integrated, tags },
+            {
+              ...this.textItemSourceFilter(source),
+              statuses,
+              integrated,
+              tags,
+            },
             variant.id
           ),
         });
@@ -191,6 +281,21 @@ export default abstract class BaseExportFormatter<
     }
 
     return requests;
+  }
+
+  private textItemSourceFilter(source: TextItemSource): PullFilters {
+    // Individual, non-connected project
+    if (source.kind === "project") {
+      return { projects: [{ id: source.id }] };
+    }
+
+    // Base and/or project(s) connected to that base, grouped into a single file
+    return {
+      ...(source.projectIds.length > 0 && {
+        projects: source.projectIds.map((id) => ({ id })),
+      }),
+      ...(source.fetchBaseTextItems && { bases: [{ id: source.id }] }),
+    };
   }
 
   /**

@@ -8,6 +8,11 @@ import { ZTagsFilter, ZTextStatus } from "../http/types";
 export const ZBaseOutputFilters = z.object({
   framework: z.undefined().optional(),
   projects: z.array(z.object({ id: z.string() })).optional(),
+  // Must list specific bases: unlike `projects: []`, there's no option to pull every base
+  bases: z
+    .array(z.object({ id: z.string() }))
+    .min(1, "bases list, if present, cannot be empty")
+    .optional(),
   components: z
     .object({
       folders: z

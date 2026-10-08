@@ -38,7 +38,7 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
   /**
    * Generates the metadata filters that apply to every text item export.
    * These are the filters that are the same for every request/file.
-   * Does not include variants or projects, which differ per request and are added separately.
+   * Does not include variants, projects, or bases, which differ per request and are added separately.
    */
   protected generateTextItemPullFilter() {
     let filters: PullFilters = {

@@ -35,22 +35,17 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
     this.meta = meta;
   }
 
+  /**
+   * Generates the metadata filters that apply to every text item export.
+   * These are the filters that are the same for every request/file.
+   * Does not include variants or projects, which differ per request and are added separately.
+   */
   protected generateTextItemPullFilter() {
     let filters: PullFilters = {
-      projects: this.projectConfig.projects,
-      variants: this.projectConfig.variants,
       statuses: this.projectConfig.statuses,
       integrated: this.projectConfig.integrated,
       tags: this.projectConfig.tags,
     };
-
-    if (this.output.projects) {
-      filters.projects = this.output.projects;
-    }
-
-    if (this.output.variants) {
-      filters.variants = this.output.variants;
-    }
 
     if (this.output.statuses) {
       filters.statuses = this.output.statuses;
@@ -67,12 +62,15 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
     return filters;
   }
 
+  /**
+   * Returns the filters that are the same for every component export request.
+   * Does not include variants, which differ per request and are added separately.
+   */
   protected generateComponentPullFilter() {
     let filters: PullFilters = {
       ...(this.projectConfig.components?.folders && {
         folders: this.projectConfig.components.folders,
       }),
-      variants: this.projectConfig.variants,
       statuses: this.projectConfig.statuses,
       integrated: this.projectConfig.integrated,
       tags: this.projectConfig.tags,
@@ -80,10 +78,6 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
 
     if (this.output.components) {
       filters.folders = this.output.components?.folders;
-    }
-
-    if (this.output.variants) {
-      filters.variants = this.output.variants;
     }
 
     if (this.output.statuses) {
@@ -102,19 +96,25 @@ export default class BaseFormatter<OutputFileType, APIDataType = unknown> {
   }
 
   /**
-   * Returns the query parameters for the fetchText API request
+   * Returns the query params shared by every export request (/v2/textItems/export and
+   * /v2/components/export): the stringified filter and richText. Per-request params
+   * (variantId, format, format-specific flags) are added by BaseExportFormatter.
    */
   protected generateQueryParams(filters: PullFilters = {}): PullQueryParams {
     let params: PullQueryParams = {
       filter: JSON.stringify(filters),
     };
 
-    if (this.projectConfig.richText) {
-      params.richText = this.projectConfig.richText;
-    }
+    // We must check against undefined here, as `richText: false` is a valid value that should be respected
+    // A truthy check here would incorrectly ignore an explicit `false` value on an output-level setting.
+    const richText =
+      this.output.richText !== undefined
+        ? this.output.richText
+        : this.projectConfig.richText;
 
-    if (this.output.richText) {
-      params.richText = this.output.richText;
+    // Now, we do a truthiness check - richText: false translates to no param on the request itself
+    if (richText) {
+      params.richText = richText;
     }
 
     return params;

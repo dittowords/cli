@@ -2,16 +2,24 @@ import JavascriptOutputFile from "../../shared/fileTypes/JavascriptOutputFile";
 import OutputFile from "../../shared/fileTypes/OutputFile";
 import { applyMixins } from "../../shared";
 import javascriptCodegenMixin from "../../mixins/javascriptCodegenMixin";
-import JSONOutputFile from "../../shared/fileTypes/JSONOutputFile";
+import JSONOutputFile, {
+  JSONFileMetadata,
+} from "../../shared/fileTypes/JSONOutputFile";
 import BaseFramework from "./base";
 
-export default class I18NextFramework extends applyMixins(
+/**
+ * Generates the `index.js` driver file that re-exports every generated JSON file, grouped by
+ * variant. Shared by the `i18next` and `vue-i18n` frameworks: the framework-specific parts
+ * (plural keys, single-brace interpolation) are rendered by the API's `json_i18next` and
+ * `json_vue_i18n` export formats, so the driver itself is the same for both.
+ */
+export default class JsonDriverFramework extends applyMixins(
   BaseFramework,
   javascriptCodegenMixin
 ) {
-  process(
-    outputJsonFiles: Record<string, JSONOutputFile<{ variantId: string }>>
-  ) {
+  process(outputJsonFiles: Record<string, JSONOutputFile<JSONFileMetadata>>) {
+    const sortedFiles = sortDriverFiles(Object.values(outputJsonFiles));
+
     let moduleType: "commonjs" | "module" = "commonjs";
     if ("type" in this.output && this.output.type) {
       moduleType = this.output.type;
@@ -22,18 +30,15 @@ export default class I18NextFramework extends applyMixins(
       path: this.outDir,
     });
 
-    const filesGroupedByVariantId = Object.values(outputJsonFiles).reduce(
-      (acc, file) => {
-        const variantId = file.metadata.variantId;
-        acc[variantId] ??= [];
-        acc[variantId].push(file);
-        return acc;
-      },
-      {} as Record<string, OutputFile[]>
-    );
+    const filesGroupedByVariantId = sortedFiles.reduce((acc, file) => {
+      const variantId = file.metadata.variantId;
+      acc[variantId] ??= [];
+      acc[variantId].push(file);
+      return acc;
+    }, {} as Record<string, OutputFile[]>);
 
     if (moduleType === "module") {
-      driverFile.content += this.generateImportStatements(outputJsonFiles);
+      driverFile.content += this.generateImportStatements(sortedFiles);
 
       driverFile.content += `\n`;
 
@@ -41,7 +46,7 @@ export default class I18NextFramework extends applyMixins(
         this.generateExportedObjectString(filesGroupedByVariantId)
       );
     } else {
-      driverFile.content += this.generateRequireStatements(outputJsonFiles);
+      driverFile.content += this.generateRequireStatements(sortedFiles);
 
       driverFile.content += `\n`;
 
@@ -55,14 +60,12 @@ export default class I18NextFramework extends applyMixins(
 
   /**
    * Generates the import statements for the driver file with type "module". One import per generated json file.
-   * @param outputJsonFiles - The output json files.
+   * @param files - The output json files, in driver order.
    * @returns The import statements, stringified.
    */
-  private generateImportStatements(
-    outputJsonFiles: Record<string, JSONOutputFile<{ variantId: string }>>
-  ) {
+  private generateImportStatements(files: JSONOutputFile<JSONFileMetadata>[]) {
     let importStatements = "";
-    for (const file of Object.values(outputJsonFiles)) {
+    for (const file of files) {
       importStatements += this.codegenDefaultImport(
         this.sanitizeStringForJSVariableName(file.filename),
         `./${file.filenameWithExtension}`
@@ -73,14 +76,12 @@ export default class I18NextFramework extends applyMixins(
 
   /**
    * Generates the require statements for the driver file with type "commonjs". One require per generated json file.
-   * @param outputJsonFiles - The output json files.
+   * @param files - The output json files, in driver order.
    * @returns The require statements, stringified.
    */
-  private generateRequireStatements(
-    outputJsonFiles: Record<string, JSONOutputFile<{ variantId: string }>>
-  ) {
+  private generateRequireStatements(files: JSONOutputFile<JSONFileMetadata>[]) {
     let requireStatements = "";
-    for (const file of Object.values(outputJsonFiles)) {
+    for (const file of files) {
       requireStatements += this.codegenDefaultRequire(
         this.sanitizeStringForJSVariableName(file.filename),
         `./${file.filenameWithExtension}`
@@ -120,4 +121,24 @@ export default class I18NextFramework extends applyMixins(
 
     return defaultExportObjectString;
   }
+}
+
+/**
+ * Orders files for the driver: projects alphabetically by ID, then components last. Within a
+ * project, files are ordered by variant ID. This order is used for the imports/requires and
+ * for the spreads within each variant, so when two files share a key, the later one wins
+ * predictably (components override projects).
+ */
+function sortDriverFiles(files: JSONOutputFile<JSONFileMetadata>[]) {
+  const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+  return [...files].sort((a, b) => {
+    const { projectId: aProject } = a.metadata;
+    const { projectId: bProject } = b.metadata;
+    if (aProject === undefined && bProject !== undefined) return 1;
+    if (aProject !== undefined && bProject === undefined) return -1;
+    return (
+      compare(aProject ?? "", bProject ?? "") ||
+      compare(a.metadata.variantId, b.metadata.variantId)
+    );
+  });
 }

@@ -1,5 +1,6 @@
 import {
   PullQueryParams,
+  ExportFormat,
   ExportTextItemsResponse,
   ExportComponentsResponse,
 } from "../../http/types";
@@ -10,6 +11,7 @@ import fetchProjects from "../../http/projects";
 import fetchVariants from "../../http/variants";
 import OutputFile from "./fileTypes/OutputFile";
 import { BASE_VARIANT_ID } from "../../utils/constants";
+import { mapWithConcurrency } from "../../utils/concurrency";
 
 interface ComponentsMap {
   [variantId: string]: ExportComponentsResponse;
@@ -20,7 +22,7 @@ interface TextItemsMap {
   };
 }
 
-type ExportFormatAPIData = {
+export type ExportFormatAPIData = {
   textItemsMap: TextItemsMap;
   componentsMap: ComponentsMap;
 };
@@ -30,16 +32,25 @@ type ExportOutputFile<MetadataType extends { variantId: string }> = OutputFile<
   MetadataType
 >;
 
+type ExportRequest =
+  | {
+      kind: "textItems";
+      projectId: string;
+      variantId: string;
+      params: PullQueryParams;
+    }
+  | { kind: "components"; variantId: string; params: PullQueryParams };
+
 /**
- * Base Class for File Formats That Leverage API /v2/components/export and /v2/textItems/export endpoints
- * These file formats fetch their file data directly from the API and write to files, unlike in the case of
- * default /v2/textItems + /v2/components JSON, we cannot perform any manipulation on the data itself
+ * Base class for every output format. All formats are rendered by the API's
+ * /v2/textItems/export and /v2/components/export endpoints -- the CLI decides which files to
+ * produce, requests each one, and writes the response through.
  */
 export default abstract class BaseExportFormatter<
   TOutputFile extends ExportOutputFile<{ variantId: string }>
 > extends BaseFormatter<TOutputFile, ExportFormatAPIData> {
-  protected abstract exportFormat: PullQueryParams["format"];
-  private variants: { id: string }[] = [];
+  protected abstract exportFormat: ExportFormat;
+  protected variants: { id: string }[] = [];
 
   protected abstract createOutputFile(
     filePrefix: string,
@@ -48,12 +59,44 @@ export default abstract class BaseExportFormatter<
     content: string | Record<string, unknown>
   ): void;
 
-  protected async fetchAPIData() {
+  /**
+   * Format-specific query params added to every export request this output makes.
+   * Can be overridden by subclasses to add format-specific query parameters to every export request of that format.
+   */
+  protected exportQueryParams(): Partial<PullQueryParams> {
+    return {};
+  }
+
+  /**
+   * Fetches every file this output writes.
+   *
+   * Text item and component requests share one bounded pool rather than each fanning out on
+   * its own, so the concurrency limit holds across the whole output and not per entity type.
+   */
+  protected async fetchAPIData(): Promise<ExportFormatAPIData> {
     await this.fetchVariants();
-    const [textItemsMap, componentsMap] = await Promise.all([
-      this.fetchTextItemsMap(),
-      this.fetchComponentsMap(),
-    ]);
+
+    const requests: ExportRequest[] = [
+      ...(await this.buildTextItemRequests()),
+      ...this.buildComponentRequests(),
+    ];
+
+    const responses = await mapWithConcurrency(requests, (request) =>
+      request.kind === "textItems"
+        ? exportTextItems(request.params, this.meta)
+        : exportComponents(request.params, this.meta)
+    );
+
+    const textItemsMap: TextItemsMap = {};
+    const componentsMap: ComponentsMap = {};
+    requests.forEach((request, index) => {
+      if (request.kind === "textItems") {
+        textItemsMap[request.projectId] ??= {};
+        textItemsMap[request.projectId][request.variantId] = responses[index];
+      } else {
+        componentsMap[request.variantId] = responses[index];
+      }
+    });
 
     return { textItemsMap, componentsMap };
   }
@@ -64,7 +107,7 @@ export default abstract class BaseExportFormatter<
    *
    * @returns {OutputFile[]} List of Output Files
    */
-  protected transformAPIData(data: ExportFormatAPIData): TOutputFile[] {
+  protected transformAPIData(data: ExportFormatAPIData): OutputFile[] {
     Object.entries(data.textItemsMap).forEach(
       ([projectId, projectVariants]) => {
         Object.entries(projectVariants).forEach(
@@ -102,7 +145,7 @@ export default abstract class BaseExportFormatter<
    * - Fetches from API if "all" configured
    * - Adds "base" variant by default if none configured
    */
-  private async fetchVariants(): Promise<void> {
+  protected async fetchVariants(): Promise<void> {
     let variants: { id: string }[] =
       this.output.variants ?? this.projectConfig.variants ?? [];
     if (variants.some((variant) => variant.id === "all")) {
@@ -116,88 +159,70 @@ export default abstract class BaseExportFormatter<
   }
 
   /**
-   * Fetches text item data via API for each configured project and variant
-   * in this output
-   *
-   * @returns text items mapped to their respective variant and project
+   * One text item export request per configured project and variant.
+   * Skipped entirely if no projects field is present in the config.
    */
-  private async fetchTextItemsMap(): Promise<TextItemsMap> {
-    if (!this.projectConfig.projects && !this.output.projects) return {};
+  private async buildTextItemRequests(): Promise<ExportRequest[]> {
+    if (!this.projectConfig.projects && !this.output.projects) return [];
     let projects: { id: string }[] =
       this.output.projects ?? this.projectConfig.projects ?? [];
 
-    const result: TextItemsMap = {};
-
+    // projects: [] corresponds to exporting every project in the workspace
+    // In this case, we need to fetch the whole list of projects so we can fire individual requests for each one
     if (projects.length === 0) {
       projects = await fetchProjects(this.meta);
     }
 
-    const fetchFileContentRequests = [];
+    const { statuses, integrated, tags } = super.generateTextItemPullFilter();
+    const requests: ExportRequest[] = [];
 
     for (const project of projects) {
-      result[project.id] = {};
-
       for (const variant of this.variants) {
-        // map "base" to undefined, as by default export endpoint returns base variant
-        const variantId =
-          variant.id === BASE_VARIANT_ID ? undefined : variant.id;
-        const { statuses, integrated, tags } = super.generateTextItemPullFilter();
-        const params: PullQueryParams = {
-          ...super.generateQueryParams({
-            projects: [{ id: project.id }],
-            statuses,
-            integrated,
-            tags,
-          }),
-          variantId,
-          format: this.exportFormat,
-        };
-        const addVariantToProjectMap = exportTextItems(params, this.meta).then(
-          (textItemsFileContent) => {
-            result[project.id][variant.id] = textItemsFileContent;
-          }
-        );
-        fetchFileContentRequests.push(addVariantToProjectMap);
+        requests.push({
+          kind: "textItems",
+          projectId: project.id,
+          variantId: variant.id,
+          params: this.exportParams(
+            { projects: [{ id: project.id }], statuses, integrated, tags },
+            variant.id
+          ),
+        });
       }
     }
 
-    await Promise.all(fetchFileContentRequests);
-
-    return result;
+    return requests;
   }
 
   /**
-   * Fetches component data via API.
-   * If individual variants configured, fetch by each otherwise fetch for all
-   * Skips the fetch request if components field is not specified in config.
-   *
-   * @returns components data
+   * One component export request per configured variant.
+   * Skipped entirely if no components field present in the config.
    */
-  private async fetchComponentsMap(): Promise<ComponentsMap> {
-    if (!this.projectConfig.components && !this.output.components) return {};
-    const result: ComponentsMap = {};
+  private buildComponentRequests(): ExportRequest[] {
+    if (!this.projectConfig.components && !this.output.components) return [];
 
-    const fetchFileContentRequests = [];
+    const { folders, statuses, integrated, tags } =
+      super.generateComponentPullFilter();
 
-    for (const variant of this.variants) {
-      // map "base" to undefined, as by default export endpoint returns base variant
-      const variantId = variant.id === BASE_VARIANT_ID ? undefined : variant.id;
-      const { folders, statuses, tags } = super.generateComponentPullFilter();
-      const params: PullQueryParams = {
-        // gets folders from base component pull filters, overwrites variants with just this iteration's variant
-        ...super.generateQueryParams({ folders, statuses, tags }),
-        variantId,
-        format: this.exportFormat,
-      };
-      const addVariantToMap = exportComponents(params, this.meta).then(
-        (componentsFileContent) => {
-          result[variant.id] = componentsFileContent;
-        }
-      );
-      fetchFileContentRequests.push(addVariantToMap);
-    }
+    return this.variants.map((variant) => ({
+      kind: "components" as const,
+      variantId: variant.id,
+      params: this.exportParams(
+        { folders, statuses, integrated, tags },
+        variant.id
+      ),
+    }));
+  }
 
-    await Promise.all(fetchFileContentRequests);
-    return result;
+  private exportParams(
+    filters: Parameters<BaseFormatter<TOutputFile>["generateQueryParams"]>[0],
+    variantId: string
+  ): PullQueryParams {
+    return {
+      ...super.generateQueryParams(filters),
+      // The export endpoints return the base variant when no variantId is given
+      variantId: variantId === BASE_VARIANT_ID ? undefined : variantId,
+      format: this.exportFormat,
+      ...this.exportQueryParams(),
+    };
   }
 }

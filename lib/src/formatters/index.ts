@@ -7,6 +7,7 @@ import ARBFormatter from "./arb";
 import IOSStringsFormatter from "./iosStrings";
 import IOSStringsDictFormatter from "./iosStringsDict";
 import JSONFormatter from "./json";
+import JSONVueI18nFormatter from "./jsonVueI18n";
 import logger from "../utils/logger";
 
 export default function formatOutput(
@@ -23,6 +24,10 @@ export default function formatOutput(
       if (output.framework === "arb") {
         return new ARBFormatter(output, projectConfig, meta).format();
       }
+      if (output.framework === "vue-i18n") {
+        return new JSONVueI18nFormatter(output, projectConfig, meta).format();
+      }
+      // Plain JSON and i18next share the same file contents; i18next also writes index.js
       return new JSONFormatter(output, projectConfig, meta).format();
     case "android":
       return new AndroidXMLFormatter(output, projectConfig, meta).format();

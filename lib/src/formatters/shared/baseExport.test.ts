@@ -10,7 +10,10 @@ import { exportComponents } from "../../http/components";
 import fetchProjects from "../../http/projects";
 import fetchVariants from "../../http/variants";
 import generateSwiftDriver from "../../http/cli";
-import BaseExportFormatter from "./baseExport";
+import BaseExportFormatter, { ExportFormatAPIData } from "./baseExport";
+import IOSStringsOutputFile from "./fileTypes/IOSStringsOutputFile";
+import { EXPORT_REQUEST_CONCURRENCY } from "../../utils/concurrency";
+import { ExportFormat, PullQueryParams } from "../../http/types";
 
 jest.mock("../../http/textItems");
 jest.mock("../../http/components");
@@ -40,41 +43,52 @@ const mockGenerateSwiftDriver = generateSwiftDriver as jest.MockedFunction<
   typeof generateSwiftDriver
 >;
 
-// fake test class to expose private methods
-// @ts-ignore
-class TestBaseExportFormatter extends BaseExportFormatter {
+// Test subclass that exposes the protected fetch pipeline
+class TestBaseExportFormatter extends BaseExportFormatter<
+  IOSStringsOutputFile<{ variantId: string }>
+> {
+  protected exportFormat: ExportFormat = "ios-strings";
+
   public createOutputFile(
+    filePrefix: string,
     fileName: string,
     variantId: string,
     content: string
   ) {}
+  public extraParams: Partial<PullQueryParams> = {};
+  protected exportQueryParams() {
+    return this.extraParams;
+  }
+
   public async fetchAPIData() {
     return super.fetchAPIData();
   }
 
-  public transformAPIData(
-    data: Parameters<BaseExportFormatter<any>["transformAPIData"]>[0]
-  ) {
+  public transformAPIData(data: ExportFormatAPIData) {
     return super.transformAPIData(data);
   }
 
   public async fetchVariants() {
-    return super["fetchVariants"]();
+    return super.fetchVariants();
   }
 
-  // Expose private methods for testing
+  public getVariants() {
+    return this.variants;
+  }
+
   public async fetchTextItemsMap() {
-    return super["fetchTextItemsMap"]();
+    return (await super.fetchAPIData()).textItemsMap;
   }
 
   public async fetchComponentsMap() {
-    return super["fetchComponentsMap"]();
+    return (await super.fetchAPIData()).componentsMap;
   }
 }
 
 describe("BaseExportFormatter", () => {
-  // @ts-ignore
-  const createMockOutput = (overrides: Partial<Output> = {}): Output => ({
+  const createMockOutput = (
+    overrides: Partial<Extract<Output, { format: "ios-strings" }>> = {}
+  ): Output => ({
     format: "ios-strings",
     outDir: "/test/output",
     ...overrides,
@@ -83,7 +97,6 @@ describe("BaseExportFormatter", () => {
   const createMockProjectConfig = (
     overrides: Partial<ProjectConfigYAML> = {}
   ): ProjectConfigYAML => ({
-    projects: [],
     variants: [],
     components: {
       folders: [],
@@ -134,14 +147,13 @@ describe("BaseExportFormatter", () => {
         { id: "variant2", name: "Variant 2" },
       ];
       mockFetchVariants.mockResolvedValue(mockVariants);
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
         createMockMeta()
       );
       await formatter.fetchVariants();
-      expect(formatter.variants).toEqual([
+      expect(formatter.getVariants()).toEqual([
         { id: "variant1", name: "Variant 1" },
         { id: "variant2", name: "Variant 2" },
         { id: "base" },
@@ -160,14 +172,13 @@ describe("BaseExportFormatter", () => {
         { id: "variant2", name: "Variant 2" },
       ];
       mockFetchVariants.mockResolvedValue(mockVariants);
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
         createMockMeta()
       );
       await formatter.fetchVariants();
-      expect(formatter.variants).toEqual([{ id: "base" }]);
+      expect(formatter.getVariants()).toEqual([{ id: "base" }]);
     });
 
     it("should prioritize outputs configured in output config", async () => {
@@ -184,14 +195,13 @@ describe("BaseExportFormatter", () => {
         { id: "variant2", name: "Variant 2" },
       ];
       mockFetchVariants.mockResolvedValue(mockVariants);
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
         createMockMeta()
       );
       await formatter.fetchVariants();
-      expect(formatter.variants).toEqual(output.variants);
+      expect(formatter.getVariants()).toEqual(output.variants);
     });
 
     it("should otherwise default to variants configured in project config", async () => {
@@ -206,14 +216,13 @@ describe("BaseExportFormatter", () => {
         { id: "variant2", name: "Variant 2" },
       ];
       mockFetchVariants.mockResolvedValue(mockVariants);
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
         createMockMeta()
       );
       await formatter.fetchVariants();
-      expect(formatter.variants).toEqual(projectConfig.variants);
+      expect(formatter.getVariants()).toEqual(projectConfig.variants);
     });
   });
 
@@ -221,14 +230,13 @@ describe("BaseExportFormatter", () => {
    * fetchTextItemsMap
    ***********************************************************/
 
-  describe("fetchTextItemsMap", () => {
+  describe("text item requests", () => {
     it("should fetch text items for projects and variants configured at root level", async () => {
       const projectConfig = createMockProjectConfig({
         projects: [{ id: "project1" }, { id: "project2" }],
         variants: [{ id: "variant1" }, { id: "base" }],
       });
       const output = createMockOutput();
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
@@ -259,7 +267,6 @@ describe("BaseExportFormatter", () => {
         variants: [{ id: "base" }],
       });
       const output = createMockOutput();
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
@@ -303,7 +310,6 @@ describe("BaseExportFormatter", () => {
         variants: [{ id: "all" }],
       });
       const output = createMockOutput();
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
@@ -338,7 +344,6 @@ describe("BaseExportFormatter", () => {
         variants: [],
       });
       const output = createMockOutput();
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
@@ -362,7 +367,7 @@ describe("BaseExportFormatter", () => {
   /***********************************************************
    * fetchComponentsMap
    ***********************************************************/
-  describe("fetchComponentsMap", () => {
+  describe("component requests", () => {
     it("should fetch components for variants configured at root level", async () => {
       const projectConfig = createMockProjectConfig({
         variants: [{ id: "variant1" }, { id: "base" }],
@@ -371,7 +376,6 @@ describe("BaseExportFormatter", () => {
         },
       });
       const output = createMockOutput();
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
@@ -400,7 +404,6 @@ describe("BaseExportFormatter", () => {
         },
       });
       const output = createMockOutput();
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
@@ -435,7 +438,6 @@ describe("BaseExportFormatter", () => {
         },
       });
       const output = createMockOutput();
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
@@ -453,12 +455,37 @@ describe("BaseExportFormatter", () => {
       });
     });
 
+    it("sends folders, statuses, integrated and tags in the component filter", async () => {
+      const projectConfig = createMockProjectConfig({
+        variants: [{ id: "base" }],
+        components: { folders: [{ id: "folder1" }] },
+        statuses: ["FINAL"],
+        integrated: true,
+        tags: { values: ["tag-1"] },
+      });
+      const formatter = new TestBaseExportFormatter(
+        createMockOutput(),
+        projectConfig,
+        createMockMeta()
+      );
+      mockExportComponents.mockResolvedValue(createMockComponentsContent());
+
+      await formatter.fetchAPIData();
+
+      const [params] = mockExportComponents.mock.calls[0];
+      expect(JSON.parse(params.filter)).toEqual({
+        folders: [{ id: "folder1" }],
+        statuses: ["FINAL"],
+        integrated: true,
+        tags: { values: ["tag-1"] },
+      });
+    });
+
     it("should return empty object when components not configured", async () => {
       const projectConfig = createMockProjectConfig({
         components: undefined,
       });
       const output = createMockOutput();
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
@@ -485,7 +512,6 @@ describe("BaseExportFormatter", () => {
         },
       });
       const output = createMockOutput();
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
@@ -522,7 +548,6 @@ describe("BaseExportFormatter", () => {
     it("should invoke BaseExportFormatter.createOutputFiles for each text item", () => {
       const projectConfig = createMockProjectConfig();
       const output = createMockOutput({ outDir: "/test/output" });
-      // @ts-ignore
       const formatter = new TestBaseExportFormatter(
         output,
         projectConfig,
@@ -555,6 +580,96 @@ describe("BaseExportFormatter", () => {
         "variant1",
         mockTextContent
       );
+    });
+  });
+
+  /***********************************************************
+   * request batching
+   ***********************************************************/
+  describe("request batching", () => {
+    const tick = () => new Promise((resolve) => setTimeout(resolve, 1));
+
+    it("bounds text item and component requests by one shared limit", async () => {
+      // 4 projects x 2 variants + 2 component variants = 10 requests, double the limit
+      const projectConfig = createMockProjectConfig({
+        projects: [{ id: "p1" }, { id: "p2" }, { id: "p3" }, { id: "p4" }],
+        variants: [{ id: "base" }, { id: "variant1" }],
+        components: { folders: [] },
+      });
+      const formatter = new TestBaseExportFormatter(
+        createMockOutput(),
+        projectConfig,
+        createMockMeta()
+      );
+
+      let inFlight = 0;
+      let maxInFlight = 0;
+      const trackRequest = async () => {
+        inFlight++;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await tick();
+        inFlight--;
+        return createMockIOSStringsContent();
+      };
+      mockExportTextItems.mockImplementation(trackRequest);
+      mockExportComponents.mockImplementation(trackRequest);
+
+      await formatter.fetchAPIData();
+
+      expect(mockExportTextItems).toHaveBeenCalledTimes(8);
+      expect(mockExportComponents).toHaveBeenCalledTimes(2);
+      // Combined, never above the limit -- not the limit per entity type
+      expect(maxInFlight).toBe(EXPORT_REQUEST_CONCURRENCY);
+    });
+
+    it("assembles the maps in request order, not completion order", async () => {
+      const projectConfig = createMockProjectConfig({
+        projects: [{ id: "slow" }, { id: "fast" }],
+        variants: [{ id: "base" }],
+        components: undefined,
+      });
+      const formatter = new TestBaseExportFormatter(
+        createMockOutput(),
+        projectConfig,
+        createMockMeta()
+      );
+
+      mockExportTextItems.mockImplementation(async (params) => {
+        const projectId = JSON.parse(params.filter).projects[0].id;
+        await new Promise((r) => setTimeout(r, projectId === "slow" ? 20 : 0));
+        return projectId;
+      });
+
+      const { textItemsMap } = await formatter.fetchAPIData();
+
+      expect(Object.keys(textItemsMap)).toEqual(["slow", "fast"]);
+    });
+
+    it("adds the format's exportQueryParams to every request", async () => {
+      const projectConfig = createMockProjectConfig({
+        projects: [{ id: "p1" }],
+        variants: [{ id: "base" }, { id: "variant1" }],
+        components: { folders: [] },
+      });
+      const formatter = new TestBaseExportFormatter(
+        createMockOutput(),
+        projectConfig,
+        createMockMeta()
+      );
+      formatter.extraParams = { excludeVariantMetadata: "true" };
+      mockExportTextItems.mockResolvedValue(createMockIOSStringsContent());
+      mockExportComponents.mockResolvedValue(createMockComponentsContent());
+
+      await formatter.fetchAPIData();
+
+      const allParams = [
+        ...mockExportTextItems.mock.calls,
+        ...mockExportComponents.mock.calls,
+      ].map(([params]) => params);
+      expect(allParams).toHaveLength(4);
+      for (const params of allParams) {
+        expect(params.excludeVariantMetadata).toBe("true");
+      }
     });
   });
 });

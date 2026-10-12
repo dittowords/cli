@@ -1,5 +1,11 @@
 import OutputFile from "./OutputFile";
 
+/**
+ * Metadata for the key/value JSON outputs. `projectId` is set on project files and left
+ * undefined on the components file.
+ */
+export type JSONFileMetadata = { variantId: string; projectId?: string };
+
 export default class JSONOutputFile<MetadataType> extends OutputFile<
   Record<string, unknown>,
   MetadataType

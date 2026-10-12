@@ -25,7 +25,9 @@ export const ZBaseOutputFilters = z.object({
   tags: ZTagsFilter.optional(),
   variants: z.array(z.object({ id: z.string() })).optional(),
   outDir: z.string().optional(),
-  richText: z.union([z.literal("html"), z.literal(false)]).optional(),
+  richText: z
+    .union([z.literal("html"), z.literal("html_paragraphs"), z.literal(false)])
+    .optional(),
   iosLocales: z.array(z.record(z.string(), z.string())).optional(),
   androidLocales: z.array(z.record(z.string(), z.string())).optional(),
   iosLocalesOutDir: z.string().optional(),

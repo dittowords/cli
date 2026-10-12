@@ -1,13 +1,13 @@
 import BaseExportFormatter from "./shared/baseExport";
 import AndroidOutputFile from "./shared/fileTypes/AndroidOutputFile";
-import { PullQueryParams } from "../http/types";
+import { ExportFormat } from "../http/types";
 import appContext from "../utils/appContext";
 import { BASE_VARIANT_ID } from "../utils/constants";
 
 export default class AndroidXMLFormatter extends BaseExportFormatter<
   AndroidOutputFile<{ variantId: string }>
 > {
-  protected exportFormat: PullQueryParams["format"] = "android";
+  protected exportFormat: ExportFormat = "android";
 
   protected createOutputFile(
     filePrefix: string,

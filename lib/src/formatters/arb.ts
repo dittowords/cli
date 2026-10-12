@@ -1,12 +1,12 @@
 import BaseExportFormatter from "./shared/baseExport";
 import ARBOutputFile from "./shared/fileTypes/ARBOutputFile";
-import { PullQueryParams } from "../http/types";
+import { ExportFormat } from "../http/types";
 import { BASE_VARIANT_ID } from "../utils/constants";
 
 export default class ARBFormatter extends BaseExportFormatter<
   ARBOutputFile<{ variantId: string }>
 > {
-  protected exportFormat: PullQueryParams["format"] = "arb";
+  protected exportFormat: ExportFormat = "arb";
 
   protected createOutputFile(
     _filePrefix: string,

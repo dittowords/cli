@@ -2,7 +2,6 @@ import { AxiosError } from "axios";
 import {
   CommandMetaFlags,
   PullQueryParams,
-  ZTextItemsResponse,
   ZExportTextItemsResponse,
 } from "./types";
 import getHttpClient from "./client";
@@ -31,25 +30,6 @@ const handleError = (
 
   return e;
 };
-
-export async function fetchTextItems(
-  params: PullQueryParams,
-  meta: CommandMetaFlags
-) {
-  try {
-    const httpClient = getHttpClient({ meta });
-    const defaultResponse = await httpClient.get("/v2/textItems", {
-      params,
-    });
-    return ZTextItemsResponse.parse(defaultResponse.data);
-  } catch (e: unknown) {
-    throw handleError(
-      e,
-      "Invalid project filters",
-      "Please check your project filters and try again."
-    );
-  }
-}
 
 export async function exportTextItems(
   params: PullQueryParams,

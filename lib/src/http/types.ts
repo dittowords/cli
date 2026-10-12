@@ -6,23 +6,53 @@ export interface PullFilters {
     id: string;
     excludeNestedFolders?: boolean;
   }[];
-  variants?: { id: string }[];
   statuses?: ITextStatus[];
   integrated?: boolean;
   tags?: ITagsFilter;
 }
 export interface PullQueryParams {
   filter: string; // Stringified PullFilters
-  richText?: "html";
+  richText?: RichTextOutputOption;
   variantId?: string; // undefined for base
-  format?:
-    | "ios-strings"
-    | "ios-stringsdict"
-    | "android"
-    | "json_icu"
-    | "arb"
-    | undefined;
+  format?: ExportFormat | undefined;
+  /**
+   * Omits the `__variant-name` / `__variant-description` keys the API adds to variant exports
+   * in the JSON formats. Stringified because it travels as a query param.
+   */
+  excludeVariantMetadata?: "true";
+  /**
+   * Adds a `__variables_used` key listing the variable names referenced by the exported
+   * strings. Only has an effect on `json_i18next` and `json_vue_i18n`.
+   */
+  includeVariableSummary?: "true";
 }
+
+/**
+ * How the API should render rich text. Mirrors RICH_TEXT_OUTPUT_OPTIONS in the API.
+ * - `html` strips wrapping `<p>` tags and preserves line breaks as `<br />`
+ * - `html_paragraphs` wraps all text in `<p>` tags (legacy behavior)
+ */
+export const RICH_TEXT_OUTPUT_OPTIONS = ["html", "html_paragraphs"] as const;
+export type RichTextOutputOption = (typeof RICH_TEXT_OUTPUT_OPTIONS)[number];
+
+/**
+ * The `format` values accepted by /v2/textItems/export and /v2/components/export.
+ * Mirrors EXPORT_FORMATS in the API.
+ */
+export const EXPORT_FORMATS = [
+  "json_icu",
+  "json_i18next",
+  "json_vue_i18n",
+  "ios-strings",
+  "ios-stringsdict",
+  "android",
+  "arb",
+] as const;
+export type ExportFormat = (typeof EXPORT_FORMATS)[number];
+
+/** Key the API adds to i18next/vue-i18n exports when `includeVariableSummary` is 'true'. */
+export const VARIABLES_USED_KEY = "__variables_used";
+
 export const ZTextStatus = z.enum(["NONE", "WIP", "REVIEW", "FINAL"]);
 export type ITextStatus = z.infer<typeof ZTextStatus>;
 
@@ -32,53 +62,19 @@ export const ZTagsFilter = z.object({
 });
 export type ITagsFilter = z.infer<typeof ZTagsFilter>;
 
-export const ZTextPluralType = z.enum([
-  "zero",
-  "one",
-  "two",
-  "few",
-  "many",
-  "other",
-]);
-export type ITextPluralType = z.infer<typeof ZTextPluralType>;
-
-const ZBaseTextEntity = z.object({
-  id: z.string(),
-  text: z.string(),
-  richText: z.string().optional(),
-  status: z.string(),
-  notes: z.string(),
-  tags: z.array(z.string()),
-  integrated: z.boolean(),
-  pluralForm: ZTextPluralType.nullable(),
-  variableIds: z.array(z.string()),
-  variantId: z.string().nullable(),
-});
-
-const ZTextItem = ZBaseTextEntity.extend({
-  projectId: z.string(),
-});
-
-export function isTextItem(item: TextItem | Component): item is TextItem {
-  return "projectId" in item;
-}
-
-/**
- * Represents a single text item, as returned from the /v2/textItems endpoint
- */
-export type TextItem = z.infer<typeof ZTextItem>;
-
-export const ZTextItemsResponse = z.array(ZTextItem);
-export type TextItemsResponse = z.infer<typeof ZTextItemsResponse>;
-
 const ZExportTextItemsStringResponse = z.string();
 export type ExportTextItemsStringResponse = z.infer<
   typeof ZExportTextItemsStringResponse
 >;
 
 // Most JSON export formats (e.g. json_icu) map each key to a plain string, but some
-// (e.g. arb) also include metadata entries (e.g. "@key") whose value is an object.
-const ZExportItemValue = z.union([z.string(), z.record(z.string(), z.unknown())]);
+// (e.g. arb) also include metadata entries (e.g. "@key") whose value is an object, and
+// json_i18next / json_vue_i18n add a `__variables_used` string array when requested.
+const ZExportItemValue = z.union([
+  z.string(),
+  z.array(z.string()),
+  z.record(z.string(), z.unknown()),
+]);
 
 const ZExportTextItemsJSONResponse = z.record(z.string(), ZExportItemValue);
 export type ExportTextItemsJSONResponse = z.infer<
@@ -92,18 +88,6 @@ export const ZExportTextItemsResponse = z.union([
 export type ExportTextItemsResponse = z.infer<typeof ZExportTextItemsResponse>;
 
 // MARK - Components
-
-const ZComponent = ZBaseTextEntity.extend({
-  folderId: z.string().nullable(),
-});
-
-/**
- * Represents a single component, as returned from the /v2/components endpoint
- */
-export type Component = z.infer<typeof ZComponent>;
-
-export const ZComponentsResponse = z.array(ZComponent);
-export type ComponentsResponse = z.infer<typeof ZComponentsResponse>;
 
 export const ZExportComponentsJSONResponse = z.record(
   z.string(),

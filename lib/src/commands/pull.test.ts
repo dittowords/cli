@@ -1,7 +1,7 @@
 import { pull } from "./pull";
 import getHttpClient from "../http/client";
-import { Component, TextItem } from "../http/types";
 import appContext from "../utils/appContext";
+import { Output } from "../outputs";
 import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
@@ -20,7 +20,27 @@ const mockHttpClient = {
 /**********************************************************
  * HELPERS
  **********************************************************/
-const createMockTextItem = (overrides: Partial<TextItem> = {}) => ({
+/**
+ * A text item or component as it exists in the mocked workspace, before the API renders it.
+ * The fake export API below turns these into the `{ developerId: text }` files the real
+ * export endpoints return.
+ */
+type MockEntity = {
+  id: string;
+  text: string;
+  richText: string;
+  status: string;
+  notes: string;
+  tags: string[];
+  integrated: boolean;
+  variableIds: string[];
+  pluralForm: string | null;
+  variantId: string | null;
+};
+type TextItem = MockEntity & { projectId: string };
+type Component = MockEntity & { folderId: string | null };
+
+const createMockTextItem = (overrides: Partial<TextItem> = {}): TextItem => ({
   id: "text-1",
   text: "Plain text content",
   richText: "<p>Rich <strong>HTML</strong> content</p>",
@@ -35,7 +55,9 @@ const createMockTextItem = (overrides: Partial<TextItem> = {}) => ({
   ...overrides,
 });
 
-const createMockComponent = (overrides: Partial<Component> = {}) => ({
+const createMockComponent = (
+  overrides: Partial<Component> = {}
+): Component => ({
   id: "component-1",
   text: "Plain text content",
   richText: "<p>Rich <strong>HTML</strong> content</p>",
@@ -164,6 +186,32 @@ const createMockData = () => {
 };
 
 // Helper functions
+
+/**
+ * Renders entities the way the real export endpoints do for the JSON formats: rich text when
+ * requested, and a `__variables_used` summary when `includeVariableSummary` is set. An empty
+ * export stays empty, matching the API (it skips the summary on an empty file).
+ */
+const renderExport = (entities: MockEntity[], params: any) => {
+  const json: Record<string, unknown> = {};
+  const variablesUsed = new Set<string>();
+  for (const entity of entities) {
+    json[entity.id] = params.richText ? entity.richText : entity.text;
+    entity.variableIds.forEach((id) => variablesUsed.add(id));
+  }
+  if (
+    params.includeVariableSummary === "true" &&
+    Object.keys(json).length > 0
+  ) {
+    json.__variables_used = [...variablesUsed].sort();
+  }
+  return json;
+};
+
+/**
+ * Stands in for the API. The export endpoints filter the fixtures by the requested project and
+ * variant, so a test describes its workspace once and every request sees a consistent view.
+ */
 const setupMocks = ({
   textItems = [],
   components = [],
@@ -173,19 +221,58 @@ const setupMocks = ({
   components?: Component[];
   variables?: any[];
 }) => {
+  const projects = [...new Set(textItems.map((item) => item.projectId))].map(
+    (id) => ({ id, name: id })
+  );
+
   mockHttpClient.get.mockImplementation((url: string, config?: any) => {
-    if (url.includes("/v2/textItems")) {
-      return Promise.resolve({ data: textItems });
+    const params = config?.params ?? {};
+    const filter = params.filter ? JSON.parse(params.filter) : {};
+    const variantId = params.variantId ?? null;
+
+    if (url === "/v2/textItems/export") {
+      const projectIds: string[] = (filter.projects ?? []).map(
+        (project: { id: string }) => project.id
+      );
+      return Promise.resolve({
+        data: renderExport(
+          textItems.filter(
+            (item) =>
+              projectIds.includes(item.projectId) &&
+              item.variantId === variantId
+          ),
+          params
+        ),
+      });
     }
-    if (url.includes("/v2/variables")) {
+    if (url === "/v2/components/export") {
+      return Promise.resolve({
+        data: renderExport(
+          components.filter((component) => component.variantId === variantId),
+          params
+        ),
+      });
+    }
+    if (url === "/v2/projects") {
+      return Promise.resolve({ data: projects });
+    }
+    if (url === "/v2/variables") {
       return Promise.resolve({ data: variables });
-    }
-    if (url.includes("/v2/components")) {
-      return Promise.resolve({ data: components });
     }
     return Promise.resolve({ data: [] });
   });
 };
+
+/** Every request made to an export endpoint, with its filter parsed. */
+const exportCalls = (
+  endpoint: "/v2/textItems/export" | "/v2/components/export"
+) =>
+  mockHttpClient.get.mock.calls
+    .filter(([url]: [string]) => url === endpoint)
+    .map(([, config]: [string, any]) => ({
+      ...config.params,
+      filter: JSON.parse(config.params.filter),
+    }));
 
 const setupExportMocks = ({
   textItems,
@@ -256,6 +343,9 @@ describe("pull command - end-to-end tests", () => {
   // Reset appContext before each test
   beforeEach(() => {
     jest.clearAllMocks();
+    // Every test starts from an API with no data. clearAllMocks only clears call history, so
+    // this also replaces the mock implementation the previous test set up.
+    setupMocks({ textItems: [] });
 
     // Create a fresh temp directory for each test
     testDir = fs.mkdtempSync(path.join(os.tmpdir(), "ditto-test-"));
@@ -365,28 +455,181 @@ describe("pull command - end-to-end tests", () => {
     });
   });
 
+  /**
+   * `richText` is resolved once (an output-level value, including `false`, overrides the
+   * project-level one) and sent on every export request, so every output configuration has to
+   * honor it identically.
+   */
+  describe("Rich Text Options", () => {
+    const jsonContent = { greeting: "Hello" };
+    const outputConfigs: [string, Output, string | Record<string, string>][] = [
+      ["json", { format: "json" }, jsonContent],
+      ["json + i18next", { format: "json", framework: "i18next" }, jsonContent],
+      [
+        "json + vue-i18n",
+        { format: "json", framework: "vue-i18n" },
+        jsonContent,
+      ],
+      ["json + icu", { format: "json", framework: "icu" }, jsonContent],
+      ["json_icu (deprecated)", { format: "json_icu" }, jsonContent],
+      ["json + arb", { format: "json", framework: "arb" }, jsonContent],
+      ["android", { format: "android" }, "<resources/>"],
+      ["ios-strings", { format: "ios-strings" }, '"greeting" = "Hello";'],
+      ["ios-stringsdict", { format: "ios-stringsdict" }, "<plist/>"],
+    ];
+
+    describe.each(outputConfigs)(
+      "%s",
+      (_label, outputConfig, exportContent) => {
+        const richTextParams = async (
+          projectRichText: "html" | "html_paragraphs" | undefined,
+          outputRichText: "html" | "html_paragraphs" | false | undefined
+        ) => {
+          fs.mkdirSync(outputDir, { recursive: true });
+          setupExportMocks({
+            textItems: exportContent,
+            components: exportContent,
+          });
+
+          appContext.setProjectConfig({
+            projects: [{ id: "project-1" }],
+            components: {},
+            ...(projectRichText && { richText: projectRichText }),
+            outputs: [
+              {
+                ...outputConfig,
+                outDir: outputDir,
+                ...(outputRichText !== undefined && {
+                  richText: outputRichText,
+                }),
+              },
+            ],
+          });
+
+          await pull({});
+
+          const calls = [
+            ...exportCalls("/v2/textItems/export"),
+            ...exportCalls("/v2/components/export"),
+          ];
+          expect(calls).toHaveLength(2);
+          return calls;
+        };
+
+        it.each(["html", "html_paragraphs"] as const)(
+          "passes richText: %s through on every export request",
+          async (richText) => {
+            for (const call of await richTextParams(richText, undefined)) {
+              expect(call.richText).toBe(richText);
+            }
+          }
+        );
+
+        it("omits the richText param when an output sets richText: false over a project-level value", async () => {
+          for (const call of await richTextParams("html", false)) {
+            expect(call).not.toHaveProperty("richText");
+          }
+        });
+      }
+    );
+  });
+
+  /**
+   * Empty exports must produce exactly the files they did before the export migration in v5.11.0:
+   * - JSON formats only ever created a file when text landed in it, so they write nothing.
+   * - Every other format wrote one file per project and variant regardless of content, and
+   *   keeps doing so -- skipping them would delete files existing integrations expect.
+   */
+  describe("Empty exports", () => {
+    it.each([
+      [{ format: "json" }, "json"],
+      [{ format: "json", framework: "i18next" }, "json"],
+      [{ format: "json", framework: "vue-i18n" }, "json"],
+    ] as const)(
+      "%o: writes no data file for an empty export",
+      async (outputConfig, extension) => {
+        fs.mkdirSync(outputDir, { recursive: true });
+        setupExportMocks({ textItems: {}, components: {} });
+
+        appContext.setProjectConfig({
+          projects: [{ id: "project-1" }],
+          components: {},
+          outputs: [{ ...outputConfig, outDir: outputDir }],
+        });
+
+        await pull({});
+
+        expect(
+          fs.existsSync(path.join(outputDir, `project-1___base.${extension}`))
+        ).toBe(false);
+        expect(
+          fs.existsSync(path.join(outputDir, `components___base.${extension}`))
+        ).toBe(false);
+        // As before v5.11.0, JSON outputs write variables.json even when it's empty
+        expect(parseJsonFile(path.join(outputDir, "variables.json"))).toEqual(
+          {}
+        );
+      }
+    );
+
+    it.each([
+      [{ format: "json", framework: "icu" }, {}, "json"],
+      [{ format: "json_icu" }, {}, "json"],
+      [{ format: "json", framework: "arb" }, {}, "arb"],
+      [
+        { format: "android" },
+        '<?xml version="1.0" encoding="utf-8"?>\n<resources/>',
+        "xml",
+      ],
+      [{ format: "ios-strings" }, "", "strings"],
+      [{ format: "ios-stringsdict" }, "<plist><dict/></plist>", "stringsdict"],
+    ] as const)(
+      "%o: still writes a file for an empty export",
+      async (outputConfig, emptyContent, extension) => {
+        fs.mkdirSync(outputDir, { recursive: true });
+        setupExportMocks({ textItems: emptyContent, components: emptyContent });
+
+        appContext.setProjectConfig({
+          projects: [{ id: "project-1" }],
+          components: {},
+          outputs: [{ ...outputConfig, outDir: outputDir }],
+        });
+
+        await pull({});
+
+        expect(
+          fs.existsSync(path.join(outputDir, `project-1___base.${extension}`))
+        ).toBe(true);
+        expect(
+          fs.existsSync(path.join(outputDir, `components___base.${extension}`))
+        ).toBe(true);
+      }
+    );
+  });
+
+  /**
+   * Each output requests one rendered file per project and variant, so a config filter becomes
+   * one export request per project/variant: the project goes in the filter, and the variant is
+   * sent as `variantId` rather than inside the filter.
+   */
   describe("Filter Feature", () => {
+    const textItemCalls = () => exportCalls("/v2/textItems/export");
+    const componentCalls = () => exportCalls("/v2/components/export");
+
     it("should filter projects when configured at base level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
 
       appContext.setProjectConfig({
         projects: [{ id: "project-1" }, { id: "project-2" }],
-        outputs: [
-          {
-            format: "json",
-            outDir: outputDir,
-          },
-        ],
+        outputs: [{ format: "json", outDir: outputDir }],
       });
 
       await pull({});
 
-      // Verify correct API call with filtered params
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
-        params: {
-          filter: '{"projects":[{"id":"project-1"},{"id":"project-2"}]}',
-        },
-      });
+      expect(textItemCalls().map((call) => call.filter)).toEqual([
+        { projects: [{ id: "project-1" }] },
+        { projects: [{ id: "project-2" }] },
+      ]);
     });
 
     it("should filter variants at base level", async () => {
@@ -395,23 +638,15 @@ describe("pull command - end-to-end tests", () => {
       appContext.setProjectConfig({
         projects: [{ id: "project-1" }],
         variants: [{ id: "variant-a" }, { id: "variant-b" }],
-        outputs: [
-          {
-            format: "json",
-            outDir: outputDir,
-          },
-        ],
+        outputs: [{ format: "json", outDir: outputDir }],
       });
 
       await pull({});
 
-      // Verify correct API call with filtered params
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
-        params: {
-          filter:
-            '{"projects":[{"id":"project-1"}],"variants":[{"id":"variant-a"},{"id":"variant-b"}]}',
-        },
-      });
+      expect(textItemCalls().map((call) => call.variantId)).toEqual([
+        "variant-a",
+        "variant-b",
+      ]);
     });
 
     it("should query components when source field is provided", async () => {
@@ -419,114 +654,80 @@ describe("pull command - end-to-end tests", () => {
 
       appContext.setProjectConfig({
         components: {},
-        outputs: [
-          {
-            format: "json",
-            outDir: outputDir,
-          },
-        ],
+        outputs: [{ format: "json", outDir: outputDir }],
       });
 
       await pull({});
 
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/components", {
-        params: {
-          filter: "{}",
-        },
-      });
+      expect(componentCalls().map((call) => call.filter)).toEqual([{}]);
+      expect(textItemCalls()).toEqual([]);
     });
 
     it("should filter components by folder at base level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
 
       appContext.setProjectConfig({
-        components: {
-          folders: [{ id: "folder-1" }],
-        },
-        outputs: [
-          {
-            format: "json",
-            outDir: outputDir,
-          },
-        ],
+        components: { folders: [{ id: "folder-1" }] },
+        outputs: [{ format: "json", outDir: outputDir }],
       });
 
       await pull({});
 
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/components", {
-        params: {
-          filter: '{"folders":[{"id":"folder-1"}]}',
-        },
-      });
+      expect(componentCalls().map((call) => call.filter)).toEqual([
+        { folders: [{ id: "folder-1" }] },
+      ]);
     });
 
     it("should filter components by folder and variants at base level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
 
       appContext.setProjectConfig({
-        components: {
-          folders: [{ id: "folder-1" }],
-        },
+        components: { folders: [{ id: "folder-1" }] },
         variants: [{ id: "variant-a" }, { id: "variant-b" }],
-        outputs: [
-          {
-            format: "json",
-            outDir: outputDir,
-          },
-        ],
+        outputs: [{ format: "json", outDir: outputDir }],
       });
 
       await pull({});
 
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/components", {
-        params: {
-          filter:
-            '{"folders":[{"id":"folder-1"}],"variants":[{"id":"variant-a"},{"id":"variant-b"}]}',
-        },
-      });
+      expect(
+        componentCalls().map(({ filter, variantId }) => ({ filter, variantId }))
+      ).toEqual([
+        { filter: { folders: [{ id: "folder-1" }] }, variantId: "variant-a" },
+        { filter: { folders: [{ id: "folder-1" }] }, variantId: "variant-b" },
+      ]);
     });
 
     it("should filter components by folder at output level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
 
       appContext.setProjectConfig({
-        components: {
-          folders: [{ id: "folder-1" }],
-        },
+        components: { folders: [{ id: "folder-1" }] },
         outputs: [
           {
             format: "json",
             outDir: outputDir,
-            components: {
-              folders: [{ id: "folder-3" }],
-            },
+            components: { folders: [{ id: "folder-3" }] },
           },
         ],
       });
 
       await pull({});
 
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/components", {
-        params: {
-          filter: '{"folders":[{"id":"folder-3"}]}',
-        },
-      });
+      expect(componentCalls().map((call) => call.filter)).toEqual([
+        { folders: [{ id: "folder-3" }] },
+      ]);
     });
 
     it("should filter components by folder and variants at output level", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
 
       appContext.setProjectConfig({
-        components: {
-          folders: [{ id: "folder-1" }],
-        },
+        components: { folders: [{ id: "folder-1" }] },
         outputs: [
           {
             format: "json",
             outDir: outputDir,
-            components: {
-              folders: [{ id: "folder-3" }],
-            },
+            components: { folders: [{ id: "folder-3" }] },
             variants: [{ id: "variant-a" }, { id: "variant-b" }],
           },
         ],
@@ -534,12 +735,12 @@ describe("pull command - end-to-end tests", () => {
 
       await pull({});
 
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/components", {
-        params: {
-          filter:
-            '{"folders":[{"id":"folder-3"}],"variants":[{"id":"variant-a"},{"id":"variant-b"}]}',
-        },
-      });
+      expect(
+        componentCalls().map(({ filter, variantId }) => ({ filter, variantId }))
+      ).toEqual([
+        { filter: { folders: [{ id: "folder-3" }] }, variantId: "variant-a" },
+        { filter: { folders: [{ id: "folder-3" }] }, variantId: "variant-b" },
+      ]);
     });
 
     it("should filter projects at output level", async () => {
@@ -558,12 +759,9 @@ describe("pull command - end-to-end tests", () => {
 
       await pull({});
 
-      // Verify correct API call with filtered params
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
-        params: {
-          filter: '{"projects":[{"id":"project-1"}]}',
-        },
-      });
+      expect(textItemCalls().map((call) => call.filter)).toEqual([
+        { projects: [{ id: "project-1" }] },
+      ]);
     });
 
     it("should filter variants at output level", async () => {
@@ -583,40 +781,36 @@ describe("pull command - end-to-end tests", () => {
 
       await pull({});
 
-      // Verify correct API call with filtered params
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
-        params: {
-          filter:
-            '{"projects":[{"id":"project-1"}],"variants":[{"id":"variant-a"}]}',
-        },
-      });
+      expect(textItemCalls().map((call) => call.variantId)).toEqual([
+        "variant-a",
+      ]);
     });
 
     it("supports the default filter behavior", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
+      setupMocks({
+        textItems: [
+          createMockTextItem({ projectId: "project-1" }),
+          createMockTextItem({ projectId: "project-2", id: "text-2" }),
+        ],
+      });
 
       appContext.setProjectConfig({
         projects: [],
-        outputs: [
-          {
-            format: "json",
-            outDir: outputDir,
-          },
-        ],
+        outputs: [{ format: "json", outDir: outputDir }],
       });
 
       await pull({});
 
-      // Verify correct API call with filtered params
-      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/textItems", {
-        params: {
-          filter: '{"projects":[]}',
-        },
-      });
+      // An empty `projects` filter expands to every project in the workspace
+      expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/projects");
+      expect(textItemCalls().map((call) => call.filter)).toEqual([
+        { projects: [{ id: "project-1" }] },
+        { projects: [{ id: "project-2" }] },
+      ]);
       expect(mockHttpClient.get).toHaveBeenCalledWith("/v2/variables");
-
       // Components endpoint should not be called if not provided as source field
-      expect(mockHttpClient.get).toHaveBeenCalledTimes(2);
+      expect(componentCalls()).toEqual([]);
     });
   });
 
@@ -732,6 +926,7 @@ describe("pull command - end-to-end tests", () => {
       appContext.setProjectConfig({
         projects: [],
         components: {},
+        variants: [{ id: "base" }, { id: "variant-a" }, { id: "variant-b" }],
         outputs: [
           {
             format: "json",
@@ -746,6 +941,52 @@ describe("pull command - end-to-end tests", () => {
       assertFilesCreated(outputDir, expectedJSONFiles);
     });
 
+    it("builds variables.json from the variables referenced across every file", async () => {
+      fs.mkdirSync(outputDir, { recursive: true });
+      const variable = (name: string) =>
+        createMockVariable({ id: name, name, data: { example: `${name}!` } });
+      setupMocks({
+        textItems: [
+          createMockTextItem({
+            id: "a",
+            projectId: "project-1",
+            variableIds: ["Age"],
+          }),
+          createMockTextItem({
+            id: "b",
+            projectId: "project-2",
+            variableIds: ["Name"],
+          }),
+        ],
+        components: [createMockComponent({ variableIds: ["State"] })],
+        variables: [
+          variable("Age"),
+          variable("Name"),
+          variable("State"),
+          variable("Unused"),
+        ],
+      });
+
+      appContext.setProjectConfig({
+        projects: [{ id: "project-1" }, { id: "project-2" }],
+        components: {},
+        outputs: [{ format: "json", outDir: outputDir }],
+      });
+
+      await pull({});
+
+      // Union across both project files and the components file; unreferenced ones left out
+      expect(parseJsonFile(path.join(outputDir, "variables.json"))).toEqual({
+        Age: { example: "Age!" },
+        Name: { example: "Name!" },
+        State: { example: "State!" },
+      });
+      // The summary that produced it is not written into the locale files
+      expect(
+        parseJsonFile(path.join(outputDir, "project-1___base.json"))
+      ).not.toHaveProperty("__variables_used");
+    });
+
     it("should create index.js file when framework: i18next provided", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
       setupMocks(createMockData());
@@ -753,6 +994,7 @@ describe("pull command - end-to-end tests", () => {
       appContext.setProjectConfig({
         projects: [],
         components: {},
+        variants: [{ id: "base" }, { id: "variant-a" }, { id: "variant-b" }],
         outputs: [
           {
             format: "json",
@@ -767,18 +1009,19 @@ describe("pull command - end-to-end tests", () => {
       assertFilesCreated(outputDir, [...expectedJSONFiles, "index.js"]);
     });
 
-    it("should create index.js file when framework: vue-18n provided", async () => {
+    it("should create index.js file when framework: vue-i18n provided", async () => {
       fs.mkdirSync(outputDir, { recursive: true });
       setupMocks(createMockData());
 
       appContext.setProjectConfig({
         projects: [],
         components: {},
+        variants: [{ id: "base" }, { id: "variant-a" }, { id: "variant-b" }],
         outputs: [
           {
             format: "json",
             outDir: outputDir,
-            framework: "i18next",
+            framework: "vue-i18n",
           },
         ],
       });

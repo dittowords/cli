@@ -20,10 +20,12 @@ describe("fetchProjects", () => {
         {
           id: "project1",
           name: "Project One",
+          baseId: "my-base",
         },
         {
           id: "project2",
           name: "Project Two",
+          baseId: null,
         },
       ],
     };

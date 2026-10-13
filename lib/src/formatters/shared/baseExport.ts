@@ -25,7 +25,7 @@ type BaseTextItemSource = {
   /** Developer ID of the base */
   id: string;
   /** True if the base is in the config, so its own text items are exported too */
-  fetchBaseTextItems: boolean;
+  shouldFetchBaseTextItems: boolean;
   /** Developer IDs of the configured projects connected to this base */
   projectIds: string[];
 };
@@ -229,7 +229,7 @@ export default abstract class BaseExportFormatter<
         baseSources.set(baseId, {
           kind: "base",
           id: baseId,
-          fetchBaseTextItems: false,
+          shouldFetchBaseTextItems: false,
           projectIds: [],
         });
       }
@@ -239,7 +239,7 @@ export default abstract class BaseExportFormatter<
     const projectSources: ProjectTextItemSource[] = [];
 
     for (const base of configuredBases ?? []) {
-      getBaseSource(base.id).fetchBaseTextItems = true;
+      getBaseSource(base.id).shouldFetchBaseTextItems = true;
     }
 
     for (const projectId of projectIds) {
@@ -294,7 +294,7 @@ export default abstract class BaseExportFormatter<
       ...(source.projectIds.length > 0 && {
         projects: source.projectIds.map((id) => ({ id })),
       }),
-      ...(source.fetchBaseTextItems && { bases: [{ id: source.id }] }),
+      ...(source.shouldFetchBaseTextItems && { bases: [{ id: source.id }] }),
     };
   }
 

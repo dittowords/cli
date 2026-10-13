@@ -403,7 +403,7 @@ describe("BaseExportFormatter", () => {
         {
           kind: "base",
           id: "base1",
-          fetchBaseTextItems: true,
+          shouldFetchBaseTextItems: true,
           projectIds: ["project1"],
         },
       ]);
@@ -428,7 +428,7 @@ describe("BaseExportFormatter", () => {
         {
           kind: "base",
           id: "base1",
-          fetchBaseTextItems: false,
+          shouldFetchBaseTextItems: false,
           projectIds: ["project1", "project2"],
         },
         { kind: "project", id: "project3" },
@@ -452,7 +452,7 @@ describe("BaseExportFormatter", () => {
         {
           kind: "base",
           id: "base1",
-          fetchBaseTextItems: false,
+          shouldFetchBaseTextItems: false,
           projectIds: ["project2", "project3"],
         },
         { kind: "project", id: "project1" },
@@ -469,7 +469,7 @@ describe("BaseExportFormatter", () => {
         {
           kind: "base",
           id: "base1",
-          fetchBaseTextItems: true,
+          shouldFetchBaseTextItems: true,
           projectIds: [],
         },
       ]);
@@ -512,7 +512,7 @@ describe("BaseExportFormatter", () => {
         {
           kind: "base",
           id: "output-base",
-          fetchBaseTextItems: true,
+          shouldFetchBaseTextItems: true,
           projectIds: [],
         },
       ]);
@@ -744,7 +744,7 @@ describe("BaseExportFormatter", () => {
           {
             kind: "base",
             id: "base1",
-            fetchBaseTextItems: true,
+            shouldFetchBaseTextItems: true,
             projectIds: ["project2"],
           },
         ],

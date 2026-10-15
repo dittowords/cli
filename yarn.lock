@@ -1080,10 +1080,10 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@dittowords/text-extract@^0.4.0":
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/@dittowords/text-extract/-/text-extract-0.4.0.tgz#e0b770416c64477e8d51fd3e83a3e111adc3dbc1"
-  integrity sha512-4mb4J6vKDy0CpgTxkUuINa6KReatMyIPn4w/L2wMSbArcyog0Hxg0Xcs1yJgRW7Wt7cIW/bQEIUgiB9jWMuuLw==
+"@dittowords/text-extract@^0.4.1":
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/@dittowords/text-extract/-/text-extract-0.4.1.tgz#2df38f16bd0de0b97499e3f9b59cb081c419ecc6"
+  integrity sha512-NBXzeTUEGaljs5Xz+W5suAx9CuhPR/jU3vAl88WP7+X/a/1L3H/B23jQ13y6oncQ35M8ABB+X+GLtOFaOEad9A==
   dependencies:
     globby "^16.2.0"
     tm-grammars "^1.32.22"

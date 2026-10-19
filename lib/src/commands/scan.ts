@@ -104,6 +104,12 @@ function logExtractSummary(
       `  files.skipped_minified: ${summary.filesSkippedMinified}\n`
     );
   }
+  // A file larger than MAX_FILE_BYTES (1 MB) is not scanned.
+  if (summary.filesSkippedTooLarge > 0) {
+    process.stderr.write(
+      `  files.skipped_too_large: ${summary.filesSkippedTooLarge}\n`
+    );
+  }
   // A failed file is dropped from the results, so its strings are missing.
   if (summary.filesFailed > 0) {
     process.stderr.write(`  files.failed: ${summary.filesFailed}\n`);

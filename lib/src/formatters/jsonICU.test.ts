@@ -1,6 +1,7 @@
 import { Output } from "../outputs";
 import { ProjectConfigYAML } from "../services/projectConfig";
 import { exportTextItems } from "../http/textItems";
+import fetchProjects from "../http/projects";
 import JSONICUFormatter from "./jsonICU";
 
 jest.mock("../http/textItems");
@@ -16,9 +17,14 @@ const mockExportTextItems = exportTextItems as jest.MockedFunction<
   typeof exportTextItems
 >;
 
+const mockFetchProjects = fetchProjects as jest.MockedFunction<
+  typeof fetchProjects
+>;
+
 describe("JSONICUFormatter", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFetchProjects.mockResolvedValue([]);
     mockExportTextItems.mockResolvedValue({ greeting: "Hello" });
   });
 

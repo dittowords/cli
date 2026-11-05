@@ -44,10 +44,11 @@ The first time you run the CLI, a `ditto/` folder will be created if it doesn't 
 The default file looks like this:
 
 ```yml
-bases:
-  - id: your-base-id-here
+projects: []
 variants: []
 statuses: []
+components:
+  folders: []
 outputs:
 	- format: json
 		framework: i18next

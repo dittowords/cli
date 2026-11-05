@@ -16,9 +16,12 @@ const ZProjectConfigYAML = z.strictObject(
 export type ProjectConfigYAML = z.infer<typeof ZProjectConfigYAML>;
 
 export const DEFAULT_PROJECT_CONFIG_JSON: ProjectConfigYAML = {
-  bases: [{ id: "your-base-id-here" }],
+  projects: [],
   variants: [],
   statuses: [],
+  components: {
+    folders: [],
+  },
   outputs: [
     {
       format: "json",

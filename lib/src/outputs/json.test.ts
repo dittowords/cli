@@ -50,4 +50,17 @@ describe("ZJSONOutput", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts a list of bases", () => {
+    const result = ZJSONOutput.safeParse({
+      format: "json",
+      bases: [{ id: "base-1" }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty bases list", () => {
+    const result = ZJSONOutput.safeParse({ format: "json", bases: [] });
+    expect(result.success).toBe(false);
+  });
 });

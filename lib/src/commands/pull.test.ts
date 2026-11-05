@@ -222,7 +222,7 @@ const setupMocks = ({
   variables?: any[];
 }) => {
   const projects = [...new Set(textItems.map((item) => item.projectId))].map(
-    (id) => ({ id, name: id })
+    (id) => ({ id, name: id, baseId: null })
   );
 
   mockHttpClient.get.mockImplementation((url: string, config?: any) => {

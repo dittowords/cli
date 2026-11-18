@@ -117,6 +117,14 @@ function logExtractSummary(
       process.stderr.write(`    ${f.file} (${f.language}): ${f.message}\n`);
     }
   }
+  // A line longer than 4,000 characters or slower than 1 s to tokenize is
+  // skipped, so its strings are missing.
+  if (summary.linesStoppedEarly > 0) {
+    process.stderr.write(`  lines.skipped: ${summary.linesStoppedEarly}\n`);
+    for (const l of summary.stoppedEarlyLines) {
+      process.stderr.write(`    ${l.file}:${l.line}\n`);
+    }
+  }
   process.stderr.write(
     `[ditto-cli scan][extract] emitted ${
       summary.candidatesEmitted

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export interface PullFilters {
   projects?: { id: string }[] | false;
+  bases?: { id: string }[];
   folders?: {
     id: string;
     excludeNestedFolders?: boolean;
@@ -114,6 +115,7 @@ export type ExportComponentsResponse = z.infer<
 const ZProject = z.object({
   id: z.string(),
   name: z.string(),
+  baseId: z.string().nullable(),
 });
 
 /**

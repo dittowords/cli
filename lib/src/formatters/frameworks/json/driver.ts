@@ -6,6 +6,7 @@ import JSONOutputFile, {
   JSONFileMetadata,
 } from "../../shared/fileTypes/JSONOutputFile";
 import BaseFramework from "./base";
+import { OutputFileSourceKind } from "../../shared/baseExport";
 
 /**
  * Generates the `index.js` driver file that re-exports every generated JSON file, grouped by
@@ -123,22 +124,25 @@ export default class JsonDriverFramework extends applyMixins(
   }
 }
 
+const SOURCE_KIND_ORDER: Record<OutputFileSourceKind, number> = {
+  base: 0,
+  project: 1,
+  components: 2,
+};
+
 /**
- * Orders files for the driver: projects alphabetically by ID, then components last. Within a
- * project, files are ordered by variant ID. This order is used for the imports/requires and
- * for the spreads within each variant, so when two files share a key, the later one wins
- * predictably (components override projects).
+ * Orders files for the driver: bases alphabetically by ID, then projects not connected to a
+ * base alphabetically by ID, then components last. Within a source, files are ordered by
+ * variant ID. This order is used for the imports/requires and for the spreads within each
+ * variant, so when two files share a key, the later one wins predictably.
  */
 function sortDriverFiles(files: JSONOutputFile<JSONFileMetadata>[]) {
   const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
-  return [...files].sort((a, b) => {
-    const { projectId: aProject } = a.metadata;
-    const { projectId: bProject } = b.metadata;
-    if (aProject === undefined && bProject !== undefined) return 1;
-    if (aProject !== undefined && bProject === undefined) return -1;
-    return (
-      compare(aProject ?? "", bProject ?? "") ||
+  return [...files].sort(
+    (a, b) =>
+      SOURCE_KIND_ORDER[a.metadata.sourceKind] -
+        SOURCE_KIND_ORDER[b.metadata.sourceKind] ||
+      compare(a.metadata.sourceId ?? "", b.metadata.sourceId ?? "") ||
       compare(a.metadata.variantId, b.metadata.variantId)
-    );
-  });
+  );
 }

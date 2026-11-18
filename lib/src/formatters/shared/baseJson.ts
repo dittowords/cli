@@ -1,4 +1,7 @@
-import BaseExportFormatter, { ExportFormatAPIData } from "./baseExport";
+import BaseExportFormatter, {
+  ExportFormatAPIData,
+  OutputFileSourceKind,
+} from "./baseExport";
 import JSONOutputFile, { JSONFileMetadata } from "./fileTypes/JSONOutputFile";
 import OutputFile from "./fileTypes/OutputFile";
 import { PullQueryParams, VARIABLES_USED_KEY } from "../../http/types";
@@ -31,7 +34,8 @@ export default abstract class BaseJSONFormatter extends BaseExportFormatter<
     filePrefix: string,
     fileName: string,
     variantId: string,
-    content: Record<string, string> & { [VARIABLES_USED_KEY]?: string[] }
+    content: Record<string, string> & { [VARIABLES_USED_KEY]?: string[] },
+    sourceKind: OutputFileSourceKind
   ): void {
     // The variable summary is metadata for the CLI, not actual Ditto text
     // This is used internally for processing only, and should not be included in the final output files.
@@ -52,7 +56,8 @@ export default abstract class BaseJSONFormatter extends BaseExportFormatter<
       path: this.outDir,
       metadata: {
         variantId: variantId || BASE_VARIANT_ID,
-        projectId: filePrefix === "components" ? undefined : filePrefix,
+        sourceKind,
+        sourceId: sourceKind === "components" ? undefined : filePrefix,
       },
       content: exportedText,
     });

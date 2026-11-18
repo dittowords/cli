@@ -4,6 +4,7 @@ import { CommandMetaFlags } from "../http/types";
 import { exportTextItems } from "../http/textItems";
 import { exportComponents } from "../http/components";
 import fetchVariables, { Variable } from "../http/variables";
+import fetchProjects from "../http/projects";
 import JSONFormatter from "./json";
 import JSONVueI18nFormatter from "./jsonVueI18n";
 import JSONOutputFile from "./shared/fileTypes/JSONOutputFile";
@@ -27,6 +28,9 @@ const mockExportComponents = exportComponents as jest.MockedFunction<
 >;
 const mockFetchVariables = fetchVariables as jest.MockedFunction<
   typeof fetchVariables
+>;
+const mockFetchProjects = fetchProjects as jest.MockedFunction<
+  typeof fetchProjects
 >;
 
 // Exposes the protected pipeline so tests can run it without writing to disk
@@ -88,6 +92,7 @@ describe("JSON formatters", () => {
     mockExportTextItems.mockResolvedValue({ greeting: "Hello" });
     mockExportComponents.mockResolvedValue({});
     mockFetchVariables.mockResolvedValue([]);
+    mockFetchProjects.mockResolvedValue([]);
   });
 
   describe("export format", () => {
@@ -265,18 +270,33 @@ describe("JSON formatters", () => {
     });
 
     it.each(["commonjs", "module"])(
-      "orders %s imports and spreads by project ID, then components",
+      "orders %s imports and spreads by base ID, then project ID, then components",
       async (type) => {
         const formatter = new TestJSONFormatter(
           // @ts-ignore
           createMockOutput({ framework: "i18next", type }),
           createMockProjectConfig({
-            projects: [{ id: "zeta" }, { id: "alpha" }, { id: "mid" }],
+            projects: [
+              { id: "zeta" },
+              { id: "alpha" },
+              { id: "mid" },
+              { id: "in-zbase" },
+              { id: "in-abase" },
+            ],
+            bases: [{ id: "zbase" }],
             variants: [{ id: "french" }, { id: "base" }],
             components: { folders: [] },
           }),
           createMockMeta()
         );
+        mockFetchProjects.mockResolvedValue([
+          { id: "zeta", name: "Zeta", baseId: null },
+          { id: "alpha", name: "Alpha", baseId: null },
+          { id: "mid", name: "Mid", baseId: null },
+          { id: "in-zbase", name: "In Z Base", baseId: "zbase" },
+          // abase isn't configured, but its project still gets a file named for it
+          { id: "in-abase", name: "In A Base", baseId: "abase" },
+        ]);
         mockExportComponents.mockResolvedValue({ shared: "Shared" });
 
         const files = await formatter.run();
@@ -286,6 +306,10 @@ describe("JSON formatters", () => {
           ...content.matchAll(/^(?:const|import) (\w+)/gm),
         ].map(([, name]) => name);
         expect(importOrder).toEqual([
+          "abase___base",
+          "abase___french",
+          "zbase___base",
+          "zbase___french",
           "alpha___base",
           "alpha___french",
           "mid___base",
@@ -303,12 +327,16 @@ describe("JSON formatters", () => {
           return [...block.matchAll(/\.\.\.(\w+)/g)].map(([, name]) => name);
         };
         expect(spreadOrder("base")).toEqual([
+          "abase___base",
+          "zbase___base",
           "alpha___base",
           "mid___base",
           "zeta___base",
           "components___base",
         ]);
         expect(spreadOrder("french")).toEqual([
+          "abase___french",
+          "zbase___french",
           "alpha___french",
           "mid___french",
           "zeta___french",

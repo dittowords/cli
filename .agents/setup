@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Prepares an Amp orb for this repository. Runs on fresh orbs and on stale
+# snapshots, so every step must be idempotent and fast when already done.
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+step() {
+  local name="$1"; shift
+  local start=$SECONDS
+  echo "==> $name"
+  "$@"
+  echo "<== $name ($((SECONDS - start))s)"
+}
+
+# Yarn classic (yarn.lock v1). Orbs ship with yarn; enable it via corepack if missing.
+if ! command -v yarn >/dev/null 2>&1; then
+  step "Enable yarn via corepack" corepack enable
+fi
+
+echo "node $(node --version), yarn $(yarn --version)"
+
+# Same install CI uses; a no-op when node_modules already matches yarn.lock.
+step "Install dependencies" yarn install --frozen-lockfile --prefer-offline --non-interactive
+
